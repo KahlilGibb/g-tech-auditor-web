@@ -1,37 +1,377 @@
 {
-  "common": {
-    "loading": "Loading...",
-    "retry": "Try again",
-    "empty": "No items yet",
-    "create": "Create New",
-    "save": "Save",
-    "cancel": "Cancel",
-    "delete": "Delete"
+  "home": {
+    "greeting": "Welcome Back",
+    "subtitle": "Log in to continue your inspection",
+    "today": "{{date}}",
+    "emptyState": {
+      "title": "All caught up! 🎉",
+      "subtitle": "Scheduled and overdue items will appear here."
+    },
+    "agenda": "Agenda",
+    "tabs": {
+      "all": "All",
+      "inspections": "Inspections",
+      "actions": "Actions",
+      "training": "Training"
+    },
+    "stats": {
+      "completed": "{{count}} Completed",
+      "active": "{{count}} Active",
+      "draft": "{{count}} Draft",
+      "overdue": "{{count}} Overdue"
+    },
+    "cta": {
+      "start": "Start Inspection",
+      "training": "Team Training"
+    },
+    "dealers": {
+      "title": "Top 5 Dealer Progress",
+      "thisWeek": "This Week"
+    },
+    "inProgress": {
+      "title": "In Progress",
+      "viewAll": "View all",
+      "new": "New\nInspection",
+      "updated": "Updated at {{time}}",
+      "label": "INSPECTION"
+    },
+    "status": {
+      "inProgress": "In Progress",
+      "draft": "Draft",
+      "overdue": "Overdue"
+    }
+  },
+  "more": {
+    "title": "More",
+    "loggedInAs": "Logged in as {{email}}",
+    "logout": "Sign Out",
+    "sections": {
+      "features": "Features",
+      "account": "Account"
+    },
+    "features": {
+      "issues": { "label": "Issues", "desc": "Manage findings & escalations" },
+      "sensors": { "label": "Sensors", "desc": "Monitor workshop environment sensors" },
+      "assets": { "label": "Assets", "desc": "Dealer asset list & status" },
+      "analytics": { "label": "Analytics", "desc": "Reports & inspection trends" },
+      "headsUp": { "label": "Heads Up", "desc": "Announcements & team broadcasts" },
+      "documents": { "label": "Documents", "desc": "SOPs, manuals & certificates" },
+      "library": { "label": "Library", "desc": "Templates & dealer inspection standards" }
+    },
+    "settings": { "label": "Settings", "desc": "Profile, team, theme & preferences" },
+    "confirmLogout": {
+      "title": "Sign out of this account?",
+      "subtitle": "Your session will end and you will need to sign in again.",
+      "confirm": "Yes, Sign Out",
+      "cancel": "Cancel"
+    },
+    "version": "Version {{version}}",
+    "copyright": "© 2026 G Tech Solutions"
   },
   "inspections": {
     "title": "Inspections",
-    "empty": "No active inspections found.",
-    "subtitle": "Manage your safety audits."
-  },
-  "templates": {
-    "title": "Templates",
-    "empty": "No templates available.",
-    "subtitle": "Manage your audit templates."
+    "filter": "Filter",
+    "tabs": {
+      "templates": "Templates",
+      "progress": "In Progress & Done"
+    },
+    "search": {
+      "templates": "Search templates...",
+      "progress": "Search inspections..."
+    },
+    "section": {
+      "yourTemplates": "Your Templates"
+    },
+    "create": "Create Template",
+    "empty": {
+      "title": "No templates found",
+      "searchHint": "Try a different keyword.",
+      "createHint": "Create your first template.",
+      "noInspection": "No inspections found."
+    },
+    "sheet": {
+      "createTitle": "Create template",
+      "upload": "Upload document",
+      "uploadDesc": "Create a template from an existing SOP or document.",
+      "library": "Use template library",
+      "libraryDesc": "Pick from ready-made templates and customize.",
+      "scratch": "Start from scratch",
+      "scratchDesc": "Build a brand new template from zero."
+    },
+    "detail": {
+      "typeLabel": "Inspection",
+      "assignment": "Assigned to",
+      "template": "Template",
+      "deadline": "Due date",
+      "updated": "Last updated",
+      "lastSynced": "Last synced",
+      "duration": "Duration",
+      "score": "Score",
+      "location": "Location",
+      "startedBy": "Started by",
+      "lastEditedBy": "Last edited by",
+      "continue": "Continue Inspection",
+      "viewReport": "View Report"
+    },
+    "status": {
+      "inProgress": "In Progress",
+      "complete": "Complete",
+      "draft": "Draft",
+      "overdue": "Overdue",
+      "all": "All"
+    },
+    "meta": {
+      "questions": "{{count}} questions",
+      "deadline": "Due {{date}}"
+    },
+    "templateSheet": {
+      "startInspection": "Start Inspection",
+      "share": "Share template",
+      "bookmark": "Bookmark",
+      "edit": "Edit template",
+      "manageAccess": "Manage access",
+      "duplicate": "Duplicate",
+      "archive": "Archive",
+      "lastModified": "Last modified",
+      "lastPublished": "Last published",
+      "lastUsed": "Last used",
+      "never": "Never",
+      "by": "by {{name}}"
+    }
   },
   "cps": {
-    "title": "Critical Process Standards",
-    "empty": "No standards defined yet.",
-    "subtitle": "Safety and process standards."
+    "title": "CPS",
+    "tabs": {
+      "progress": "Assessment History"
+    },
+    "score": "Achievement Score:",
+    "note": "Note:",
+    "updated": "Updated {{date}}",
+    "empty": {
+      "noAssessment": "No assessment data."
+    }
+  },
+  "nav": {
+    "home": "Home",
+    "inspections": "Inspections",
+    "cps": "CPS",
+    "actions": "Actions",
+    "training": "Training",
+    "more": "More"
+  },
+  "settings": {
+    "language": {
+      "title": "Language",
+      "en": "English",
+      "id": "Indonesian"
+    }
+  },
+  "builder": {
+    "title": "Edit template",
+    "createTemplate": "Create Template",
+    "save": "Save",
+    "back": "Back",
+    "templateTitlePlaceholder": "Template title",
+    "addDescription": "Add description...",
+    "typeToggle": "Type:",
+    "enableScoring": "Enable scoring",
+    "noSections": "No sections yet",
+    "titlePage": "Title Page",
+    "untitledPage": "Untitled Page",
+    "sectionTitlePlaceholder": "Section title...",
+    "addSection": "Add section",
+    "addQuestion": "Add question",
+    "questionsCount": "{{count}}q",
+    "newQuestion": "New Question",
+    "requireQuestion": "Required",
+    "type": {
+      "select": "Select",
+      "heading": "Type of response",
+      "search": "Search...",
+      "noResults": "No results for \"{{query}}\"",
+      "multipleChoice": "Multiple choice responses",
+      "global": "Global Response Sets",
+      "other": "Other responses",
+      "create": "Create",
+      "responses": "Responses"
+    },
+    "editor": {
+      "createSet": "Create response set",
+      "editSet": "Edit response set",
+      "optionName": "Option name...",
+      "addOption": "Add option",
+      "includeNA": "Include N/A",
+      "preview": "Preview"
+    },
+    "global": {
+      "site": "Site",
+      "inspectionDate": "Inspection date",
+      "person": "Person",
+      "docNumber": "Document number",
+      "asset": "Asset",
+      "company": "Company",
+      "text": "Text answer",
+      "number": "Number",
+      "good": "Good",
+      "fair": "Fair",
+      "poor": "Poor",
+      "safe": "Safe",
+      "atRisk": "At Risk",
+      "pass": "Pass",
+      "fail": "Fail",
+      "yes": "Yes",
+      "no": "No",
+      "compliant": "Compliant",
+      "nonCompliant": "Non-Compliant",
+      "na": "N/A",
+      "checkbox": "Checkbox",
+      "datetime": "Date & Time",
+      "media": "Media",
+      "slider": "Slider",
+      "annotation": "Annotation",
+      "signature": "Signature",
+      "location": "Location",
+      "instruction": "Instruction"
+    },
+    "replaceMedia": "Replace media attachment"
+  },
+  "actions": {
+    "title": "Actions",
+    "search": "Search actions…",
+    "summary": "{{count}} actions",
+    "empty": "No actions yet",
+    "create": "New Action",
+    "filterAll": "All",
+    "priority": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "fields": {
+      "title": "Title",
+      "status": "Status",
+      "priority": "Priority",
+      "dueDate": "Due Date",
+      "assignee": "Assignee",
+      "source": "Inspection Source",
+      "site": "Site",
+      "asset": "Asset",
+      "labels": "Labels",
+      "optional": "(optional)",
+      "addSite": "Add site",
+      "addAsset": "Add asset",
+      "addLabels": "Add labels"
+    },
+    "detail": {
+      "details": "Details",
+      "activity": "Activity",
+      "timeline": "Activity Timeline",
+      "noActivity": "No activity yet.",
+      "addDetails": "Add details",
+      "addDetail": "Add detail",
+      "typeDetail": "Type detail…",
+      "done": "Done",
+      "edit": "Edit",
+      "addTemplate": "Add a template to start an inspection",
+      "changeTemplate": "Change template",
+      "inspections": "Inspections",
+      "sharedWith": "Shared With",
+      "sharedDesc": "People below can access this action. The creator always has access.",
+      "addPerson": "Add person",
+      "createdBy": "Created by {{name}} · {{date}}",
+      "addLabel": "Add a label…",
+      "labelHint": "Press Enter or tap Add to add a label."
+    },
+    "workflow": {
+      "manage": "Manage Workflow",
+      "changeStatus": "Change Status",
+      "addStatus": "Add status…",
+      "add": "Add",
+      "manageWorkflow": "Manage workflow status…"
+    },
+    "form": {
+      "titleLabel": "Title",
+      "titleRequired": "*",
+      "titlePlaceholder": "What needs to be done?",
+      "dueDatePlaceholder": "e.g. 5 Mar 2026",
+      "assigneePlaceholder": "e.g. Andi Nugroho",
+      "sourcePlaceholder": "e.g. PDI Avanza 2024 - Dealer Sunter",
+      "submit": "Create Action"
+    }
   },
   "training": {
     "title": "Training",
-    "empty": "No training materials available.",
-    "subtitle": "Compliance training and certifications."
+    "tabs": {
+      "guidance": "Guidance",
+      "schedule": "Schedule"
+    },
+    "search": {
+      "guidance": "Search manuals/SOPs…",
+      "schedule": "Search training schedule…"
+    },
+    "summary": {
+      "available": "{{count}} materials available",
+      "required": "{{count}} required to read",
+      "upcoming": "{{count}} upcoming sessions"
+    },
+    "category": {
+      "all": "All"
+    },
+    "card": {
+      "markRead": "Mark as Read",
+      "markUnread": "Mark as Unread",
+      "alreadyRead": "Read",
+      "required": "Required",
+      "overview": "Overview",
+      "attachments": "Attachments",
+      "relatedTemplates": "Related Templates",
+      "document": "Document",
+      "videoTraining": "Video Training"
+    },
+    "schedule": {
+      "joinCheckin": "Join / Check-in",
+      "viewDetails": "View Details",
+      "today": "Today",
+      "scheduled": "Scheduled",
+      "done": "Done"
+    },
+    "empty": {
+      "guidance": "No guidance matches the current filters.",
+      "schedule": "No training sessions scheduled this week."
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all as read",
+    "retry": "Try again",
+    "tabs": {
+      "all": "All",
+      "unread": "Unread",
+      "read": "Read"
+    },
+    "groups": {
+      "unread": "Unread",
+      "read": "Read"
+    },
+    "empty": {
+      "title": "No notifications yet",
+      "noUnread": "No unread notifications",
+      "noRead": "No read notifications",
+      "subtitle": "Recent updates about inspections, actions, and comments will appear here."
+    }
   },
   "profile": {
-    "title": "Profile",
-    "subtitle": "User account and settings",
-    "language": "Language",
-    "logout": "Logout"
+    "title": "Profile Details",
+    "subtitle": "Inspector account information",
+    "status": "Active",
+    "changePhoto": "Change Photo",
+    "removePhoto": "Remove Photo",
+    "fields": {
+      "fullName": "Full Name",
+      "email": "Email Address",
+      "phone": "Phone Number",
+      "location": "Work Location",
+      "role": "Access Role"
+    }
   }
 }

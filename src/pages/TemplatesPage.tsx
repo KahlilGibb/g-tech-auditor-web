@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RefreshCcw, PlusCircle, FileText } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useTemplates } from '../hooks/useTemplates';
 import { SkeletonRow } from '../components/ui/SkeletonLoader';
 import { cn } from '../utils/cn';
 
 const TemplatesPage: React.FC = () => {
   const { t } = useTranslation();
-  const { templates, isLoading, error, fetchTemplates, createTemplate } = useTemplates();
+  const { templates, isLoading, error, fetchTemplates } = useTemplates();
+  const navigate = useNavigate();
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     fetchTemplates();
@@ -22,18 +23,8 @@ const TemplatesPage: React.FC = () => {
     setIsRefreshing(false);
   };
 
-  const handleCreateNew = async () => {
-    setIsCreating(true);
-    try {
-      const result = await createTemplate('inspection');
-      // Navigate to builder (to be implemented)
-      console.log('Created:', result);
-      // window.location.href = `/templates/${result.template.id}/edit`;
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsCreating(false);
-    }
+  const handleCreateNew = () => {
+    navigate('/templates/new');
   };
 
   return (
@@ -53,10 +44,9 @@ const TemplatesPage: React.FC = () => {
           </button>
           <button 
             onClick={handleCreateNew}
-            disabled={isCreating}
-            className="flex items-center gap-2 px-4 py-2.5 bg-primary-blue text-white rounded-xl font-semibold hover:bg-primary-blue-dark transition-all shadow-sm flex-1 sm:flex-none justify-center disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2.5 bg-primary-blue text-white rounded-xl font-semibold hover:bg-primary-blue-dark transition-all shadow-sm flex-1 sm:flex-none justify-center"
           >
-            {isCreating ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <PlusCircle className="w-5 h-5" />}
+            <PlusCircle className="w-5 h-5" />
             {t('common.create')}
           </button>
         </div>
@@ -88,7 +78,11 @@ const TemplatesPage: React.FC = () => {
                 </tr>
               ) : (
                 templates.map((item) => (
-                  <tr key={item.id} className="hover:bg-surface/50 transition-colors cursor-pointer text-sm">
+                  <tr 
+                    key={item.id} 
+                    onClick={() => navigate(`/templates/${item.id}/builder`)}
+                    className="hover:bg-surface/50 transition-colors cursor-pointer text-sm"
+                  >
                     <td className="px-6 py-4">
                       <div className="flex items-start gap-3">
                         <div className="p-2 bg-primary-blue/10 rounded-lg text-primary-blue mt-0.5">

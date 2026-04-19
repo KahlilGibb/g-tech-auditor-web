@@ -1,37 +1,378 @@
 {
-  "common": {
-    "loading": "Memuat...",
-    "retry": "Coba lagi",
-    "empty": "Belum ada item",
-    "create": "Buat Baru",
-    "save": "Simpan",
-    "cancel": "Batal",
-    "delete": "Hapus"
+  "home": {
+    "greeting": "Selamat Datang Kembali",
+    "subtitle": "Masuk untuk melanjutkan inspeksi Anda",
+    "today": "{{date}}",
+    "emptyState": {
+      "title": "Semua beres! 🎉",
+      "subtitle": "Item terjadwal dan yang sudah jatuh tempo akan muncul di sini."
+    },
+    "agenda": "Agenda",
+    "tabs": {
+      "all": "Semua",
+      "inspections": "Inspeksi",
+      "actions": "Tindakan",
+      "training": "Training"
+    },
+    "stats": {
+      "completed": "{{count}} Selesai",
+      "active": "{{count}} Aktif",
+      "draft": "{{count}} Draft",
+      "overdue": "{{count}} Terlambat"
+    },
+    "cta": {
+      "start": "Mulai Inspeksi",
+      "training": "Pelatihan Tim"
+    },
+    "dealers": {
+      "title": "Top 5 Dealer Progress",
+      "thisWeek": "Minggu Ini"
+    },
+    "inProgress": {
+      "title": "Sedang Berjalan",
+      "viewAll": "Lihat semua",
+      "new": "Inspeksi\nBaru",
+      "updated": "Diperbarui {{time}}",
+      "label": "INSPEKSI"
+    },
+    "status": {
+      "inProgress": "Berjalan",
+      "draft": "Draft",
+      "overdue": "Terlambat"
+    }
+  },
+  "more": {
+    "title": "Lainnya",
+    "loggedInAs": "Masuk sebagai {{email}}",
+    "logout": "Keluar",
+    "sections": {
+      "features": "Fitur",
+      "account": "Akun"
+    },
+    "features": {
+      "issues": { "label": "Issues", "desc": "Kelola temuan & eskalasi masalah" },
+      "sensors": { "label": "Sensors", "desc": "Monitor sensor lingkungan bengkel" },
+      "assets": { "label": "Assets", "desc": "Daftar & status aset dealer" },
+      "analytics": { "label": "Analytics", "desc": "Laporan & tren hasil inspeksi" },
+      "headsUp": { "label": "Heads Up", "desc": "Pengumuman & pesan siaran tim" },
+      "documents": { "label": "Documents", "desc": "Dokumen SOP, manual & sertifikat" },
+      "library": { "label": "Library", "desc": "Template & standar inspeksi dealer" }
+    },
+    "settings": { "label": "Settings", "desc": "Profil, tim, tema & preferensi" },
+    "confirmLogout": {
+      "title": "Keluar dari akun ini?",
+      "subtitle": "Sesi Anda akan berakhir dan Anda perlu masuk kembali.",
+      "confirm": "Ya, Keluar",
+      "cancel": "Batal"
+    },
+    "version": "Versi {{version}}",
+    "copyright": "© 2026 G Tech Solutions"
   },
   "inspections": {
-    "title": "Inspeksi",
-    "empty": "Tidak ada inspeksi aktif.",
-    "subtitle": "Kelola audit keselamatan Anda."
-  },
-  "templates": {
-    "title": "Template",
-    "empty": "Tidak ada template.",
-    "subtitle": "Kelola template audit Anda."
+    "title": "Inspections",
+    "filter": "Filter",
+    "tabs": {
+      "templates": "Templates",
+      "progress": "Berjalan & Selesai"
+    },
+    "search": {
+      "templates": "Cari template...",
+      "progress": "Cari inspeksi..."
+    },
+    "section": {
+      "yourTemplates": "Template Anda"
+    },
+    "create": "Buat Template",
+    "empty": {
+      "title": "Tidak ada template",
+      "searchHint": "Coba kata kunci lain.",
+      "createHint": "Buat template pertama Anda.",
+      "noInspection": "Tidak ada inspeksi ditemukan."
+    },
+    "sheet": {
+      "createTitle": "Buat template",
+      "upload": "Upload dokumen",
+      "uploadDesc": "Buat template dari SOP atau dokumen yang ada.",
+      "library": "Pakai template library",
+      "libraryDesc": "Pilih dari template siap pakai lalu sesuaikan.",
+      "scratch": "Mulai dari kosong",
+      "scratchDesc": "Buat template baru dari awal."
+    },
+    "detail": {
+      "typeLabel": "Inspeksi",
+      "assignment": "Penugasan",
+      "template": "Template",
+      "deadline": "Tenggat",
+      "updated": "Diperbarui",
+      "lastSynced": "Terakhir disinkron",
+      "duration": "Durasi",
+      "score": "Skor",
+      "location": "Lokasi",
+      "startedBy": "Dimulai oleh",
+      "lastEditedBy": "Terakhir diedit oleh",
+      "continue": "Lanjutkan Inspeksi",
+      "viewReport": "Lihat Laporan"
+    },
+    "status": {
+      "inProgress": "Berjalan",
+      "complete": "Selesai",
+      "draft": "Draft",
+      "overdue": "Terlambat",
+      "all": "Semua"
+    },
+    "meta": {
+      "questions": "{{count}} pertanyaan",
+      "deadline": "Tenggat {{date}}"
+    },
+    "templateSheet": {
+      "startInspection": "Mulai Inspeksi",
+      "share": "Bagikan template",
+      "bookmark": "Bookmark",
+      "edit": "Edit template",
+      "manageAccess": "Kelola akses",
+      "duplicate": "Duplikat",
+      "archive": "Arsipkan",
+      "lastModified": "Terakhir diubah",
+      "lastPublished": "Terakhir dipublikasikan",
+      "lastUsed": "Terakhir dipakai",
+      "never": "Belum pernah",
+      "by": "oleh {{name}}"
+    }
   },
   "cps": {
-    "title": "Standar Proses Kritis",
-    "empty": "Belum ada standar yang ditetapkan.",
-    "subtitle": "Standar keselamatan dan proses."
+    "title": "CPS",
+    "tabs": {
+      "progress": "Riwayat Penilaian"
+    },
+    "score": "Nilai Pencapaian:",
+    "note": "Catatan:",
+    "updated": "Diperbarui {{date}}",
+    "empty": {
+      "noAssessment": "Tidak ada data penilaian."
+    }
+  },
+  "nav": {
+    "home": "Beranda",
+    "inspections": "Inspeksi",
+    "cps": "CPS",
+    "actions": "Tindakan",
+    "training": "Training",
+    "more": "Lainnya"
+  },
+  "settings": {
+    "language": {
+      "title": "Bahasa",
+      "en": "Bahasa Inggris",
+      "id": "Bahasa Indonesia"
+    }
+  },
+  "builder": {
+    "title": " Template Builder",
+    "createTemplate": "Buat Template",
+    "save": "Simpan",
+    "back": "Kembali",
+    "templateTitlePlaceholder": "Judul template",
+    "addDescription": "Tambahkan deskripsi...",
+    "typeToggle": "Tipe:",
+    "enableScoring": "Aktifkan penilaian (scoring)",
+    "noSections": "Belum ada bab",
+    "titlePage": "Halaman Judul",
+    "untitledPage": "Halaman Tanpa Judul",
+    "sectionTitlePlaceholder": "Judul bab...",
+    "addSection": "Tambah bab",
+    "addQuestion": "Tambah pertanyaan",
+    "questionsCount": "{{count}}tanya",
+    "newQuestion": "Pertanyaan Baru",
+    "requireQuestion": "Wajib dijawab",
+    "type": {
+      "select": "Pilih",
+      "heading": "Tipe jawaban",
+      "search": "Cari...",
+      "noResults": "Tidak ada hasil untuk \"{{query}}\"",
+      "optionPlaceholder": "cth. Ya",
+      "multipleChoice": "Pilihan ganda",
+      "global": "Set Jawaban Global",
+      "other": "Tipe jawaban lain",
+      "create": "Buat",
+      "responses": "Jawaban"
+    },
+    "editor": {
+      "createSet": "Buat set jawaban",
+      "editSet": "Edit set jawaban",
+      "optionName": "Nama opsi...",
+      "addOption": "Tambah opsi",
+      "includeNA": "Sertakan N/A",
+      "preview": "Pratinjau"
+    },
+    "global": {
+      "site": "Lokasi/Site",
+      "inspectionDate": "Tanggal inspeksi",
+      "person": "Orang (Person)",
+      "docNumber": "Nomor dokumen",
+      "asset": "Aset",
+      "company": "Perusahaan",
+      "text": "Jawaban teks",
+      "number": "Angka",
+      "good": "Baik",
+      "fair": "Cukup",
+      "poor": "Buruk",
+      "safe": "Aman",
+      "atRisk": "Beresiko",
+      "pass": "Lulus",
+      "fail": "Gagal",
+      "yes": "Ya",
+      "no": "Tidak",
+      "compliant": "Sesuai (Compliant)",
+      "nonCompliant": "Tidak Sesuai",
+      "na": "N/A",
+      "checkbox": "Kotak centang",
+      "datetime": "Tanggal & Waktu",
+      "media": "Media",
+      "slider": "Slider",
+      "annotation": "Anotasi",
+      "signature": "Tanda tangan",
+      "location": "Lokasi",
+      "instruction": "Instruksi"
+    },
+    "replaceMedia": "Ganti lampiran media"
+  },
+  "actions": {
+    "title": "Tindakan",
+    "search": "Cari tindakan…",
+    "summary": "{{count}} tindakan",
+    "empty": "Belum ada tindakan",
+    "create": "Tindakan Baru",
+    "filterAll": "Semua",
+    "priority": {
+      "high": "Tinggi",
+      "medium": "Sedang",
+      "low": "Rendah"
+    },
+    "fields": {
+      "title": "Judul",
+      "status": "Status",
+      "priority": "Prioritas",
+      "dueDate": "Tenggat",
+      "assignee": "Penanggung Jawab",
+      "source": "Sumber Inspeksi",
+      "site": "Site",
+      "asset": "Aset",
+      "labels": "Label",
+      "optional": "(opsional)",
+      "addSite": "Tambah site",
+      "addAsset": "Tambah aset",
+      "addLabels": "Tambah label"
+    },
+    "detail": {
+      "details": "Detail",
+      "activity": "Aktivitas",
+      "timeline": "Timeline Aktivitas",
+      "noActivity": "Belum ada aktivitas.",
+      "addDetails": "Tambah detail",
+      "addDetail": "Tambah baris detail",
+      "typeDetail": "Ketik detail…",
+      "done": "Selesai",
+      "edit": "Edit",
+      "addTemplate": "Tambah template untuk mulai inspeksi",
+      "changeTemplate": "Ganti template",
+      "inspections": "Inspeksi",
+      "sharedWith": "Dibagikan Ke",
+      "sharedDesc": "Orang di bawah ini dapat mengakses tindakan ini. Pembuat selalu memiliki akses.",
+      "addPerson": "Tambah orang",
+      "createdBy": "Dibuat oleh {{name}} · {{date}}",
+      "addLabel": "Tambah label…",
+      "labelHint": "Tekan Enter atau ketuk Tambah untuk menambah label."
+    },
+    "workflow": {
+      "manage": "Kelola Workflow",
+      "changeStatus": "Ganti Status",
+      "addStatus": "Tambah status…",
+      "add": "Tambah",
+      "manageWorkflow": "Kelola workflow status…"
+    },
+    "form": {
+      "titleLabel": "Judul",
+      "titleRequired": "*",
+      "titlePlaceholder": "Apa yang perlu dilakukan?",
+      "dueDatePlaceholder": "mis. 5 Mar 2026",
+      "assigneePlaceholder": "mis. Riko Pratama",
+      "sourcePlaceholder": "mis. PDI Avanza 2024 - Dealer Sunter",
+      "submit": "Buat Tindakan"
+    }
   },
   "training": {
-    "title": "Pelatihan",
-    "empty": "Tidak ada materi pelatihan.",
-    "subtitle": "Pelatihan dan sertifikasi kepatuhan."
+    "title": "Training",
+    "tabs": {
+      "guidance": "Panduan",
+      "schedule": "Jadwal"
+    },
+    "search": {
+      "guidance": "Cari manual/SOP…",
+      "schedule": "Cari jadwal training…"
+    },
+    "summary": {
+      "available": "{{count}} materi tersedia",
+      "required": "{{count}} wajib dibaca",
+      "upcoming": "{{count}} jadwal mendatang"
+    },
+    "category": {
+      "all": "Semua"
+    },
+    "card": {
+      "markRead": "Tandai Sudah Dibaca",
+      "markUnread": "Tandai Belum Dibaca",
+      "alreadyRead": "Sudah dibaca",
+      "required": "Wajib",
+      "overview": "Ringkasan",
+      "attachments": "Lampiran",
+      "relatedTemplates": "Template Terkait",
+      "document": "Dokumen",
+      "videoTraining": "Video Training"
+    },
+    "schedule": {
+      "joinCheckin": "Join / Check-in",
+      "viewDetails": "Lihat Detail",
+      "today": "Hari Ini",
+      "scheduled": "Terjadwal",
+      "done": "Selesai"
+    },
+    "empty": {
+      "guidance": "Belum ada panduan yang sesuai filter.",
+      "schedule": "Belum ada jadwal training grooming minggu ini."
+    }
+  },
+  "notifications": {
+    "title": "Notifikasi",
+    "markAllRead": "Tandai semua dibaca",
+    "retry": "Coba lagi",
+    "tabs": {
+      "all": "Semua",
+      "unread": "Belum Dibaca",
+      "read": "Sudah Dibaca"
+    },
+    "groups": {
+      "unread": "Belum dibaca",
+      "read": "Sudah dibaca"
+    },
+    "empty": {
+      "title": "Belum ada notifikasi",
+      "noUnread": "Tidak ada notifikasi yang belum dibaca",
+      "noRead": "Tidak ada notifikasi yang sudah dibaca",
+      "subtitle": "Notifikasi terbaru tentang inspeksi, tindakan, dan komentar akan muncul di sini."
+    }
   },
   "profile": {
-    "title": "Profil",
-    "subtitle": "Akun pengguna dan pengaturan",
-    "language": "Bahasa",
-    "logout": "Keluar"
+    "title": "Detail Profil",
+    "subtitle": "Informasi akun inspector",
+    "status": "Aktif",
+    "changePhoto": "Ganti Foto",
+    "removePhoto": "Hapus Foto",
+    "fields": {
+      "fullName": "Nama Lengkap",
+      "email": "Alamat Email",
+      "phone": "No. HP",
+      "location": "Lokasi Kerja",
+      "role": "Akses Role"
+    }
   }
 }

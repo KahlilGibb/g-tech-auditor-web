@@ -10,6 +10,7 @@ import ActionsPage from './pages/ActionsPage';
 import CpsPage from './pages/CpsPage';
 import TrainingPage from './pages/TrainingPage';
 import ProfilePage from './pages/ProfilePage';
+import TemplateBuilderPage from './pages/TemplateBuilderPage';
 import { Loader2 } from 'lucide-react';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -58,6 +59,24 @@ const AppRoutes: React.FC = () => {
         <Route path="users" element={<div className="p-8"><h1 className="text-2xl font-bold text-foreground">Users</h1><p className="mt-2 text-muted-foreground">Manage organizational users and roles.</p></div>} />
         <Route path="settings" element={<ProfilePage />} />
       </Route>
+
+      <Route
+        path="/templates/new"
+        element={
+          <ProtectedRoute>
+            <TemplateBuilderPage />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/templates/:id/builder"
+        element={
+          <ProtectedRoute>
+            <TemplateBuilderPage />
+          </ProtectedRoute>
+        }
+      />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
