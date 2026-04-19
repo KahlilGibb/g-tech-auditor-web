@@ -1,0 +1,37 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "retry": "Try again",
+    "empty": "No items yet",
+    "create": "Create New",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete"
+  },
+  "inspections": {
+    "title": "Inspections",
+    "empty": "No active inspections found.",
+    "subtitle": "Manage your safety audits."
+  },
+  "templates": {
+    "title": "Templates",
+    "empty": "No templates available.",
+    "subtitle": "Manage your audit templates."
+  },
+  "cps": {
+    "title": "Critical Process Standards",
+    "empty": "No standards defined yet.",
+    "subtitle": "Safety and process standards."
+  },
+  "training": {
+    "title": "Training",
+    "empty": "No training materials available.",
+    "subtitle": "Compliance training and certifications."
+  },
+  "profile": {
+    "title": "Profile",
+    "subtitle": "User account and settings",
+    "language": "Language",
+    "logout": "Logout"
+  }
+}

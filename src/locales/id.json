@@ -1,0 +1,37 @@
+{
+  "common": {
+    "loading": "Memuat...",
+    "retry": "Coba lagi",
+    "empty": "Belum ada item",
+    "create": "Buat Baru",
+    "save": "Simpan",
+    "cancel": "Batal",
+    "delete": "Hapus"
+  },
+  "inspections": {
+    "title": "Inspeksi",
+    "empty": "Tidak ada inspeksi aktif.",
+    "subtitle": "Kelola audit keselamatan Anda."
+  },
+  "templates": {
+    "title": "Template",
+    "empty": "Tidak ada template.",
+    "subtitle": "Kelola template audit Anda."
+  },
+  "cps": {
+    "title": "Standar Proses Kritis",
+    "empty": "Belum ada standar yang ditetapkan.",
+    "subtitle": "Standar keselamatan dan proses."
+  },
+  "training": {
+    "title": "Pelatihan",
+    "empty": "Tidak ada materi pelatihan.",
+    "subtitle": "Pelatihan dan sertifikasi kepatuhan."
+  },
+  "profile": {
+    "title": "Profil",
+    "subtitle": "Akun pengguna dan pengaturan",
+    "language": "Bahasa",
+    "logout": "Keluar"
+  }
+}
