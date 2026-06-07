@@ -9,6 +9,7 @@ import type {
   Organization,
   OrganizationFormInput,
   Permission,
+  PermissionFormInput,
   Role,
   RoleFormInput,
   Site,
@@ -178,6 +179,14 @@ function branchPayload(input: BranchFormInput) {
     code: input.code,
     address: input.address,
     status: input.status,
+  });
+}
+
+function permissionPayload(input: PermissionFormInput) {
+  return compactPayload({
+    name: input.name,
+    resource: input.resource,
+    action: input.action,
   });
 }
 
@@ -356,6 +365,35 @@ export const permissionService = {
       return unwrapList<unknown>(response.data).map(normalizePermission);
     } catch (error) {
       if (error instanceof MockInterceptError) return mockRoleApi.listPermissions();
+      throw error;
+    }
+  },
+
+  async getById(id: string): Promise<Permission> {
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.PERMISSIONS.DETAIL(id));
+      return normalizePermission(unwrapData(response.data));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockRoleApi.getPermissionById(id);
+      throw error;
+    }
+  },
+
+  async create(input: PermissionFormInput): Promise<Permission> {
+    try {
+      const response = await apiClient.post(API_ENDPOINTS.PERMISSIONS.CREATE, permissionPayload(input));
+      return normalizePermission(unwrapData(response.data));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockRoleApi.createPermission(input);
+      throw error;
+    }
+  },
+
+  async remove(id: string): Promise<void> {
+    try {
+      await apiClient.delete(API_ENDPOINTS.PERMISSIONS.DELETE(id));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockRoleApi.deletePermission(id);
       throw error;
     }
   },

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { getApiErrorMessage } from '../lib/apiResponse';
 import { permissionService, roleService } from '../services/managementService';
-import type { Permission, Role, RoleFormInput } from '../types/management';
+import type { Permission, PermissionFormInput, Role, RoleFormInput } from '../types/management';
 
 interface RoleStoreState {
   roles: Role[];
@@ -15,6 +15,8 @@ interface RoleStoreState {
   updateRole: (id: string, input: RoleFormInput) => Promise<void>;
   deleteRole: (id: string) => Promise<void>;
   fetchPermissions: () => Promise<void>;
+  createPermission: (input: PermissionFormInput) => Promise<void>;
+  deletePermission: (id: string) => Promise<void>;
   fetchRolePermissions: (id: string) => Promise<void>;
   addPermissionToRole: (roleId: string, permissionId: string) => Promise<void>;
   removePermissionFromRole: (roleId: string, permissionId: string) => Promise<void>;
@@ -76,11 +78,48 @@ export const useRoleStore = create<RoleStoreState>()((set, get) => ({
   },
 
   fetchPermissions: async () => {
+    set({ isLoading: true, error: null });
     try {
       const permissions = await permissionService.list();
-      set({ permissions });
+      set({ permissions, isLoading: false });
     } catch (error) {
-      set({ error: getApiErrorMessage(error, 'Failed to load permissions') });
+      set({ isLoading: false, error: getApiErrorMessage(error, 'Failed to load permissions') });
+    }
+  },
+
+  createPermission: async input => {
+    set({ isSaving: true, error: null });
+    try {
+      const permission = await permissionService.create(input);
+      set(state => ({ permissions: [permission, ...state.permissions], isSaving: false }));
+    } catch (error) {
+      set({ isSaving: false, error: getApiErrorMessage(error, 'Failed to create permission') });
+      throw error;
+    }
+  },
+
+  deletePermission: async id => {
+    const permissionSnapshot = get().permissions;
+    const rolePermissionSnapshot = get().permissionsByRoleId;
+    set(state => ({
+      permissions: state.permissions.filter(permission => permission.id !== id),
+      permissionsByRoleId: Object.fromEntries(
+        Object.entries(state.permissionsByRoleId).map(([roleId, permissions]) => [
+          roleId,
+          permissions.filter(permission => permission.id !== id),
+        ]),
+      ),
+      error: null,
+    }));
+    try {
+      await permissionService.remove(id);
+    } catch (error) {
+      set({
+        permissions: permissionSnapshot,
+        permissionsByRoleId: rolePermissionSnapshot,
+        error: getApiErrorMessage(error, 'Failed to delete permission'),
+      });
+      throw error;
     }
   },
 
@@ -96,20 +135,23 @@ export const useRoleStore = create<RoleStoreState>()((set, get) => ({
   },
 
   addPermissionToRole: async (roleId, permissionId) => {
+    set({ isSaving: true, error: null });
     try {
       await roleService.addPermission(roleId, permissionId);
       const permissions = await roleService.getPermissions(roleId);
       set(state => ({
         permissionsByRoleId: { ...state.permissionsByRoleId, [roleId]: permissions },
+        isSaving: false,
       }));
     } catch (error) {
-      set({ error: getApiErrorMessage(error, 'Failed to add role permission') });
+      set({ isSaving: false, error: getApiErrorMessage(error, 'Failed to add role permission') });
       throw error;
     }
   },
 
   removePermissionFromRole: async (roleId, permissionId) => {
     const snapshot = get().permissionsByRoleId[roleId] ?? [];
+    set({ isSaving: true, error: null });
     set(state => ({
       permissionsByRoleId: {
         ...state.permissionsByRoleId,
@@ -121,10 +163,12 @@ export const useRoleStore = create<RoleStoreState>()((set, get) => ({
     } catch (error) {
       set(state => ({
         permissionsByRoleId: { ...state.permissionsByRoleId, [roleId]: snapshot },
+        isSaving: false,
         error: getApiErrorMessage(error, 'Failed to remove role permission'),
       }));
       throw error;
     }
+    set({ isSaving: false });
   },
 
   clearError: () => set({ error: null }),

@@ -6,6 +6,7 @@ type ConfirmTone = 'primary' | 'danger';
 type EntityKey =
   | 'user'
   | 'role'
+  | 'permission'
   | 'branch'
   | 'organization'
   | 'site'

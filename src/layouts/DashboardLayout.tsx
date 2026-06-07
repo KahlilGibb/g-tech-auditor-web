@@ -15,6 +15,7 @@ import {
   FileText,
   FolderOpen,
   GraduationCap,
+  KeyRound,
   LayoutDashboard,
   LogOut,
   MapPinned,
@@ -232,6 +233,7 @@ const DashboardLayout: React.FC = () => {
   const adminNavItems = [
     { to: '/users', icon: Users, labelKey: 'users' },
     { to: '/roles', icon: UserCog, labelKey: 'roles' },
+    { to: '/permissions', icon: KeyRound, labelKey: 'permissions' },
     { to: '/organizations', icon: Building2, labelKey: 'organizations' },
     { to: '/branches', icon: Building2, labelKey: 'branches' },
     { to: '/sites', icon: MapPinned, labelKey: 'sites' },

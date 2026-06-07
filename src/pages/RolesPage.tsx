@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { KeyRound, Loader2, Pencil, Plus, RefreshCcw, Search, ShieldCheck, Trash2, X } from 'lucide-react';
+import { Check, KeyRound, Loader2, Pencil, Plus, RefreshCcw, Search, ShieldCheck, Trash2, X } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { useRoleStore } from '../stores/roleStore';
 import type { Role, RoleFormInput } from '../types/management';
@@ -16,6 +16,7 @@ const RolesPage: React.FC = () => {
   const { t } = useTranslation();
   const {
     roles,
+    permissions,
     permissionsByRoleId,
     isLoading,
     isSaving,
@@ -24,9 +25,14 @@ const RolesPage: React.FC = () => {
     createRole,
     updateRole,
     deleteRole,
+    fetchPermissions,
     fetchRolePermissions,
+    addPermissionToRole,
+    removePermissionFromRole,
   } = useRoleStore();
   const [query, setQuery] = useState('');
+  const [permissionQuery, setPermissionQuery] = useState('');
+  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [form, setForm] = useState<RoleFormInput>(EMPTY_FORM);
@@ -34,12 +40,34 @@ const RolesPage: React.FC = () => {
 
   useEffect(() => {
     fetchRoles();
-  }, [fetchRoles]);
+    fetchPermissions();
+  }, [fetchPermissions, fetchRoles]);
 
   const filteredRoles = useMemo(() => {
     const keyword = query.toLowerCase();
     return roles.filter(role => [role.name, role.description].join(' ').toLowerCase().includes(keyword));
   }, [query, roles]);
+
+  const selectedRole = useMemo(
+    () => roles.find(role => role.id === selectedRoleId) ?? null,
+    [roles, selectedRoleId],
+  );
+
+  const selectedPermissions = useMemo(
+    () => (selectedRoleId ? permissionsByRoleId[selectedRoleId] ?? [] : []),
+    [permissionsByRoleId, selectedRoleId],
+  );
+  const selectedPermissionIds = useMemo(
+    () => new Set(selectedPermissions.map(permission => permission.id)),
+    [selectedPermissions],
+  );
+
+  const filteredPermissions = useMemo(() => {
+    const keyword = permissionQuery.toLowerCase();
+    return permissions.filter(permission =>
+      [permission.name, permission.resource, permission.action].join(' ').toLowerCase().includes(keyword),
+    );
+  }, [permissionQuery, permissions]);
 
   const openCreate = () => {
     setEditingRole(null);
@@ -53,6 +81,11 @@ const RolesPage: React.FC = () => {
     setForm({ name: role.name, description: role.description ?? '' });
     setFormError('');
     setIsModalOpen(true);
+  };
+
+  const openPermissions = async (role: Role) => {
+    setSelectedRoleId(role.id);
+    await fetchRolePermissions(role.id);
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -96,6 +129,41 @@ const RolesPage: React.FC = () => {
     }
   };
 
+  const handleTogglePermission = async (permissionId: string, assigned: boolean) => {
+    if (!selectedRole) return;
+
+    const permission = permissions.find(item => item.id === permissionId);
+    const confirmed = assigned
+      ? await appSwal.confirm({
+          title: t('roles.permissions.confirmRemove.title'),
+          text: t('roles.permissions.confirmRemove.text', {
+            permission: permission?.name ?? permissionId,
+            role: selectedRole.name,
+          }),
+          tone: 'danger',
+        })
+      : await appSwal.confirm({
+          title: t('roles.permissions.confirmAdd.title'),
+          text: t('roles.permissions.confirmAdd.text', {
+            permission: permission?.name ?? permissionId,
+            role: selectedRole.name,
+          }),
+        });
+
+    if (!confirmed) return;
+
+    try {
+      if (assigned) {
+        await removePermissionFromRole(selectedRole.id, permissionId);
+      } else {
+        await addPermissionToRole(selectedRole.id, permissionId);
+      }
+      await appSwal.successSaved('role');
+    } catch (error) {
+      await appSwal.errorSaveFailed('role', getApiErrorMessage(error));
+    }
+  };
+
   return (
     <div className="page-shell">
       <div className="page-header">
@@ -135,78 +203,176 @@ const RolesPage: React.FC = () => {
         </div>
       )}
 
-      <div className="panel overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="table-header">
-              <tr>
-                <th className="px-6 py-4">Role</th>
-                <th className="px-6 py-4">Permissions</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-divider">
-              {isLoading ? (
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
+        <div className="panel overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="table-header">
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-sm text-muted-foreground">
-                    Memuat role...
-                  </td>
+                  <th className="px-6 py-4">Role</th>
+                  <th className="px-6 py-4">Permissions</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4 text-right">Aksi</th>
                 </tr>
-              ) : filteredRoles.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-6 py-14 text-center">
-                    <ShieldCheck className="mx-auto mb-3 h-10 w-10 text-muted-foreground/30" />
-                    <p className="text-sm font-semibold text-foreground">Belum ada role</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Data dari API /roles akan tampil di sini.</p>
-                  </td>
-                </tr>
-              ) : (
-                filteredRoles.map(role => {
-                  const permissions = permissionsByRoleId[role.id] ?? [];
-                  return (
-                    <tr key={role.id} className="transition hover:bg-surface/60">
-                      <td className="px-6 py-4">
-                        <p className="text-sm font-semibold text-foreground">{role.name}</p>
-                        <p className="mt-0.5 max-w-xl text-xs text-muted-foreground">{role.description || '-'}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <button
-                          className="inline-flex items-center gap-2 rounded-lg border border-divider bg-white px-3 py-1.5 text-xs font-semibold text-muted-foreground transition hover:bg-surface hover:text-foreground"
-                          onClick={() => fetchRolePermissions(role.id)}
-                        >
-                          <KeyRound className="h-3.5 w-3.5" />
-                          {permissions.length ? `${permissions.length} permission` : 'Load permissions'}
-                        </button>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="rounded-full bg-success-green/10 px-2.5 py-1 text-xs font-semibold capitalize text-success-green">
-                          {role.status || 'active'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="inline-flex items-center gap-1">
+              </thead>
+              <tbody className="divide-y divide-divider">
+                {isLoading && roles.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-12 text-center text-sm text-muted-foreground">
+                      Memuat role...
+                    </td>
+                  </tr>
+                ) : filteredRoles.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-14 text-center">
+                      <ShieldCheck className="mx-auto mb-3 h-10 w-10 text-muted-foreground/30" />
+                      <p className="text-sm font-semibold text-foreground">Belum ada role</p>
+                      <p className="mt-1 text-xs text-muted-foreground">Data dari API /roles akan tampil di sini.</p>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredRoles.map(role => {
+                    const rolePermissions = permissionsByRoleId[role.id] ?? [];
+                    const isSelected = role.id === selectedRoleId;
+                    return (
+                      <tr key={role.id} className={cn('transition hover:bg-surface/60', isSelected && 'bg-primary-blue/[0.04]')}>
+                        <td className="px-6 py-4">
+                          <p className="text-sm font-semibold text-foreground">{role.name}</p>
+                          <p className="mt-0.5 max-w-xl text-xs text-muted-foreground">{role.description || '-'}</p>
+                        </td>
+                        <td className="px-6 py-4">
                           <button
-                            className="rounded-lg p-2 text-muted-foreground transition hover:bg-surface hover:text-foreground"
-                            onClick={() => openEdit(role)}
+                            className={cn(
+                              'inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-semibold transition',
+                              isSelected
+                                ? 'border-primary-blue/30 bg-primary-blue/10 text-primary-blue'
+                                : 'border-divider bg-white text-muted-foreground hover:bg-surface hover:text-foreground',
+                            )}
+                            onClick={() => openPermissions(role)}
                           >
-                            <Pencil className="h-4 w-4" />
+                            <KeyRound className="h-3.5 w-3.5" />
+                            {rolePermissions.length ? `${rolePermissions.length} permission` : 'Manage permissions'}
                           </button>
-                          <button
-                            className="rounded-lg p-2 text-muted-foreground transition hover:bg-danger-red/10 hover:text-danger-red"
-                            onClick={() => handleDelete(role)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="rounded-full bg-success-green/10 px-2.5 py-1 text-xs font-semibold capitalize text-success-green">
+                            {role.status || 'active'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="inline-flex items-center gap-1">
+                            <button
+                              className="rounded-lg p-2 text-muted-foreground transition hover:bg-surface hover:text-foreground"
+                              onClick={() => openEdit(role)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button
+                              className="rounded-lg p-2 text-muted-foreground transition hover:bg-danger-red/10 hover:text-danger-red"
+                              onClick={() => handleDelete(role)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
+
+        <aside className="panel overflow-hidden">
+          <div className="panel-header">
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">{t('roles.permissions.title')}</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {selectedRole ? selectedRole.name : t('roles.permissions.emptyRole')}
+              </p>
+            </div>
+            <KeyRound className="h-5 w-5 text-primary-blue" />
+          </div>
+
+          <div className="space-y-4 p-4">
+            {!selectedRole ? (
+              <div className="rounded-lg border border-dashed border-divider p-6 text-center">
+                <ShieldCheck className="mx-auto mb-3 h-9 w-9 text-muted-foreground/30" />
+                <p className="text-sm font-semibold text-foreground">{t('roles.permissions.selectRole')}</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">{t('roles.permissions.selectRoleDesc')}</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg bg-surface p-3">
+                    <p className="text-xs text-muted-foreground">Assigned</p>
+                    <p className="mt-1 text-xl font-semibold text-foreground">{selectedPermissions.length}</p>
+                  </div>
+                  <div className="rounded-lg bg-surface p-3">
+                    <p className="text-xs text-muted-foreground">Available</p>
+                    <p className="mt-1 text-xl font-semibold text-foreground">{permissions.length}</p>
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    value={permissionQuery}
+                    onChange={event => setPermissionQuery(event.target.value)}
+                    className="form-input pl-9"
+                    placeholder={t('roles.permissions.search')}
+                  />
+                </div>
+
+                <div className="max-h-[520px] space-y-2 overflow-y-auto pr-1">
+                  {filteredPermissions.length === 0 ? (
+                    <div className="rounded-lg border border-dashed border-divider p-5 text-center text-sm text-muted-foreground">
+                      {t('roles.permissions.emptyPermissions')}
+                    </div>
+                  ) : (
+                    filteredPermissions.map(permission => {
+                      const assigned = selectedPermissionIds.has(permission.id);
+                      return (
+                        <button
+                          key={permission.id}
+                          disabled={isSaving}
+                          onClick={() => handleTogglePermission(permission.id, assigned)}
+                          className={cn(
+                            'flex w-full items-start gap-3 rounded-lg border p-3 text-left transition',
+                            assigned
+                              ? 'border-primary-blue/25 bg-primary-blue/[0.04]'
+                              : 'border-divider bg-white hover:border-primary-blue/30 hover:bg-surface',
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border',
+                              assigned ? 'border-primary-blue bg-primary-blue text-white' : 'border-divider bg-white',
+                            )}
+                          >
+                            {assigned && <Check className="h-3.5 w-3.5" />}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate font-mono text-sm font-semibold text-foreground">{permission.name}</span>
+                            <span className="mt-1 flex flex-wrap gap-1.5">
+                              <span className="rounded-full bg-surface px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                                {permission.resource || '-'}
+                              </span>
+                              <span className="rounded-full bg-surface px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                                {permission.action || '-'}
+                              </span>
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </aside>
       </div>
 
       {isModalOpen && (

@@ -124,6 +124,7 @@
       "userRequired": "Nama, username, email, dan role wajib diisi.",
       "passwordRequired": "Password wajib diisi untuk user baru.",
       "roleRequired": "Nama role wajib diisi.",
+      "permissionRequired": "Nama, resource, dan action permission wajib diisi.",
       "branchRequired": "Nama, kode, dan alamat branch wajib diisi.",
       "organizationRequired": "Nama dan kode organization wajib diisi.",
       "siteRequired": "Nama dan kode site wajib diisi."
@@ -131,6 +132,7 @@
     "entities": {
       "user": "user",
       "role": "role",
+      "permission": "permission",
       "branch": "branch",
       "organization": "organization",
       "site": "site",
@@ -290,6 +292,24 @@
     "subtitle": "Kelola template formulir inspeksi",
     "empty": "Belum ada template. Buat template pertama Anda."
   },
+  "roles": {
+    "permissions": {
+      "title": "Permission Role",
+      "emptyRole": "Pilih role dari tabel",
+      "selectRole": "Pilih role untuk mulai",
+      "selectRoleDesc": "Klik Manage permissions pada salah satu role untuk mengatur aksesnya.",
+      "search": "Cari permission...",
+      "emptyPermissions": "Tidak ada permission yang sesuai.",
+      "confirmAdd": {
+        "title": "Tambahkan permission?",
+        "text": "{{permission}} akan diberikan ke role {{role}}."
+      },
+      "confirmRemove": {
+        "title": "Lepas permission?",
+        "text": "{{permission}} akan dilepas dari role {{role}}."
+      }
+    }
+  },
   "cps": {
     "title": "CPS",
     "subtitle": "Checklist Penilaian Standar dealer",
@@ -315,6 +335,7 @@
     "more": "Lainnya",
     "users": "User",
     "roles": "Role",
+    "permissions": "Permissions",
     "branches": "Branch",
     "organizations": "Organizations",
     "sites": "Sites",

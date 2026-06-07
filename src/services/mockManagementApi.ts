@@ -7,6 +7,7 @@ import type {
   Organization,
   OrganizationFormInput,
   Permission,
+  PermissionFormInput,
   Role,
   RoleFormInput,
   Site,
@@ -362,6 +363,35 @@ export const mockRoleApi = {
   async listPermissions() {
     await wait();
     return [...permissions];
+  },
+
+  async getPermissionById(permissionId: string) {
+    await wait();
+    const permission = permissions.find(item => item.id === permissionId);
+    if (!permission) throw new Error('Mock permission not found');
+    return permission;
+  },
+
+  async createPermission(input: PermissionFormInput) {
+    await wait();
+    const permission: Permission = {
+      id: id('perm'),
+      name: input.name,
+      resource: input.resource,
+      action: input.action,
+    };
+    permissions.push(permission);
+    return permission;
+  },
+
+  async deletePermission(permissionId: string) {
+    await wait();
+    const index = permissions.findIndex(permission => permission.id === permissionId);
+    if (index === -1) throw new Error('Mock permission not found');
+    permissions.splice(index, 1);
+    for (const roleId of Object.keys(rolePermissions)) {
+      rolePermissions[roleId] = rolePermissions[roleId].filter(id => id !== permissionId);
+    }
   },
 };
 

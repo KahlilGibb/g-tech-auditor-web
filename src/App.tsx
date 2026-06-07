@@ -15,6 +15,7 @@ import ProfilePage from './pages/ProfilePage';
 import TemplateBuilderPage from './pages/TemplateBuilderPage';
 import UsersPage from './pages/UsersPage';
 import RolesPage from './pages/RolesPage';
+import PermissionsPage from './pages/PermissionsPage';
 import BranchesPage from './pages/BranchesPage';
 import OrganizationsPage from './pages/OrganizationsPage';
 import SitesPage from './pages/SitesPage';
@@ -68,6 +69,7 @@ const AppRoutes: React.FC = () => {
         <Route path="profile" element={<ProfilePage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="roles" element={<RolesPage />} />
+        <Route path="permissions" element={<PermissionsPage />} />
         <Route path="branches" element={<BranchesPage />} />
         <Route path="organizations" element={<OrganizationsPage />} />
         <Route path="sites" element={<SitesPage />} />

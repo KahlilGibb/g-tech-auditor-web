@@ -54,6 +54,12 @@ export interface Permission {
   action?: string;
 }
 
+export interface PermissionFormInput {
+  name: string;
+  resource: string;
+  action: string;
+}
+
 export interface Branch {
   id: string;
   name: string;

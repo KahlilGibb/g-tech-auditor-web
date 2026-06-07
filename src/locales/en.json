@@ -124,6 +124,7 @@
       "userRequired": "Name, username, email, and role are required.",
       "passwordRequired": "Password is required for a new user.",
       "roleRequired": "Role name is required.",
+      "permissionRequired": "Permission name, resource, and action are required.",
       "branchRequired": "Branch name, code, and address are required.",
       "organizationRequired": "Organization name and code are required.",
       "siteRequired": "Site name and code are required."
@@ -131,6 +132,7 @@
     "entities": {
       "user": "user",
       "role": "role",
+      "permission": "permission",
       "branch": "branch",
       "organization": "organization",
       "site": "site",
@@ -290,6 +292,24 @@
     "subtitle": "Manage inspection form templates",
     "empty": "No templates yet. Create your first template."
   },
+  "roles": {
+    "permissions": {
+      "title": "Role Permissions",
+      "emptyRole": "Select a role from the table",
+      "selectRole": "Select a role to start",
+      "selectRoleDesc": "Click Manage permissions on a role to configure its access.",
+      "search": "Search permissions...",
+      "emptyPermissions": "No matching permissions.",
+      "confirmAdd": {
+        "title": "Add permission?",
+        "text": "{{permission}} will be assigned to the {{role}} role."
+      },
+      "confirmRemove": {
+        "title": "Remove permission?",
+        "text": "{{permission}} will be removed from the {{role}} role."
+      }
+    }
+  },
   "cps": {
     "title": "CPS",
     "subtitle": "Dealer Standard Assessment Checklist",
@@ -315,6 +335,7 @@
     "more": "More",
     "users": "Users",
     "roles": "Roles",
+    "permissions": "Permissions",
     "branches": "Branches",
     "organizations": "Organizations",
     "sites": "Sites",
