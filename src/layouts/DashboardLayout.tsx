@@ -17,6 +17,7 @@ import {
   GraduationCap,
   LayoutDashboard,
   LogOut,
+  MapPinned,
   Menu,
   MessageSquare,
   Search,
@@ -231,7 +232,9 @@ const DashboardLayout: React.FC = () => {
   const adminNavItems = [
     { to: '/users', icon: Users, labelKey: 'users' },
     { to: '/roles', icon: UserCog, labelKey: 'roles' },
+    { to: '/organizations', icon: Building2, labelKey: 'organizations' },
     { to: '/branches', icon: Building2, labelKey: 'branches' },
+    { to: '/sites', icon: MapPinned, labelKey: 'sites' },
     { to: '/settings', icon: Settings, labelKey: 'settings' },
   ];
 

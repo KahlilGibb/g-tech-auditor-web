@@ -124,12 +124,16 @@
       "userRequired": "Name, username, email, and role are required.",
       "passwordRequired": "Password is required for a new user.",
       "roleRequired": "Role name is required.",
-      "branchRequired": "Branch name, code, and address are required."
+      "branchRequired": "Branch name, code, and address are required.",
+      "organizationRequired": "Organization name and code are required.",
+      "siteRequired": "Site name and code are required."
     },
     "entities": {
       "user": "user",
       "role": "role",
       "branch": "branch",
+      "organization": "organization",
+      "site": "site",
       "template": "template",
       "profile": "profile",
       "section": "section",
@@ -311,6 +315,8 @@
     "users": "Users",
     "roles": "Roles",
     "branches": "Branches",
+    "organizations": "Organizations",
+    "sites": "Sites",
     "settings": "Settings",
     "menuUtama": "Main Menu",
     "administrasi": "Administration",

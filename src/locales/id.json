@@ -124,12 +124,16 @@
       "userRequired": "Nama, username, email, dan role wajib diisi.",
       "passwordRequired": "Password wajib diisi untuk user baru.",
       "roleRequired": "Nama role wajib diisi.",
-      "branchRequired": "Nama, kode, dan alamat branch wajib diisi."
+      "branchRequired": "Nama, kode, dan alamat branch wajib diisi.",
+      "organizationRequired": "Nama dan kode organization wajib diisi.",
+      "siteRequired": "Nama dan kode site wajib diisi."
     },
     "entities": {
       "user": "user",
       "role": "role",
       "branch": "branch",
+      "organization": "organization",
+      "site": "site",
       "template": "template",
       "profile": "profil",
       "section": "bab",
@@ -311,6 +315,8 @@
     "users": "User",
     "roles": "Role",
     "branches": "Branch",
+    "organizations": "Organizations",
+    "sites": "Sites",
     "settings": "Pengaturan",
     "menuUtama": "Menu Utama",
     "administrasi": "Administrasi",

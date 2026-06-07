@@ -6,12 +6,22 @@ import type {
   BranchFormInput,
   ListQuery,
   ManagementUser,
+  Organization,
+  OrganizationFormInput,
   Permission,
   Role,
   RoleFormInput,
+  Site,
+  SiteFormInput,
   UserFormInput,
 } from '../types/management';
-import { mockBranchApi, mockRoleApi, mockUserApi } from './mockManagementApi';
+import {
+  mockBranchApi,
+  mockOrganizationApi,
+  mockRoleApi,
+  mockSiteApi,
+  mockUserApi,
+} from './mockManagementApi';
 
 function normalizeDate(value: unknown) {
   return toStringValue(value) || undefined;
@@ -102,6 +112,46 @@ function normalizeBranch(raw: unknown): Branch {
   };
 }
 
+function normalizeOrganization(raw: unknown): Organization {
+  const record = toRecord(raw);
+  return {
+    id: toStringValue(record.id || record.organization_id || record.org_id),
+    name: toStringValue(record.name),
+    code: toStringValue(record.code),
+    address: toStringValue(record.address) || undefined,
+    phone: toStringValue(record.phone || record.phone_number) || undefined,
+    email: toStringValue(record.email) || undefined,
+    status: toStringValue(record.status) || undefined,
+    createdAt: normalizeDate(record.created_at || record.createdAt),
+    updatedAt: normalizeDate(record.updated_at || record.updatedAt),
+  };
+}
+
+function normalizeSite(raw: unknown): Site {
+  const record = toRecord(raw);
+  const organization = toRecord(record.organization || record.org);
+  const branch = toRecord(record.branch || record.group);
+
+  return {
+    id: toStringValue(record.id || record.site_id),
+    name: toStringValue(record.name),
+    code: toStringValue(record.code),
+    address: toStringValue(record.address || record.location) || undefined,
+    organizationId:
+      toStringValue(record.organization_id || record.org_id || record.organizationId || organization.id) ||
+      undefined,
+    organizationName:
+      toStringValue(record.organization_name || record.org_name || organization.name) || undefined,
+    branchId:
+      toStringValue(record.branch_id || record.group_id || record.branchId || branch.id) ||
+      undefined,
+    branchName: toStringValue(record.branch_name || record.group_name || branch.name) || undefined,
+    status: toStringValue(record.status) || undefined,
+    createdAt: normalizeDate(record.created_at || record.createdAt),
+    updatedAt: normalizeDate(record.updated_at || record.updatedAt),
+  };
+}
+
 function compactPayload(payload: Record<string, unknown>) {
   return Object.fromEntries(
     Object.entries(payload).filter(([, value]) => value !== undefined && value !== ''),
@@ -127,6 +177,30 @@ function branchPayload(input: BranchFormInput) {
     name: input.name,
     code: input.code,
     address: input.address,
+    status: input.status,
+  });
+}
+
+function organizationPayload(input: OrganizationFormInput) {
+  return compactPayload({
+    name: input.name,
+    code: input.code,
+    address: input.address,
+    phone: input.phone,
+    email: input.email,
+    status: input.status,
+  });
+}
+
+function sitePayload(input: SiteFormInput) {
+  return compactPayload({
+    name: input.name,
+    code: input.code,
+    address: input.address,
+    organization_id: input.organizationId,
+    org_id: input.organizationId,
+    branch_id: input.branchId,
+    group_id: input.branchId,
     status: input.status,
   });
 }
@@ -365,6 +439,112 @@ export const branchService = {
       await apiClient.delete(API_ENDPOINTS.BRANCHES.USER(branchId, userId));
     } catch (error) {
       if (error instanceof MockInterceptError) return mockBranchApi.removeUser(branchId, userId);
+      throw error;
+    }
+  },
+};
+
+export const organizationService = {
+  async list(query?: ListQuery): Promise<Organization[]> {
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.ORGANIZATIONS.LIST, {
+        params: queryParams(query),
+      });
+      return unwrapList<unknown>(response.data).map(normalizeOrganization);
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockOrganizationApi.list(query);
+      throw error;
+    }
+  },
+
+  async getById(id: string): Promise<Organization> {
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.ORGANIZATIONS.DETAIL(id));
+      return normalizeOrganization(unwrapData(response.data));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockOrganizationApi.getById(id);
+      throw error;
+    }
+  },
+
+  async create(input: OrganizationFormInput): Promise<Organization> {
+    try {
+      const response = await apiClient.post(API_ENDPOINTS.ORGANIZATIONS.CREATE, organizationPayload(input));
+      return normalizeOrganization(unwrapData(response.data));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockOrganizationApi.create(input);
+      throw error;
+    }
+  },
+
+  async update(id: string, input: OrganizationFormInput): Promise<Organization> {
+    try {
+      const response = await apiClient.put(API_ENDPOINTS.ORGANIZATIONS.UPDATE(id), organizationPayload(input));
+      return normalizeOrganization(unwrapData(response.data));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockOrganizationApi.update(id, input);
+      throw error;
+    }
+  },
+
+  async remove(id: string): Promise<void> {
+    try {
+      await apiClient.delete(API_ENDPOINTS.ORGANIZATIONS.DELETE(id));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockOrganizationApi.remove(id);
+      throw error;
+    }
+  },
+};
+
+export const siteService = {
+  async list(query?: ListQuery): Promise<Site[]> {
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.SITES.LIST, {
+        params: queryParams(query),
+      });
+      return unwrapList<unknown>(response.data).map(normalizeSite);
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockSiteApi.list(query);
+      throw error;
+    }
+  },
+
+  async getById(id: string): Promise<Site> {
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.SITES.DETAIL(id));
+      return normalizeSite(unwrapData(response.data));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockSiteApi.getById(id);
+      throw error;
+    }
+  },
+
+  async create(input: SiteFormInput): Promise<Site> {
+    try {
+      const response = await apiClient.post(API_ENDPOINTS.SITES.CREATE, sitePayload(input));
+      return normalizeSite(unwrapData(response.data));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockSiteApi.create(input);
+      throw error;
+    }
+  },
+
+  async update(id: string, input: SiteFormInput): Promise<Site> {
+    try {
+      const response = await apiClient.put(API_ENDPOINTS.SITES.UPDATE(id), sitePayload(input));
+      return normalizeSite(unwrapData(response.data));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockSiteApi.update(id, input);
+      throw error;
+    }
+  },
+
+  async remove(id: string): Promise<void> {
+    try {
+      await apiClient.delete(API_ENDPOINTS.SITES.DELETE(id));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockSiteApi.remove(id);
       throw error;
     }
   },

@@ -71,3 +71,47 @@ export interface BranchFormInput {
   address: string;
   status?: EntityStatus;
 }
+
+export interface Organization {
+  id: string;
+  name: string;
+  code: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  status?: EntityStatus;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface OrganizationFormInput {
+  name: string;
+  code: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  status?: EntityStatus;
+}
+
+export interface Site {
+  id: string;
+  name: string;
+  code: string;
+  address?: string;
+  organizationId?: string;
+  organizationName?: string;
+  branchId?: string;
+  branchName?: string;
+  status?: EntityStatus;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SiteFormInput {
+  name: string;
+  code: string;
+  address?: string;
+  organizationId?: string;
+  branchId?: string;
+  status?: EntityStatus;
+}

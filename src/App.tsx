@@ -15,6 +15,8 @@ import TemplateBuilderPage from './pages/TemplateBuilderPage';
 import UsersPage from './pages/UsersPage';
 import RolesPage from './pages/RolesPage';
 import BranchesPage from './pages/BranchesPage';
+import OrganizationsPage from './pages/OrganizationsPage';
+import SitesPage from './pages/SitesPage';
 import DocumentManagementPage from './pages/DocumentManagementPage';
 import { Loader2 } from 'lucide-react';
 
@@ -65,6 +67,8 @@ const AppRoutes: React.FC = () => {
         <Route path="users" element={<UsersPage />} />
         <Route path="roles" element={<RolesPage />} />
         <Route path="branches" element={<BranchesPage />} />
+        <Route path="organizations" element={<OrganizationsPage />} />
+        <Route path="sites" element={<SitesPage />} />
         <Route path="settings" element={<ProfilePage />} />
       </Route>
 

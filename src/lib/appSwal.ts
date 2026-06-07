@@ -3,7 +3,18 @@ import 'sweetalert2/dist/sweetalert2.min.css';
 import i18n from '../i18n';
 
 type ConfirmTone = 'primary' | 'danger';
-type EntityKey = 'user' | 'role' | 'branch' | 'template' | 'profile' | 'section' | 'question' | 'folder' | 'file';
+type EntityKey =
+  | 'user'
+  | 'role'
+  | 'branch'
+  | 'organization'
+  | 'site'
+  | 'template'
+  | 'profile'
+  | 'section'
+  | 'question'
+  | 'folder'
+  | 'file';
 
 interface ConfirmOptions {
   title: string;

@@ -4,9 +4,13 @@ import type {
   BranchFormInput,
   ListQuery,
   ManagementUser,
+  Organization,
+  OrganizationFormInput,
   Permission,
   Role,
   RoleFormInput,
+  Site,
+  SiteFormInput,
   UserFormInput,
 } from '../types/management';
 
@@ -127,6 +131,56 @@ let branches: Branch[] = [
     address: 'Pantai Indah Kapuk, Jakarta Utara',
     status: 'active',
     createdAt: '2026-01-11T08:00:00Z',
+  },
+];
+
+let organizations: Organization[] = [
+  {
+    id: 'org-gtech-demo',
+    name: 'G-Tech Automotive',
+    code: 'GTECH',
+    address: 'Jakarta, Indonesia',
+    phone: '+62 21 555 0101',
+    email: 'ops@gtech.example',
+    status: 'active',
+    createdAt: '2026-01-05T08:00:00Z',
+  },
+  {
+    id: 'org-dealer-network',
+    name: 'Dealer Network Group',
+    code: 'DNG',
+    address: 'Tangerang Selatan, Indonesia',
+    phone: '+62 21 555 0102',
+    email: 'network@gtech.example',
+    status: 'active',
+    createdAt: '2026-01-06T08:00:00Z',
+  },
+];
+
+let sites: Site[] = [
+  {
+    id: 'site-sunter-workshop',
+    name: 'Sunter Workshop',
+    code: 'SNT-WS',
+    address: 'Area bengkel Dealer Sunter',
+    organizationId: 'org-gtech-demo',
+    organizationName: 'G-Tech Automotive',
+    branchId: 'branch-sunter',
+    branchName: 'Dealer Sunter',
+    status: 'active',
+    createdAt: '2026-01-12T08:00:00Z',
+  },
+  {
+    id: 'site-bsd-showroom',
+    name: 'BSD Showroom',
+    code: 'BSD-SR',
+    address: 'Area showroom Dealer Audi VW BSD',
+    organizationId: 'org-dealer-network',
+    organizationName: 'Dealer Network Group',
+    branchId: 'branch-bsd',
+    branchName: 'Dealer Audi VW BSD',
+    status: 'active',
+    createdAt: '2026-01-13T08:00:00Z',
   },
 ];
 
@@ -380,5 +434,109 @@ export const mockBranchApi = {
         ? { ...user, branchId: undefined, groupId: undefined, updatedAt: now() }
         : user,
     );
+  },
+};
+
+export const mockOrganizationApi = {
+  async list(query?: ListQuery) {
+    await wait();
+    return filterBySearch(organizations, query);
+  },
+
+  async getById(organizationId: string) {
+    await wait();
+    const organization = organizations.find(item => item.id === organizationId);
+    if (!organization) throw new Error('Mock organization not found');
+    return organization;
+  },
+
+  async create(input: OrganizationFormInput) {
+    await wait();
+    const organization: Organization = {
+      id: id('org'),
+      ...input,
+      status: input.status ?? 'active',
+      createdAt: now(),
+      updatedAt: now(),
+    };
+    organizations = [organization, ...organizations];
+    return organization;
+  },
+
+  async update(organizationId: string, input: OrganizationFormInput) {
+    await wait();
+    const current = organizations.find(item => item.id === organizationId);
+    if (!current) throw new Error('Mock organization not found');
+    const organization: Organization = { ...current, ...input, updatedAt: now() };
+    organizations = organizations.map(item => (item.id === organizationId ? organization : item));
+    sites = sites.map(site =>
+      site.organizationId === organizationId
+        ? { ...site, organizationName: organization.name, updatedAt: now() }
+        : site,
+    );
+    return organization;
+  },
+
+  async remove(organizationId: string) {
+    await wait();
+    organizations = organizations.filter(organization => organization.id !== organizationId);
+    sites = sites.map(site =>
+      site.organizationId === organizationId
+        ? { ...site, organizationId: undefined, organizationName: undefined, updatedAt: now() }
+        : site,
+    );
+  },
+};
+
+export const mockSiteApi = {
+  async list(query?: ListQuery) {
+    await wait();
+    return filterBySearch(sites, query);
+  },
+
+  async getById(siteId: string) {
+    await wait();
+    const site = sites.find(item => item.id === siteId);
+    if (!site) throw new Error('Mock site not found');
+    return site;
+  },
+
+  async create(input: SiteFormInput) {
+    await wait();
+    const organization = organizations.find(item => item.id === input.organizationId);
+    const branch = branches.find(item => item.id === input.branchId);
+    const site: Site = {
+      id: id('site'),
+      ...input,
+      organizationName: organization?.name,
+      branchName: branch?.name,
+      status: input.status ?? 'active',
+      createdAt: now(),
+      updatedAt: now(),
+    };
+    sites = [site, ...sites];
+    return site;
+  },
+
+  async update(siteId: string, input: SiteFormInput) {
+    await wait();
+    const current = sites.find(item => item.id === siteId);
+    if (!current) throw new Error('Mock site not found');
+    const organization = organizations.find(item => item.id === input.organizationId);
+    const branch = branches.find(item => item.id === input.branchId);
+    const site: Site = {
+      ...current,
+      ...input,
+      organizationName: organization?.name,
+      branchName: branch?.name,
+      updatedAt: now(),
+    };
+    sites = sites.map(item => (item.id === siteId ? site : item));
+    return site;
+  },
+
+  async remove(siteId: string) {
+    await wait();
+    sites = sites.filter(site => site.id !== siteId);
   },
 };
