@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { InspectionSummary } from '../types/inspection';
 import { inspectionService } from '../services/inspectionService';
+import { getApiErrorMessage } from '../lib/apiResponse';
 
 interface DashboardStats {
   totalInspections: number;
@@ -50,7 +51,7 @@ export const useInspectionStore = create<InspectionStoreState>()(
         } catch (e) {
           set({ 
             isLoading: false, 
-            error: e instanceof Error ? e.message : 'Failed to load dashboard data' 
+            error: getApiErrorMessage(e, 'Failed to load dashboard data') 
           });
         }
       },

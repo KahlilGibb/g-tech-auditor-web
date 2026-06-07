@@ -74,20 +74,20 @@ const CpsPage: React.FC = () => {
   }, [query, activeFilter]);
 
   return (
-    <div className="space-y-6">
+    <div className="page-shell">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">{t('cps.title')}</h1>
-        <p className="text-muted-foreground mt-1">{t('cps.subtitle')}</p>
+        <h1 className="page-title">{t('cps.title')}</h1>
+        <p className="page-subtitle">{t('cps.subtitle')}</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-surface p-1 rounded-xl w-full sm:w-fit">
+      <div className="flex w-full rounded-lg border border-divider bg-white p-1 shadow-sm sm:w-fit">
         <button
           onClick={() => setActiveTab('templates')}
           className={cn(
             "flex-1 sm:flex-none px-6 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2",
-            activeTab === 'templates' ? "bg-white text-primary-blue shadow-sm" : "text-muted-foreground hover:text-foreground"
+            activeTab === 'templates' ? "bg-primary-blue text-white shadow-sm" : "text-muted-foreground hover:bg-surface hover:text-foreground"
           )}
         >
           <ListTodo className="w-4 h-4" />
@@ -97,7 +97,7 @@ const CpsPage: React.FC = () => {
           onClick={() => setActiveTab('progress')}
           className={cn(
             "flex-1 sm:flex-none px-6 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2",
-            activeTab === 'progress' ? "bg-white text-primary-blue shadow-sm" : "text-muted-foreground hover:text-foreground"
+            activeTab === 'progress' ? "bg-primary-blue text-white shadow-sm" : "text-muted-foreground hover:bg-surface hover:text-foreground"
           )}
         >
           <Presentation className="w-4 h-4" />
@@ -106,7 +106,7 @@ const CpsPage: React.FC = () => {
       </div>
 
       {/* Main Area */}
-      <div className="bg-white rounded-3xl border border-divider shadow-sm overflow-hidden min-h-[400px]">
+      <div className="panel min-h-[400px] overflow-hidden">
         {activeTab === 'templates' && (
           <div className="p-6 space-y-4">
             {isLoading ? (
@@ -135,12 +135,12 @@ const CpsPage: React.FC = () => {
             <div className="p-6 border-b border-divider flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-surface/30">
                <div className="relative w-full sm:max-w-xs">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input 
+                  <input
                     type="text" 
                     placeholder="Search progress..." 
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 bg-white border border-divider rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue/20"
+                    className="form-input pl-9"
                   />
                 </div>
                 <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0 hide-scrollbar">
@@ -149,7 +149,7 @@ const CpsPage: React.FC = () => {
                       key={f}
                       onClick={() => setActiveFilter(f)}
                       className={cn(
-                        "whitespace-nowrap px-4 py-2 rounded-xl text-sm font-semibold transition-colors border",
+                        "whitespace-nowrap px-4 py-2 rounded-lg text-sm font-semibold transition-colors border",
                         activeFilter === f 
                           ? "bg-primary-blue text-white border-primary-blue" 
                           : "bg-white text-muted-foreground border-divider hover:bg-surface"
@@ -163,7 +163,7 @@ const CpsPage: React.FC = () => {
 
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-surface/50 text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+                <thead className="table-header">
                   <tr>
                     <th className="px-6 py-4">Assessment</th>
                     <th className="px-6 py-4">Location</th>

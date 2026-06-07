@@ -2,8 +2,12 @@ export interface AuthUser {
   id: string;
   email: string;
   name: string;
-  orgId: string;
-  role: 'admin' | 'inspector' | 'manager';
+  username?: string;
+  orgId?: string;
+  role: string;
+  roleId?: string;
+  branchId?: string;
+  groupId?: string;
   avatar?: string;
 }
 

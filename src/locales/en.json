@@ -1,4 +1,143 @@
 {
+  "common": {
+    "create": "Create New",
+    "retry": "Try Again",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "search": "Search...",
+    "loading": "Loading...",
+    "viewAll": "View All",
+    "yes": "Yes",
+    "no": "No",
+    "close": "Close",
+    "download": "Download"
+  },
+  "swal": {
+    "buttons": {
+      "yes": "Yes",
+      "no": "No",
+      "understand": "Understood"
+    },
+    "confirm": {
+      "save": {
+        "title": "Save changes?",
+        "text": "Please make sure the entered data is correct before saving."
+      },
+      "submit": {
+        "title": "Submit data?",
+        "text": "The data will be sent and processed by the system."
+      },
+      "delete": {
+        "title": "Delete {{entity}}?",
+        "text": "{{name}} will be deleted and this change cannot be undone."
+      },
+      "logout": {
+        "title": "Sign out of this account?",
+        "text": "Your session will end and you will need to sign in again."
+      },
+      "leave": {
+        "title": "Leave without saving?",
+        "text": "Unsaved changes will be lost."
+      },
+      "removeBranchUser": {
+        "title": "Remove user from branch?",
+        "text": "{{name}} will be removed from this branch."
+      },
+      "createTemplate": {
+        "title": "Create new template?",
+        "text": "A blank template will be created and you will be redirected to the builder."
+      }
+    },
+    "success": {
+      "login": {
+        "title": "Login successful",
+        "text": "Welcome back."
+      },
+      "logout": {
+        "title": "Signed out successfully"
+      },
+      "saved": {
+        "title": "{{entity}} saved",
+        "text": "Changes were saved successfully."
+      },
+      "created": {
+        "title": "{{entity}} created",
+        "text": "{{name}} was added successfully."
+      },
+      "updated": {
+        "title": "{{entity}} updated",
+        "text": "{{name}} was saved successfully."
+      },
+      "deleted": {
+        "title": "{{entity}} deleted",
+        "text": "{{name}} was deleted successfully."
+      },
+      "assigned": {
+        "title": "User added",
+        "text": "{{name}} was added to the branch."
+      },
+      "removed": {
+        "title": "User removed",
+        "text": "{{name}} was removed from the branch."
+      }
+    },
+    "error": {
+      "incomplete": {
+        "title": "Incomplete data"
+      },
+      "loginIncomplete": {
+        "title": "Login incomplete",
+        "text": "Email and password are required."
+      },
+      "loginFailed": {
+        "title": "Login failed",
+        "text": "Invalid email or password."
+      },
+      "logoutFailed": {
+        "title": "Server logout failed",
+        "text": "Your local session has ended, but the server has not confirmed logout."
+      },
+      "createFailed": {
+        "title": "Failed to create {{entity}}"
+      },
+      "updateFailed": {
+        "title": "Failed to update {{entity}}"
+      },
+      "deleteFailed": {
+        "title": "Failed to delete {{entity}}"
+      },
+      "saveFailed": {
+        "title": "Failed to save {{entity}}"
+      },
+      "assignFailed": {
+        "title": "Failed to add user"
+      },
+      "removeFailed": {
+        "title": "Failed to remove user"
+      }
+    },
+    "validation": {
+      "loginRequired": "Email and password are required.",
+      "userRequired": "Name, username, email, and role are required.",
+      "passwordRequired": "Password is required for a new user.",
+      "roleRequired": "Role name is required.",
+      "branchRequired": "Branch name, code, and address are required."
+    },
+    "entities": {
+      "user": "user",
+      "role": "role",
+      "branch": "branch",
+      "template": "template",
+      "profile": "profile",
+      "section": "section",
+      "question": "question",
+      "folder": "folder",
+      "file": "file"
+    }
+  },
   "home": {
     "greeting": "Welcome Back",
     "subtitle": "Log in to continue your inspection",
@@ -70,6 +209,7 @@
   },
   "inspections": {
     "title": "Inspections",
+    "subtitle": "Manage and monitor all dealer inspections",
     "filter": "Filter",
     "tabs": {
       "templates": "Templates",
@@ -83,7 +223,8 @@
       "yourTemplates": "Your Templates"
     },
     "create": "Create Template",
-    "empty": {
+    "empty": "No inspections found.",
+    "emptyDetail": {
       "title": "No templates found",
       "searchHint": "Try a different keyword.",
       "createHint": "Create your first template.",
@@ -139,25 +280,48 @@
       "by": "by {{name}}"
     }
   },
+  "templates": {
+    "title": "Templates",
+    "subtitle": "Manage inspection form templates",
+    "empty": "No templates yet. Create your first template."
+  },
   "cps": {
     "title": "CPS",
+    "subtitle": "Dealer Standard Assessment Checklist",
     "tabs": {
       "progress": "Assessment History"
     },
     "score": "Achievement Score:",
     "note": "Note:",
     "updated": "Updated {{date}}",
-    "empty": {
+    "empty": "No assessment data.",
+    "emptyDetail": {
       "noAssessment": "No assessment data."
     }
   },
   "nav": {
     "home": "Home",
     "inspections": "Inspections",
+    "templates": "Templates",
+    "documents": "Documents",
     "cps": "CPS",
     "actions": "Actions",
     "training": "Training",
-    "more": "More"
+    "more": "More",
+    "users": "Users",
+    "roles": "Roles",
+    "branches": "Branches",
+    "settings": "Settings",
+    "menuUtama": "Main Menu",
+    "administrasi": "Administration",
+    "logout": "Logout",
+    "notifications": "Notifications",
+    "noNotifications": "No notifications",
+    "allRead": "All read",
+    "markAll": "Mark all read",
+    "searchPlaceholder": "Search inspections...",
+    "today": "Today",
+    "earlier": "Earlier"
   },
   "settings": {
     "language": {
@@ -301,6 +465,7 @@
   },
   "training": {
     "title": "Training",
+    "subtitle": "Guidance materials and team training schedules",
     "tabs": {
       "guidance": "Guidance",
       "schedule": "Schedule"
@@ -372,6 +537,80 @@
       "phone": "Phone Number",
       "location": "Work Location",
       "role": "Access Role"
+    }
+  },
+  "documents": {
+    "title": "Document Management",
+    "subtitle": "Manage uploaded documents and images from submitted forms",
+    "searchPlaceholder": "Search folders or files...",
+    "allFolders": "All Folders",
+    "allFiles": "All Files",
+    "foldersTitle": "Folders",
+    "filesTitle": "Files",
+    "simulator": {
+      "label": "Simulator State:",
+      "interactive": "Active / Interactive",
+      "loading": "Loading Skeleton",
+      "empty": "Empty Directory"
+    },
+    "status": {
+      "all": "All Statuses",
+      "verified": "Verified",
+      "pending": "Pending",
+      "archived": "Archived"
+    },
+    "sort": {
+      "name": "Sort: Name",
+      "date": "Sort: Date",
+      "size": "Sort: Size"
+    },
+    "uploadArea": {
+      "dragDrop": "Drag and drop files here",
+      "orBrowse": "or browse files",
+      "supportText": "Supports PDF, Word, Excel, JPG, PNG up to 10MB"
+    },
+    "storage": {
+      "title": "Storage Usage",
+      "usedOf": "used of"
+    },
+    "activity": {
+      "title": "Recent Activity",
+      "empty": "No activity yet."
+    },
+    "table": {
+      "name": "File Name",
+      "reference": "Link Reference",
+      "uploadedBy": "Uploaded By",
+      "size": "Size",
+      "date": "Upload Date",
+      "status": "Status",
+      "actions": "Actions",
+      "paginationText": "Showing {{start}} - {{end}} of {{total}} files"
+    },
+    "actions": {
+      "preview": "Preview",
+      "download": "Download",
+      "rename": "Rename",
+      "move": "Move",
+      "delete": "Delete",
+      "createFolder": "Create Folder"
+    },
+    "modals": {
+      "createFolderTitle": "Create New Folder",
+      "folderName": "Folder Name",
+      "folderPlaceholder": "e.g., SOP Grooming",
+      "renameTitle": "Rename Item",
+      "renamePlaceholder": "Enter new name...",
+      "moveTitle": "Move to Folder",
+      "selectFolder": "Select destination folder",
+      "rootFolder": "Root Folder",
+      "previewMetadata": "File Metadata",
+      "unsupportedPreview": "Format {{type}} does not support full graphics rendering. Please download the file to view its contents.",
+      "simulatedPhoto": "Simulated Cloudflare R2 Photo"
+    },
+    "empty": {
+      "title": "This folder is empty",
+      "subtitle": "Upload your first file or create a sub-folder."
     }
   }
 }

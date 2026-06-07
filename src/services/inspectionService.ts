@@ -57,6 +57,17 @@ const MOCK_INSPECTIONS: InspectionSummary[] = [
   },
 ];
 
+export interface DashboardStatsResponse {
+  totalInspections: number;
+  totalInspectionsChange: string;
+  activeIssues: number;
+  activeIssuesChange: string;
+  auditorsOnline: number;
+  auditorsOnlineChange: string;
+  avgCompliance: string;
+  avgComplianceChange: string;
+}
+
 export const inspectionService = {
   async getInspections(): Promise<InspectionSummary[]> {
     try {
@@ -71,9 +82,9 @@ export const inspectionService = {
     }
   },
 
-  async getDashboardStats() {
+  async getDashboardStats(): Promise<DashboardStatsResponse> {
     try {
-      const res = await apiClient.get<any>(API_ENDPOINTS.INSPECTIONS.DASHBOARD_STATS);
+      const res = await apiClient.get<DashboardStatsResponse>(API_ENDPOINTS.INSPECTIONS.DASHBOARD_STATS);
       return res.data;
     } catch (e) {
       if (e instanceof MockInterceptError) {

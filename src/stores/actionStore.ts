@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { ActionItem, ActionWorkflowStatus } from '../types/action';
 import { actionService } from '../services/actionService';
+import { getApiErrorMessage } from '../lib/apiResponse';
 
 interface ActionStoreState {
   actions: ActionItem[];
@@ -33,7 +34,7 @@ export const useActionStore = create<ActionStoreState>()(
           ]);
           set({ actions, workflowStatuses: statuses, isLoading: false, isFetched: true });
         } catch (e) {
-          set({ isLoading: false, error: 'Failed to load actions' });
+          set({ isLoading: false, error: getApiErrorMessage(e, 'Failed to load actions') });
         }
       },
 
@@ -47,11 +48,15 @@ export const useActionStore = create<ActionStoreState>()(
         });
 
         try {
-          // In real app: await actionService.updateAction(id, { workflowStatusId: statusId });
-          await new Promise(resolve => setTimeout(resolve, 300));
+          const updatedAction = await actionService.updateActionStatus(id, statusId);
+          set({
+            actions: get().actions.map(a => 
+              a.id === id ? { ...a, ...updatedAction } : a
+            )
+          });
         } catch (e) {
           // Rollback on failure
-          set({ actions: previousActions, error: 'Failed to update action' });
+          set({ actions: previousActions, error: getApiErrorMessage(e, 'Failed to update action') });
         }
       }
     }),

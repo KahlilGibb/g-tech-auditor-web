@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { FormType } from '../types/template';
 import { templateService, type TemplateListItem, type CreateTemplateResult } from '../services/templateService';
+import { getApiErrorMessage } from '../lib/apiResponse';
 
 interface TemplateStoreState {
   templates: TemplateListItem[];
@@ -29,7 +30,7 @@ export const useTemplateStore = create<TemplateStoreState>()(
           const templates = await templateService.getTemplates();
           set({ templates, isLoading: false, isFetched: true });
         } catch (e) {
-          set({ isLoading: false, error: e instanceof Error ? e.message : 'Failed to load templates' });
+          set({ isLoading: false, error: getApiErrorMessage(e, 'Failed to load templates') });
         }
       },
 
@@ -41,7 +42,7 @@ export const useTemplateStore = create<TemplateStoreState>()(
           set({ isFetched: false, isLoading: false });
           return result;
         } catch (e) {
-          set({ isLoading: false, error: e instanceof Error ? e.message : 'Failed to create template' });
+          set({ isLoading: false, error: getApiErrorMessage(e, 'Failed to create template') });
           throw e;
         }
       },

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { User, Mail, Phone, MapPin, ShieldCheck, Globe, LogOut, Camera, X } from 'lucide-react';
 import { cn } from '../utils/cn';
+import { appSwal } from '../lib/appSwal';
 
 // Mock profile data
 const MOCK_PROFILE = {
@@ -27,22 +28,26 @@ const ProfilePage: React.FC = () => {
     // In a real app, update the languageStore or user preference backend here.
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    const confirmed = await appSwal.confirmSave();
+    if (!confirmed) return;
+
     setProfile(formData);
     setIsEditing(false);
+    await appSwal.successSaved('profile');
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="mx-auto w-full max-w-4xl space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">{t('profile.title') || 'Profile & Settings'}</h1>
-        <p className="text-muted-foreground mt-1">{t('profile.subtitle') || 'Manage your account and preferences.'}</p>
+        <h1 className="page-title">{t('profile.title') || 'Profile & Settings'}</h1>
+        <p className="page-subtitle">{t('profile.subtitle') || 'Manage your account and preferences.'}</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
         {/* Left Column - Profile Card */}
         <div className="md:col-span-1 space-y-6">
-          <div className="bg-white rounded-3xl border border-divider shadow-sm p-6 text-center">
+          <div className="panel p-6 text-center">
             <div className="relative inline-block">
               <div className="w-24 h-24 rounded-2xl bg-primary-blue text-white flex items-center justify-center text-3xl font-bold mx-auto overflow-hidden border-4 border-surface shadow-sm">
                 {profile.avatarBase64 ? (
@@ -64,7 +69,7 @@ const ProfilePage: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl border border-divider shadow-sm p-6">
+          <div className="panel p-6">
             <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
               <Globe className="w-5 h-5 text-primary-blue" />
               {t('settings.language.title') || 'Language / Bahasa'}
@@ -98,7 +103,7 @@ const ProfilePage: React.FC = () => {
 
         {/* Right Column - Details */}
         <div className="md:col-span-2">
-          <div className="bg-white rounded-3xl border border-divider shadow-sm overflow-hidden">
+          <div className="panel overflow-hidden">
             <div className="p-6 border-b border-divider flex justify-between items-center bg-surface/30">
               <h3 className="font-bold text-foreground">Personal Information</h3>
               {!isEditing ? (
@@ -129,7 +134,7 @@ const ProfilePage: React.FC = () => {
                       type="text" 
                       value={formData.fullName} 
                       onChange={e => setFormData({...formData, fullName: e.target.value})}
-                      className="w-full px-3 py-2 border border-divider rounded-lg focus:outline-none focus:border-primary-blue"
+                      className="form-input"
                     />
                   ) : (
                     <p className="font-medium text-foreground py-2">{profile.fullName}</p>
@@ -145,7 +150,7 @@ const ProfilePage: React.FC = () => {
                       type="email" 
                       value={formData.email} 
                       onChange={e => setFormData({...formData, email: e.target.value})}
-                      className="w-full px-3 py-2 border border-divider rounded-lg focus:outline-none focus:border-primary-blue"
+                      className="form-input"
                     />
                   ) : (
                     <p className="font-medium text-foreground py-2">{profile.email}</p>
@@ -161,7 +166,7 @@ const ProfilePage: React.FC = () => {
                       type="tel" 
                       value={formData.phone} 
                       onChange={e => setFormData({...formData, phone: e.target.value})}
-                      className="w-full px-3 py-2 border border-divider rounded-lg focus:outline-none focus:border-primary-blue"
+                      className="form-input"
                     />
                   ) : (
                     <p className="font-medium text-foreground py-2">{profile.phone}</p>
@@ -177,7 +182,7 @@ const ProfilePage: React.FC = () => {
                       type="text" 
                       value={formData.workLocation} 
                       onChange={e => setFormData({...formData, workLocation: e.target.value})}
-                      className="w-full px-3 py-2 border border-divider rounded-lg focus:outline-none focus:border-primary-blue"
+                      className="form-input"
                     />
                   ) : (
                     <p className="font-medium text-foreground py-2">{profile.workLocation}</p>
@@ -198,7 +203,7 @@ const ProfilePage: React.FC = () => {
                 <div className="pt-4 flex justify-end">
                   <button 
                     onClick={handleSave}
-                    className="px-6 py-2 bg-primary-blue text-white rounded-xl font-semibold hover:bg-primary-blue-dark transition-colors shadow-sm"
+                    className="btn-primary"
                   >
                     Save Changes
                   </button>

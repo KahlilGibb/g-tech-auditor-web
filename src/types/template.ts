@@ -4,17 +4,28 @@ export type FormType = 'inspection' | 'cps'
 export type TemplateStatus = 'draft' | 'published' | 'archived'
 export type FieldType =
   | 'text_answer'
+  | 'text'
   | 'pass_fail'
+  | 'multiple_choice'
   | 'inspection_date'
+  | 'datetime'
   | 'person'
   | 'number'
   | 'checkbox'
   | 'dropdown'
   | 'photo'
+  | 'media'
+  | 'annotation'
   | 'signature'
+  | 'location'
   | 'instruction'
   | 'slider'
   | 'table'
+  | 'title_site'
+  | 'title_inspection_date'
+  | 'title_document_number'
+  | 'title_asset'
+  | 'title_company'
 
 // ─── Domain interfaces (mirror DB schema) ─────────────────────────────────────
 
@@ -119,6 +130,7 @@ export interface MasterFieldOption {
 
 export const FIELD_TYPES: { value: FieldType; label: string; color: string }[] = [
   { value: 'text_answer',     label: 'Text answer',     color: '#F59E0B' },
+  { value: 'multiple_choice', label: 'Multiple choice', color: '#6B7280' },
   { value: 'pass_fail',       label: 'Pass / Fail',     color: '#6B7280' },
   { value: 'inspection_date', label: 'Inspection date', color: '#10B981' },
   { value: 'person',          label: 'Person',          color: '#8B5CF6' },

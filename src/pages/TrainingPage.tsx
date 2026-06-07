@@ -100,20 +100,20 @@ const TrainingPage: React.FC = () => {
   const upcomingCount = SCHEDULE_ITEMS.filter(s => s.status !== 'Selesai').length;
 
   return (
-    <div className="space-y-6">
+    <div className="page-shell">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">{t('training.title')}</h1>
-        <p className="text-muted-foreground mt-1">{t('training.subtitle') || 'Compliance training and certifications.'}</p>
+        <h1 className="page-title">{t('training.title')}</h1>
+        <p className="page-subtitle">{t('training.subtitle') || 'Compliance training and certifications.'}</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-surface p-1 rounded-xl w-full sm:w-fit">
+      <div className="flex w-full rounded-lg border border-divider bg-white p-1 shadow-sm sm:w-fit">
         <button
           onClick={() => setActiveTab('guidance')}
           className={cn(
             "flex-1 sm:flex-none px-6 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2",
-            activeTab === 'guidance' ? "bg-white text-primary-blue shadow-sm" : "text-muted-foreground hover:text-foreground"
+            activeTab === 'guidance' ? "bg-primary-blue text-white shadow-sm" : "text-muted-foreground hover:bg-surface hover:text-foreground"
           )}
         >
           <BookOpen className="w-4 h-4" />
@@ -123,7 +123,7 @@ const TrainingPage: React.FC = () => {
           onClick={() => setActiveTab('schedule')}
           className={cn(
             "flex-1 sm:flex-none px-6 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2",
-            activeTab === 'schedule' ? "bg-white text-primary-blue shadow-sm" : "text-muted-foreground hover:text-foreground"
+            activeTab === 'schedule' ? "bg-primary-blue text-white shadow-sm" : "text-muted-foreground hover:bg-surface hover:text-foreground"
           )}
         >
           <CalendarDays className="w-4 h-4" />
@@ -132,8 +132,8 @@ const TrainingPage: React.FC = () => {
       </div>
 
       {/* Summary Widget */}
-      <div className="flex items-center gap-4 bg-primary-blue/5 border border-primary-blue/20 rounded-2xl p-4">
-        <div className="p-3 bg-primary-blue/10 rounded-xl text-primary-blue">
+      <div className="panel flex items-center gap-4 p-4">
+        <div className="rounded-lg bg-primary-blue/10 p-3 text-primary-blue">
           <BookOpen className="w-6 h-6" />
         </div>
         <div className="flex-1">
@@ -147,7 +147,7 @@ const TrainingPage: React.FC = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="bg-white rounded-3xl border border-divider shadow-sm overflow-hidden min-h-[400px]">
+      <div className="panel min-h-[400px] overflow-hidden">
         {/* Search Header */}
         <div className="p-6 border-b border-divider flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-surface/30">
           <div className="relative w-full sm:max-w-md">
@@ -157,7 +157,7 @@ const TrainingPage: React.FC = () => {
               placeholder={activeTab === 'guidance' ? "Search guidance..." : "Search schedule..."} 
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 bg-white border border-divider rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue/20"
+              className="form-input pl-9 pr-8"
             />
             {query.length > 0 && (
               <button 
@@ -176,7 +176,7 @@ const TrainingPage: React.FC = () => {
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
                   className={cn(
-                    "whitespace-nowrap px-4 py-2 rounded-xl text-sm font-semibold transition-colors border",
+                    "whitespace-nowrap px-4 py-2 rounded-lg text-sm font-semibold transition-colors border",
                     selectedCategory === cat 
                       ? "bg-primary-blue text-white border-primary-blue" 
                       : "bg-white text-muted-foreground border-divider hover:bg-surface"

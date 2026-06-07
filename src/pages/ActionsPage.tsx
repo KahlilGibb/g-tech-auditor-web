@@ -69,13 +69,13 @@ const ActionsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="page-shell">
+      <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Actions</h1>
-          <p className="text-muted-foreground mt-1">Manage and track all corrective actions.</p>
+          <h1 className="page-title">Actions</h1>
+          <p className="page-subtitle">Manage and track all corrective actions.</p>
         </div>
-        <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-blue text-white rounded-xl font-bold hover:bg-primary-blue-dark transition-all shadow-md shadow-primary-blue/20">
+        <button className="btn-primary">
           <Plus className="w-5 h-5" />
           Create Action
         </button>
@@ -87,10 +87,10 @@ const ActionsPage: React.FC = () => {
           <input 
             type="text" 
             placeholder="Search actions by title, code, or assignee..." 
-            className="w-full pl-10 pr-4 py-2.5 bg-white border border-divider rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-blue/20"
+            className="form-input pl-10"
           />
         </div>
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-divider rounded-xl text-sm font-semibold text-foreground hover:bg-surface transition-all">
+        <button className="btn-secondary">
           <Filter className="w-4 h-4" />
           Filters
         </button>
@@ -102,10 +102,10 @@ const ActionsPage: React.FC = () => {
         </div>
       )}
 
-      <div className="bg-white rounded-3xl border border-divider shadow-sm overflow-hidden">
+      <div className="panel overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-surface text-muted-foreground text-xs font-bold uppercase tracking-wider border-b border-divider">
+            <thead className="table-header border-b border-divider">
               <tr>
                 <th className="px-6 py-4">Action Details</th>
                 <th className="px-6 py-4">Source & Site</th>

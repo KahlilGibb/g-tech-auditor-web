@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './hooks/useAuth';
+import { useAuth } from './hooks/useAuth';
+import { AuthProvider } from './providers/AuthProvider';
 import LoginPage from './pages/LoginPage';
 import DashboardLayout from './layouts/DashboardLayout';
 import HomePage from './pages/HomePage';
@@ -11,6 +12,10 @@ import CpsPage from './pages/CpsPage';
 import TrainingPage from './pages/TrainingPage';
 import ProfilePage from './pages/ProfilePage';
 import TemplateBuilderPage from './pages/TemplateBuilderPage';
+import UsersPage from './pages/UsersPage';
+import RolesPage from './pages/RolesPage';
+import BranchesPage from './pages/BranchesPage';
+import DocumentManagementPage from './pages/DocumentManagementPage';
 import { Loader2 } from 'lucide-react';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -52,23 +57,17 @@ const AppRoutes: React.FC = () => {
         <Route index element={<HomePage />} />
         <Route path="inspections" element={<InspectionsPage />} />
         <Route path="templates" element={<TemplatesPage />} />
+        <Route path="documents" element={<DocumentManagementPage />} />
         <Route path="actions" element={<ActionsPage />} />
         <Route path="cps" element={<CpsPage />} />
         <Route path="training" element={<TrainingPage />} />
         <Route path="profile" element={<ProfilePage />} />
-        <Route path="users" element={<div className="p-8"><h1 className="text-2xl font-bold text-foreground">Users</h1><p className="mt-2 text-muted-foreground">Manage organizational users and roles.</p></div>} />
+        <Route path="users" element={<UsersPage />} />
+        <Route path="roles" element={<RolesPage />} />
+        <Route path="branches" element={<BranchesPage />} />
         <Route path="settings" element={<ProfilePage />} />
       </Route>
 
-      <Route
-        path="/templates/new"
-        element={
-          <ProtectedRoute>
-            <TemplateBuilderPage />
-          </ProtectedRoute>
-        }
-      />
-      
       <Route
         path="/templates/:id/builder"
         element={

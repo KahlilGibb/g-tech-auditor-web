@@ -1,4 +1,143 @@
 {
+  "common": {
+    "create": "Buat Baru",
+    "retry": "Coba Lagi",
+    "save": "Simpan",
+    "cancel": "Batal",
+    "delete": "Hapus",
+    "edit": "Edit",
+    "back": "Kembali",
+    "search": "Cari...",
+    "loading": "Memuat...",
+    "viewAll": "Lihat Semua",
+    "yes": "Ya",
+    "no": "Tidak",
+    "close": "Tutup",
+    "download": "Unduh"
+  },
+  "swal": {
+    "buttons": {
+      "yes": "Ya",
+      "no": "Tidak",
+      "understand": "Mengerti"
+    },
+    "confirm": {
+      "save": {
+        "title": "Simpan perubahan?",
+        "text": "Pastikan data yang dimasukkan sudah benar sebelum disimpan."
+      },
+      "submit": {
+        "title": "Submit data?",
+        "text": "Data akan dikirim dan diproses oleh sistem."
+      },
+      "delete": {
+        "title": "Hapus {{entity}}?",
+        "text": "{{name}} akan dihapus dan perubahan ini tidak bisa dibatalkan."
+      },
+      "logout": {
+        "title": "Keluar dari akun?",
+        "text": "Sesi Anda akan diakhiri dan Anda perlu masuk kembali."
+      },
+      "leave": {
+        "title": "Keluar tanpa menyimpan?",
+        "text": "Perubahan yang belum disimpan akan hilang."
+      },
+      "removeBranchUser": {
+        "title": "Lepas user dari branch?",
+        "text": "{{name}} akan dilepas dari branch ini."
+      },
+      "createTemplate": {
+        "title": "Buat template baru?",
+        "text": "Template kosong akan dibuat dan Anda akan diarahkan ke halaman builder."
+      }
+    },
+    "success": {
+      "login": {
+        "title": "Login berhasil",
+        "text": "Selamat datang kembali."
+      },
+      "logout": {
+        "title": "Berhasil keluar"
+      },
+      "saved": {
+        "title": "{{entity}} disimpan",
+        "text": "Perubahan berhasil disimpan."
+      },
+      "created": {
+        "title": "{{entity}} dibuat",
+        "text": "{{name}} berhasil ditambahkan."
+      },
+      "updated": {
+        "title": "{{entity}} diperbarui",
+        "text": "{{name}} berhasil disimpan."
+      },
+      "deleted": {
+        "title": "{{entity}} dihapus",
+        "text": "{{name}} berhasil dihapus."
+      },
+      "assigned": {
+        "title": "User ditambahkan",
+        "text": "{{name}} berhasil ditambahkan ke branch."
+      },
+      "removed": {
+        "title": "User dilepas",
+        "text": "{{name}} berhasil dilepas dari branch."
+      }
+    },
+    "error": {
+      "incomplete": {
+        "title": "Data belum lengkap"
+      },
+      "loginIncomplete": {
+        "title": "Login belum lengkap",
+        "text": "Email dan password wajib diisi."
+      },
+      "loginFailed": {
+        "title": "Login gagal",
+        "text": "Email atau password tidak sesuai."
+      },
+      "logoutFailed": {
+        "title": "Logout dari server gagal",
+        "text": "Sesi lokal sudah diakhiri, tetapi server belum mengonfirmasi logout."
+      },
+      "createFailed": {
+        "title": "Gagal membuat {{entity}}"
+      },
+      "updateFailed": {
+        "title": "Gagal memperbarui {{entity}}"
+      },
+      "deleteFailed": {
+        "title": "Gagal menghapus {{entity}}"
+      },
+      "saveFailed": {
+        "title": "Gagal menyimpan {{entity}}"
+      },
+      "assignFailed": {
+        "title": "Gagal menambahkan user"
+      },
+      "removeFailed": {
+        "title": "Gagal melepas user"
+      }
+    },
+    "validation": {
+      "loginRequired": "Email dan password wajib diisi.",
+      "userRequired": "Nama, username, email, dan role wajib diisi.",
+      "passwordRequired": "Password wajib diisi untuk user baru.",
+      "roleRequired": "Nama role wajib diisi.",
+      "branchRequired": "Nama, kode, dan alamat branch wajib diisi."
+    },
+    "entities": {
+      "user": "user",
+      "role": "role",
+      "branch": "branch",
+      "template": "template",
+      "profile": "profil",
+      "section": "bab",
+      "question": "pertanyaan",
+      "folder": "folder",
+      "file": "file"
+    }
+  },
   "home": {
     "greeting": "Selamat Datang Kembali",
     "subtitle": "Masuk untuk melanjutkan inspeksi Anda",
@@ -69,7 +208,8 @@
     "copyright": "© 2026 G Tech Solutions"
   },
   "inspections": {
-    "title": "Inspections",
+    "title": "Inspeksi",
+    "subtitle": "Kelola dan pantau seluruh inspeksi dealer",
     "filter": "Filter",
     "tabs": {
       "templates": "Templates",
@@ -83,7 +223,8 @@
       "yourTemplates": "Template Anda"
     },
     "create": "Buat Template",
-    "empty": {
+    "empty": "Tidak ada inspeksi ditemukan.",
+    "emptyDetail": {
       "title": "Tidak ada template",
       "searchHint": "Coba kata kunci lain.",
       "createHint": "Buat template pertama Anda.",
@@ -139,25 +280,48 @@
       "by": "oleh {{name}}"
     }
   },
+  "templates": {
+    "title": "Templates",
+    "subtitle": "Kelola template formulir inspeksi",
+    "empty": "Belum ada template. Buat template pertama Anda."
+  },
   "cps": {
     "title": "CPS",
+    "subtitle": "Checklist Penilaian Standar dealer",
     "tabs": {
       "progress": "Riwayat Penilaian"
     },
     "score": "Nilai Pencapaian:",
     "note": "Catatan:",
     "updated": "Diperbarui {{date}}",
-    "empty": {
+    "empty": "Tidak ada data penilaian.",
+    "emptyDetail": {
       "noAssessment": "Tidak ada data penilaian."
     }
   },
   "nav": {
     "home": "Beranda",
     "inspections": "Inspeksi",
+    "templates": "Templates",
+    "documents": "Dokumen",
     "cps": "CPS",
     "actions": "Tindakan",
     "training": "Training",
-    "more": "Lainnya"
+    "more": "Lainnya",
+    "users": "User",
+    "roles": "Role",
+    "branches": "Branch",
+    "settings": "Pengaturan",
+    "menuUtama": "Menu Utama",
+    "administrasi": "Administrasi",
+    "logout": "Keluar",
+    "notifications": "Notifikasi",
+    "noNotifications": "Tidak ada notifikasi",
+    "allRead": "Semua sudah terbaca",
+    "markAll": "Tandai semua",
+    "searchPlaceholder": "Cari inspeksi...",
+    "today": "Hari ini",
+    "earlier": "Sebelumnya"
   },
   "settings": {
     "language": {
@@ -302,6 +466,7 @@
   },
   "training": {
     "title": "Training",
+    "subtitle": "Materi panduan dan jadwal pelatihan tim",
     "tabs": {
       "guidance": "Panduan",
       "schedule": "Jadwal"
@@ -373,6 +538,80 @@
       "phone": "No. HP",
       "location": "Lokasi Kerja",
       "role": "Akses Role"
+    }
+  },
+  "documents": {
+    "title": "Manajemen Dokumen",
+    "subtitle": "Kelola dokumen dan gambar dari formulir",
+    "searchPlaceholder": "Cari folder atau file...",
+    "allFolders": "Semua Folder",
+    "allFiles": "Semua File",
+    "foldersTitle": "Folder",
+    "filesTitle": "File",
+    "simulator": {
+      "label": "Simulasi Halaman:",
+      "interactive": "Aktif / Interaktif",
+      "loading": "Loading Skeleton",
+      "empty": "Folder Kosong"
+    },
+    "status": {
+      "all": "Semua Status",
+      "verified": "Verified",
+      "pending": "Pending",
+      "archived": "Archived"
+    },
+    "sort": {
+      "name": "Urut: Nama",
+      "date": "Urut: Tanggal",
+      "size": "Urut: Ukuran"
+    },
+    "uploadArea": {
+      "dragDrop": "Seret dan lepas file di sini",
+      "orBrowse": "atau cari file",
+      "supportText": "Mendukung PDF, Word, Excel, JPG, PNG hingga 10MB"
+    },
+    "storage": {
+      "title": "Penyimpanan",
+      "usedOf": "terpakai dari"
+    },
+    "activity": {
+      "title": "Aktivitas Terbaru",
+      "empty": "Belum ada aktivitas."
+    },
+    "table": {
+      "name": "Nama File",
+      "reference": "Link Reference",
+      "uploadedBy": "Diunggah Oleh",
+      "size": "Ukuran",
+      "date": "Tanggal Unggah",
+      "status": "Status",
+      "actions": "Aksi",
+      "paginationText": "Menampilkan {{start}} - {{end}} dari {{total}} file"
+    },
+    "actions": {
+      "preview": "Pratinjau",
+      "download": "Unduh",
+      "rename": "Ubah Nama",
+      "move": "Pindahkan",
+      "delete": "Hapus",
+      "createFolder": "Buat Folder"
+    },
+    "modals": {
+      "createFolderTitle": "Buat Folder Baru",
+      "folderName": "Nama Folder",
+      "folderPlaceholder": "mis. SOP Grooming",
+      "renameTitle": "Ubah Nama",
+      "renamePlaceholder": "Masukkan nama baru...",
+      "moveTitle": "Pindahkan ke Folder",
+      "selectFolder": "Pilih folder tujuan",
+      "rootFolder": "Folder Utama (Root)",
+      "previewMetadata": "Metadata File",
+      "unsupportedPreview": "Format {{type}} tidak mendukung rendering grafis penuh. Silakan unduh dokumen untuk melihat isinya.",
+      "simulatedPhoto": "Simulasi Foto R2 Cloudflare"
+    },
+    "empty": {
+      "title": "Folder ini kosong",
+      "subtitle": "Unggah file pertama Anda atau buat sub-folder."
     }
   }
 }

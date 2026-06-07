@@ -1,83 +1,92 @@
 import React, { useState } from 'react';
+import { Loader2, Lock, LogIn, Mail, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { LogIn, Mail, Lock, ShieldCheck, Loader2 } from 'lucide-react';
 import { cn } from '../utils/cn';
+import { appSwal } from '../lib/appSwal';
+import { useTranslation } from 'react-i18next';
+import { getApiErrorMessage } from '../lib/apiResponse';
 
 const LoginPage: React.FC = () => {
+  const { t } = useTranslation();
   const { login, isLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setError('');
-    
+
     if (!email || !password) {
-      setError('Please fill in all fields');
+      const message = t('swal.validation.loginRequired');
+      setError(message);
+      await appSwal.errorLoginIncomplete();
       return;
     }
 
     try {
       await login(email, password);
+      await appSwal.successLogin();
     } catch (err) {
-      setError('Invalid credentials');
+      const message = getApiErrorMessage(err, t('swal.error.loginFailed.text'));
+      setError(message);
+      await appSwal.errorLoginFailed(message);
     }
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-surface p-4">
+    <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
-        {/* Logo Section */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 bg-primary-blue rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-primary-blue/20">
-            <ShieldCheck className="text-white w-10 h-10" />
+        <div className="mb-8 flex flex-col items-center">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-lg bg-primary-blue text-white shadow-sm">
+            <ShieldCheck className="h-8 w-8" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">G-Tech Auditor</h1>
-          <p className="text-muted-foreground mt-1">Admin Dashboard</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">G-Tech Auditor</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Admin Dashboard</p>
         </div>
 
-        {/* Card */}
-        <div className="bg-white p-8 rounded-3xl shadow-sm border border-divider">
+        <div className="panel p-8">
           <div className="mb-6">
-            <h2 className="text-xl font-semibold text-foreground">Sign In</h2>
-            <p className="text-muted-foreground text-sm">Welcome back! Please enter your details.</p>
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">Sign In</h2>
+            <p className="text-sm text-muted-foreground">Welcome back. Please enter your details.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="p-3 bg-danger-red/10 border border-danger-red/20 text-danger-red text-sm rounded-xl">
+              <div className="rounded-lg border border-danger-red/20 bg-danger-red/10 p-3 text-sm text-danger-red">
                 {error}
               </div>
             )}
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground ml-1">Email</label>
+              <label className="ml-1 text-sm font-medium text-foreground">Email</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
+                <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@gtech.com"
-                  className="w-full pl-11 pr-4 py-3 bg-surface border border-divider rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-blue/20 focus:border-primary-blue transition-all"
+                  onChange={event => setEmail(event.target.value)}
+                  placeholder="admin@example.com"
+                  className="form-input pl-11"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <div className="flex justify-between items-center ml-1">
+              <div className="ml-1 flex items-center justify-between">
                 <label className="text-sm font-medium text-foreground">Password</label>
-                <a href="#" className="text-xs font-semibold text-primary-blue hover:text-primary-blue-dark">Forgot Password?</a>
+                <a href="#" className="text-xs font-semibold text-primary-blue hover:text-primary-blue-dark">
+                  Forgot Password?
+                </a>
               </div>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
+                <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                 <input
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-11 pr-4 py-3 bg-surface border border-divider rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-blue/20 focus:border-primary-blue transition-all"
+                  onChange={event => setPassword(event.target.value)}
+                  placeholder="Password"
+                  className="form-input pl-11"
                 />
               </div>
             </div>
@@ -85,25 +94,25 @@ const LoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className={cn(
-                "w-full py-3 bg-primary-blue text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all hover:bg-primary-blue-dark active:scale-[0.98]",
-                isLoading && "opacity-70 cursor-not-allowed"
-              )}
+              className={cn('btn-primary w-full py-3', isLoading && 'opacity-70')}
             >
               {isLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <>
-                  <LogIn className="w-5 h-5" />
+                  <LogIn className="h-5 w-5" />
                   Sign In
                 </>
               )}
             </button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-divider text-center">
+          <div className="mt-8 border-t border-divider pt-6 text-center">
             <p className="text-sm text-muted-foreground">
-              New to G-Tech Auditor? <a href="#" className="font-semibold text-primary-blue hover:underline">Contact Support</a>
+              New to G-Tech Auditor?{' '}
+              <a href="#" className="font-semibold text-primary-blue hover:underline">
+                Contact Support
+              </a>
             </p>
           </div>
         </div>

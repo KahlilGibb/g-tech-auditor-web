@@ -9,6 +9,7 @@ import type {
   FieldType,
 } from '../types/template'
 import { templateService } from '../services/templateService'
+import { getApiErrorMessage } from '../lib/apiResponse'
 
 // ─── State shape ──────────────────────────────────────────────────────────────
 
@@ -89,7 +90,7 @@ export const useTemplateEditorStore = create<TemplateEditorState>()((set, get) =
       })
       return template.id
     } catch (e) {
-      set({ error: String(e), isLoading: false })
+      set({ error: getApiErrorMessage(e, 'Failed to create template'), isLoading: false })
       throw e
     }
   },
@@ -110,7 +111,7 @@ export const useTemplateEditorStore = create<TemplateEditorState>()((set, get) =
         isLoading: false,
       })
     } catch (e) {
-      set({ error: String(e), isLoading: false })
+      set({ error: getApiErrorMessage(e, 'Failed to load template'), isLoading: false })
     }
   },
 
@@ -124,19 +125,23 @@ export const useTemplateEditorStore = create<TemplateEditorState>()((set, get) =
   },
 
   saveTemplate: async () => {
-    const { template, version } = get()
+    const { template, version, sections, fields } = get()
     if (!template || !version) return
     set({ isSaving: true })
     try {
-      await templateService.updateTemplate(template.id, {
-        title: template.title,
-        description: template.description,
-        form_type: template.form_type,
-        scoring_enabled: template.scoring_enabled,
+      const result = await templateService.saveTemplateTree(template, sections, fields)
+      set({
+        template: result.template,
+        version: result.version,
+        sections: result.sections,
+        fields: result.fields,
+        expandedSections: result.sections.length > 0 ? [result.sections[0].id] : [],
+        isSaving: false,
+        isDirty: false,
       })
-      set({ isSaving: false, isDirty: false })
     } catch (e) {
-      set({ isSaving: false, error: String(e) })
+      set({ isSaving: false, error: getApiErrorMessage(e, 'Failed to save template') })
+      throw e
     }
   },
 
@@ -147,10 +152,9 @@ export const useTemplateEditorStore = create<TemplateEditorState>()((set, get) =
     if (!version) return
 
     const newOrder = sections.length + 1
-    // Optimistic placeholder
-    const tempId = `temp-${Date.now()}`
-    const optimistic: TemplateSection = {
-      id: tempId,
+    const sectionId = `draft-section-${Date.now()}`
+    const section: TemplateSection = {
+      id: sectionId,
       version_id: version.id,
       title: 'Untitled Page',
       description:
@@ -160,41 +164,11 @@ export const useTemplateEditorStore = create<TemplateEditorState>()((set, get) =
       created_at: new Date().toISOString(),
     }
     set(state => ({
-      sections: [...state.sections, optimistic],
-      fields: { ...state.fields, [tempId]: [] },
-      expandedSections: [...state.expandedSections, tempId],
+      sections: [...state.sections, section],
+      fields: { ...state.fields, [sectionId]: [] },
+      expandedSections: [...state.expandedSections, sectionId],
       isDirty: true,
     }))
-
-    try {
-      const saved = await templateService.createSection(version.id, {
-        title: 'Untitled Page',
-        description: 'This is where you add your inspection questions and how you want them answered.',
-        order: newOrder,
-      })
-      // Replace temp with real
-      set(state => {
-        const newFields = { ...state.fields }
-        newFields[saved.id] = newFields[tempId] ?? []
-        delete newFields[tempId]
-        return {
-          sections: state.sections.map(s => (s.id === tempId ? saved : s)),
-          fields: newFields,
-          expandedSections: state.expandedSections.map(id => (id === tempId ? saved.id : id)),
-        }
-      })
-    } catch (e) {
-      // Rollback
-      set(state => {
-        const newFields = { ...state.fields }
-        delete newFields[tempId]
-        return {
-          sections: state.sections.filter(s => s.id !== tempId),
-          fields: newFields,
-          expandedSections: state.expandedSections.filter(id => id !== tempId),
-        }
-      })
-    }
   },
 
   updateSection: (sectionId, patch) => {
@@ -204,11 +178,9 @@ export const useTemplateEditorStore = create<TemplateEditorState>()((set, get) =
       ),
       isDirty: true,
     }))
-    templateService.updateSection(sectionId, patch).catch(() => {})
   },
 
   deleteSection: async (sectionId) => {
-    const snapshot = get().sections
     set(state => {
       const newFields = { ...state.fields }
       delete newFields[sectionId]
@@ -219,27 +191,35 @@ export const useTemplateEditorStore = create<TemplateEditorState>()((set, get) =
         isDirty: true,
       }
     })
-    try {
-      await templateService.deleteSection(sectionId)
-    } catch {
-      set({ sections: snapshot })
-    }
   },
 
   duplicateSection: async (sectionId) => {
-    const { version } = get()
+    const { version, sections, fields } = get()
     if (!version) return
-    try {
-      const { section, fields } = await templateService.duplicateSection(sectionId)
-      set(state => ({
-        sections: [...state.sections, section].sort((a, b) => a.order - b.order),
-        fields: { ...state.fields, [section.id]: fields },
-        expandedSections: [...state.expandedSections, section.id],
-        isDirty: true,
-      }))
-    } catch (e) {
-      set({ error: String(e) })
+    const source = sections.find(section => section.id === sectionId)
+    if (!source) return
+
+    const newSectionId = `draft-section-${Date.now()}`
+    const section: TemplateSection = {
+      ...source,
+      id: newSectionId,
+      title: `${source.title} (copy)`,
+      order: sections.length + 1,
+      created_at: new Date().toISOString(),
     }
+    const copiedFields = (fields[sectionId] ?? []).map((field, index) => ({
+      ...field,
+      id: `draft-field-${Date.now()}-${index}`,
+      section_id: newSectionId,
+      order: index + 1,
+    }))
+
+    set(state => ({
+      sections: [...state.sections, section].sort((a, b) => a.order - b.order),
+      fields: { ...state.fields, [section.id]: copiedFields },
+      expandedSections: [...state.expandedSections, section.id],
+      isDirty: true,
+    }))
   },
 
   reorderSections: async (orderedIds) => {
@@ -252,7 +232,6 @@ export const useTemplateEditorStore = create<TemplateEditorState>()((set, get) =
       })
       .filter((s): s is TemplateSection => s !== null)
     set({ sections: reordered, isDirty: true })
-    templateService.reorderSections(version.id, orderedIds).catch(() => {})
   },
 
   toggleSection: (sectionId) => {
@@ -267,9 +246,9 @@ export const useTemplateEditorStore = create<TemplateEditorState>()((set, get) =
 
   addField: async (sectionId, type) => {
     const existing = get().fields[sectionId] ?? []
-    const tempId = `temp-${Date.now()}`
-    const optimistic: TemplateField = {
-      id: tempId,
+    const fieldId = `draft-field-${Date.now()}`
+    const field: TemplateField = {
+      id: fieldId,
       section_id: sectionId,
       master_field_id: null,
       label: 'Question',
@@ -281,43 +260,41 @@ export const useTemplateEditorStore = create<TemplateEditorState>()((set, get) =
     set(state => ({
       fields: {
         ...state.fields,
-        [sectionId]: [...(state.fields[sectionId] ?? []), optimistic],
+        [sectionId]: [...(state.fields[sectionId] ?? []), field],
       },
       isDirty: true,
     }))
-    try {
-      const saved = await templateService.createField(sectionId, type)
-      set(state => ({
-        fields: {
-          ...state.fields,
-          [sectionId]: (state.fields[sectionId] ?? []).map(f =>
-            f.id === tempId ? saved : f,
-          ),
-        },
-      }))
-    } catch {
-      set(state => ({
-        fields: {
-          ...state.fields,
-          [sectionId]: (state.fields[sectionId] ?? []).filter(f => f.id !== tempId),
-        },
-      }))
-    }
   },
 
   addFieldFromMaster: async (sectionId, masterFieldId) => {
-    try {
-      const field = await templateService.createFieldFromMaster(sectionId, masterFieldId)
-      set(state => ({
-        fields: {
-          ...state.fields,
-          [sectionId]: [...(state.fields[sectionId] ?? []), field],
-        },
-        isDirty: true,
-      }))
-    } catch (e) {
-      set({ error: String(e) })
+    const master = get().masterFields.find(field => field.id === masterFieldId)
+    if (!master) return
+    const existing = get().fields[sectionId] ?? []
+    const fieldId = `draft-field-${Date.now()}`
+    const field: TemplateField = {
+      id: fieldId,
+      section_id: sectionId,
+      master_field_id: masterFieldId,
+      label: master.name,
+      type: master.field_type,
+      required: false,
+      order: existing.length + 1,
+      logic_rules: null,
+      options: master.options?.map(option => ({
+        id: option.id,
+        field_id: fieldId,
+        label: option.label,
+        value: option.value,
+        score_value: option.score_value,
+      })),
     }
+    set(state => ({
+      fields: {
+        ...state.fields,
+        [sectionId]: [...(state.fields[sectionId] ?? []), field],
+      },
+      isDirty: true,
+    }))
   },
 
   updateField: (sectionId, fieldId, patch) => {
@@ -330,11 +307,9 @@ export const useTemplateEditorStore = create<TemplateEditorState>()((set, get) =
       },
       isDirty: true,
     }))
-    templateService.updateField(fieldId, patch).catch(() => {})
   },
 
   deleteField: async (sectionId, fieldId) => {
-    const snapshot = get().fields[sectionId] ?? []
     set(state => ({
       fields: {
         ...state.fields,
@@ -342,13 +317,6 @@ export const useTemplateEditorStore = create<TemplateEditorState>()((set, get) =
       },
       isDirty: true,
     }))
-    try {
-      await templateService.deleteField(fieldId)
-    } catch {
-      set(state => ({
-        fields: { ...state.fields, [sectionId]: snapshot },
-      }))
-    }
   },
 
   reorderFields: async (sectionId, orderedIds) => {
@@ -363,7 +331,6 @@ export const useTemplateEditorStore = create<TemplateEditorState>()((set, get) =
       fields: { ...state.fields, [sectionId]: reordered },
       isDirty: true,
     }))
-    templateService.reorderFields(sectionId, orderedIds).catch(() => {})
   },
 
   // ── Master fields ────────────────────────────────────────────────────────────
@@ -372,7 +339,9 @@ export const useTemplateEditorStore = create<TemplateEditorState>()((set, get) =
     try {
       const masterFields = await templateService.getMasterFields()
       set({ masterFields })
-    } catch {}
+    } catch (e) {
+      set({ error: getApiErrorMessage(e, 'Failed to load master fields') })
+    }
   },
 
   resetEditor: () => {

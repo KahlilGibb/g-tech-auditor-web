@@ -23,22 +23,22 @@ const InspectionsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="page-shell">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">{t('inspections.title')}</h1>
-          <p className="text-muted-foreground mt-1">{t('inspections.subtitle')}</p>
+          <h1 className="page-title">{t('inspections.title')}</h1>
+          <p className="page-subtitle">{t('inspections.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <button 
             onClick={handleRefresh}
             disabled={isLoading || isRefreshing}
-            className="flex items-center justify-center p-2.5 bg-white border border-divider rounded-xl text-muted-foreground hover:text-foreground hover:bg-surface transition-all disabled:opacity-50"
+            className="icon-button"
           >
             <RefreshCcw className={cn("w-5 h-5", (isLoading || isRefreshing) && "animate-spin")} />
           </button>
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-primary-blue text-white rounded-xl font-semibold hover:bg-primary-blue-dark transition-all shadow-sm flex-1 sm:flex-none justify-center">
+          <button className="btn-primary flex-1 sm:flex-none">
             {t('common.create')}
           </button>
         </div>
@@ -51,10 +51,10 @@ const InspectionsPage: React.FC = () => {
           <input 
             type="text" 
             placeholder="Search inspections..." 
-            className="w-full pl-10 pr-4 py-2.5 bg-white border border-divider rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue/20 focus:border-primary-blue transition-all"
+            className="form-input pl-10"
           />
         </div>
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-divider rounded-xl text-sm font-semibold text-foreground hover:bg-surface transition-all">
+        <button className="btn-secondary">
           <Filter className="w-4 h-4" />
           Filter
         </button>
@@ -75,10 +75,10 @@ const InspectionsPage: React.FC = () => {
       )}
 
       {/* Content */}
-      <div className="bg-white rounded-3xl border border-divider shadow-sm overflow-hidden">
+      <div className="panel overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-surface text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+            <thead className="table-header">
               <tr>
                 <th className="px-6 py-4">Inspection</th>
                 <th className="px-6 py-4">Auditor</th>
