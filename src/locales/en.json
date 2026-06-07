@@ -134,6 +134,7 @@
       "branch": "branch",
       "organization": "organization",
       "site": "site",
+      "inspection": "inspection",
       "template": "template",
       "profile": "profile",
       "section": "section",

@@ -9,6 +9,7 @@ type EntityKey =
   | 'branch'
   | 'organization'
   | 'site'
+  | 'inspection'
   | 'template'
   | 'profile'
   | 'section'

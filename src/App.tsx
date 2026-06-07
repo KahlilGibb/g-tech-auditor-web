@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardLayout from './layouts/DashboardLayout';
 import HomePage from './pages/HomePage';
 import InspectionsPage from './pages/InspectionsPage';
+import InspectionFormPage from './pages/InspectionFormPage';
 import TemplatesPage from './pages/TemplatesPage';
 import ActionsPage from './pages/ActionsPage';
 import CpsPage from './pages/CpsPage';
@@ -58,6 +59,7 @@ const AppRoutes: React.FC = () => {
       >
         <Route index element={<HomePage />} />
         <Route path="inspections" element={<InspectionsPage />} />
+        <Route path="inspections/:id/session" element={<InspectionFormPage />} />
         <Route path="templates" element={<TemplatesPage />} />
         <Route path="documents" element={<DocumentManagementPage />} />
         <Route path="actions" element={<ActionsPage />} />

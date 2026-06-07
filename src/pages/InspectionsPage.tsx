@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { RefreshCcw, Search, Filter } from 'lucide-react';
+import { RefreshCcw, Search, Filter, PlayCircle } from 'lucide-react';
 import { useInspections } from '../hooks/useInspections';
 import { SkeletonRow } from '../components/ui/SkeletonLoader';
 import { cn } from '../utils/cn';
@@ -8,6 +9,7 @@ import { CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 
 const InspectionsPage: React.FC = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { inspections, isLoading, error, fetchInspections } = useInspections();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -86,6 +88,7 @@ const InspectionsPage: React.FC = () => {
                 <th className="px-6 py-4">Site</th>
                 <th className="px-6 py-4">Date</th>
                 <th className="px-6 py-4 text-right">Score</th>
+                <th className="px-6 py-4 text-right">Form</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-divider">
@@ -99,13 +102,17 @@ const InspectionsPage: React.FC = () => {
                 </>
               ) : inspections.length === 0 && !error ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
+                  <td colSpan={7} className="px-6 py-12 text-center">
                     <p className="text-muted-foreground">{t('inspections.empty')}</p>
                   </td>
                 </tr>
               ) : (
                 inspections.map((item) => (
-                  <tr key={item.id} className="hover:bg-surface/50 transition-colors cursor-pointer">
+                  <tr
+                    key={item.id}
+                    className="hover:bg-surface/50 transition-colors cursor-pointer"
+                    onClick={() => navigate(`/inspections/${item.id}/session`)}
+                  >
                     <td className="px-6 py-4">
                       <p className="font-semibold text-foreground text-sm">{item.title}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{item.templateName}</p>
@@ -137,6 +144,18 @@ const InspectionsPage: React.FC = () => {
                       )}>
                         {item.score || '-'}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-primary-blue transition hover:bg-primary-blue/10"
+                        onClick={event => {
+                          event.stopPropagation();
+                          navigate(`/inspections/${item.id}/session`);
+                        }}
+                      >
+                        <PlayCircle className="h-4 w-4" />
+                        Buka
+                      </button>
                     </td>
                   </tr>
                 ))
