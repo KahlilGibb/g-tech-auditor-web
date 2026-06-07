@@ -34,7 +34,7 @@ export const useBranchStore = create<BranchStoreState>()((set, get) => ({
   fetchBranches: async query => {
     set({ isLoading: true, error: null });
     try {
-      const branches = await branchService.list(query);
+      const { branches } = await branchService.getBranches(query);
       set({ branches, isLoading: false });
     } catch (error) {
       set({ isLoading: false, error: getApiErrorMessage(error, 'Failed to load branches') });

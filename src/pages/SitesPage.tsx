@@ -1,11 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Loader2, MapPinned, Pencil, Plus, RefreshCcw, Search, Trash2, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getApiErrorMessage } from '../lib/apiResponse';
 import { appSwal } from '../lib/appSwal';
-import { useBranchStore } from '../stores/branchStore';
-import { useOrganizationStore } from '../stores/organizationStore';
-import { useSiteStore } from '../stores/siteStore';
+import { useBranches } from '../hooks/useBranches';
+import { useOrganizations } from '../hooks/useOrganizations';
+import { useSites } from '../hooks/useSites';
 import type { Site, SiteFormInput } from '../types/management';
 import { cn } from '../utils/cn';
 
@@ -20,37 +20,34 @@ const EMPTY_FORM: SiteFormInput = {
 
 const SitesPage: React.FC = () => {
   const { t } = useTranslation();
-  const { sites, isLoading, isSaving, error, fetchSites, createSite, updateSite, deleteSite } =
-    useSiteStore();
-  const { organizations, fetchOrganizations } = useOrganizationStore();
-  const { branches, fetchBranches } = useBranchStore();
+  const { sites, isLoading, isSaving, error, refresh: fetchSites, createSite, updateSite, deleteSite } =
+    useSites();
+  const { organizations } = useOrganizations();
+  const { branches } = useBranches();
   const [query, setQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSite, setEditingSite] = useState<Site | null>(null);
   const [form, setForm] = useState<SiteFormInput>(EMPTY_FORM);
   const [formError, setFormError] = useState('');
 
-  useEffect(() => {
-    fetchSites();
-    fetchOrganizations();
-    fetchBranches();
-  }, [fetchBranches, fetchOrganizations, fetchSites]);
-
   const filteredSites = useMemo(() => {
     const keyword = query.toLowerCase();
-    return sites.filter(site =>
-      [
+    return sites.filter(site => {
+      const orgName = organizations.find(o => o.id === site.organizationId)?.name || site.organizationName || site.organizationId;
+      const branchName = branches.find(b => b.id === site.branchId)?.name || site.branchName || site.branchId;
+
+      return [
         site.name,
         site.code,
         site.address,
-        site.organizationName,
-        site.branchName,
+        orgName,
+        branchName,
       ]
         .join(' ')
         .toLowerCase()
-        .includes(keyword),
-    );
-  }, [sites, query]);
+        .includes(keyword);
+    });
+  }, [sites, query, organizations, branches]);
 
   const patchForm = (patch: Partial<SiteFormInput>) => {
     setForm(prev => ({ ...prev, ...patch }));
@@ -196,10 +193,10 @@ const SitesPage: React.FC = () => {
                       {site.address && <p className="mt-1 max-w-xl text-xs text-muted-foreground">{site.address}</p>}
                     </td>
                     <td className="px-6 py-4 text-sm text-foreground">
-                      {site.organizationName || site.organizationId || '-'}
+                      {organizations.find(o => o.id === site.organizationId)?.name || site.organizationName || site.organizationId || '-'}
                     </td>
                     <td className="px-6 py-4 text-sm text-foreground">
-                      {site.branchName || site.branchId || '-'}
+                      {branches.find(b => b.id === site.branchId)?.name || site.branchName || site.branchId || '-'}
                     </td>
                     <td className="px-6 py-4">
                       <span className="rounded-full bg-success-green/10 px-2.5 py-1 text-xs font-semibold capitalize text-success-green">

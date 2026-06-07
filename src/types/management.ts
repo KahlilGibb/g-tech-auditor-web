@@ -121,3 +121,25 @@ export interface SiteFormInput {
   branchId?: string;
   status?: EntityStatus;
 }
+
+export interface GetOrganizationsRequest extends ListQuery {}
+export interface GetOrganizationsResponse {
+  organizations: Organization[];
+}
+
+export interface GetGroupsRequest extends ListQuery {}
+export interface GetGroupsResponse {
+  branches: Branch[];
+}
+
+export interface GetSitesRequest extends ListQuery {}
+export interface GetSitesResponse {
+  sites: Site[];
+}
+
+export interface CreateSiteRequest extends SiteFormInput {}
+export interface CreateSiteResponse extends Site {}
+
+export interface UpdateSiteRequest extends SiteFormInput {}
+export interface UpdateSiteResponse extends Site {}
+

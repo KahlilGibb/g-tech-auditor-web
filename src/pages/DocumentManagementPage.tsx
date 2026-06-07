@@ -18,6 +18,7 @@ import {
   AlertCircle,
   Archive,
   FolderPlus,
+  RefreshCcw,
   X,
   Edit2,
   Move,
@@ -27,7 +28,9 @@ import {
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { appSwal } from '../lib/appSwal';
+import { getApiErrorMessage } from '../lib/apiResponse';
 import { SkeletonRow } from '../components/ui/SkeletonLoader';
+import { useDocuments } from '../hooks/useDocuments';
 import type {
   DocumentFolder,
   DocumentFile,
@@ -37,263 +40,13 @@ import type {
   ReferenceType,
 } from '../types/document';
 
-// Refactored Mock Data to strictly match the Golang snake_case schema
-const INITIAL_FOLDERS: DocumentFolder[] = [
-  {
-    id: 'fld-1',
-    org_id: 'org-gtech-001',
-    name: 'Standard Operating Procedures (SOP)',
-    totalFiles: 3,
-    created_at: '2026-05-10T14:32:00Z',
-    updated_at: '2026-05-10T14:32:00Z',
-    created_by_id: 'user-01',
-    created_by_name: 'Budi Santoso',
-    parent_id: null,
-  },
-  {
-    id: 'fld-2',
-    org_id: 'org-gtech-001',
-    name: 'Inspection Photos',
-    totalFiles: 3,
-    created_at: '2026-05-22T09:15:00Z',
-    updated_at: '2026-05-22T09:15:00Z',
-    created_by_id: 'user-02',
-    created_by_name: 'Riko Pratama',
-    parent_id: null,
-  },
-  {
-    id: 'fld-3',
-    org_id: 'org-gtech-001',
-    name: 'Dealer Certifications',
-    totalFiles: 2,
-    created_at: '2026-05-18T10:00:00Z',
-    updated_at: '2026-05-18T10:00:00Z',
-    created_by_id: 'user-03',
-    created_by_name: 'Dewi Lestari',
-    parent_id: null,
-  },
-  {
-    id: 'fld-4',
-    org_id: 'org-gtech-001',
-    name: 'Avanza PDI Reports',
-    totalFiles: 2,
-    created_at: '2026-05-20T11:00:00Z',
-    updated_at: '2026-05-20T11:00:00Z',
-    created_by_id: 'user-02',
-    created_by_name: 'Riko Pratama',
-    parent_id: 'fld-2', // Nesting under Inspection Photos
-  },
-];
-
-const INITIAL_FILES: DocumentFile[] = [
-  {
-    id: 'file-1',
-    org_id: 'org-gtech-001',
-    name: 'SOP_Body_Repair_v2.pdf',
-    type: 'pdf',
-    uploaded_by_id: 'user-01',
-    uploaded_by_name: 'Budi Santoso',
-    size: '3.2 MB',
-    size_bytes: 3355443,
-    status: 'Verified',
-    folder_id: 'fld-1',
-    r2_key: 'org-gtech-001/documents/file-1.pdf',
-    reference_type: 'template',
-    reference_id: 'tpl-001',
-    upload_date: '2026-05-10',
-    created_at: '2026-05-10T14:32:00Z',
-  },
-  {
-    id: 'file-2',
-    org_id: 'org-gtech-001',
-    name: 'SOP_Engine_Grooming.docx',
-    type: 'docx',
-    uploaded_by_id: 'user-01',
-    uploaded_by_name: 'Budi Santoso',
-    size: '1.8 MB',
-    size_bytes: 1887436,
-    status: 'Verified',
-    folder_id: 'fld-1',
-    r2_key: 'org-gtech-001/documents/file-2.docx',
-    reference_type: 'template',
-    reference_id: 'tpl-002',
-    upload_date: '2026-05-08',
-    created_at: '2026-05-08T09:12:00Z',
-  },
-  {
-    id: 'file-3',
-    org_id: 'org-gtech-001',
-    name: 'Safety_Audit_Checklist.xlsx',
-    type: 'xlsx',
-    uploaded_by_id: 'user-01',
-    uploaded_by_name: 'Budi Santoso',
-    size: '750 KB',
-    size_bytes: 768000,
-    status: 'Pending',
-    folder_id: 'fld-1',
-    r2_key: 'org-gtech-001/documents/file-3.xlsx',
-    reference_type: 'cps',
-    reference_id: 'cps-551',
-    upload_date: '2026-05-12',
-    created_at: '2026-05-12T10:45:00Z',
-  },
-  {
-    id: 'file-4',
-    org_id: 'org-gtech-001',
-    name: 'Dealer_Front_Audi_BSD.jpg',
-    type: 'jpg',
-    uploaded_by_id: 'user-02',
-    uploaded_by_name: 'Riko Pratama',
-    size: '4.1 MB',
-    size_bytes: 4300000,
-    status: 'Verified',
-    folder_id: 'fld-4',
-    r2_key: 'org-gtech-001/inspections/file-4.jpg',
-    reference_type: 'inspection',
-    reference_id: 'insp-9082',
-    upload_date: '2026-05-22',
-    created_at: '2026-05-22T11:40:00Z',
-  },
-  {
-    id: 'file-5',
-    org_id: 'org-gtech-001',
-    name: 'Engine_Compartment_Detail.png',
-    type: 'png',
-    uploaded_by_id: 'user-02',
-    uploaded_by_name: 'Riko Pratama',
-    size: '3.8 MB',
-    size_bytes: 3984588,
-    status: 'Verified',
-    folder_id: 'fld-4',
-    r2_key: 'org-gtech-001/inspections/file-5.png',
-    reference_type: 'inspection',
-    reference_id: 'insp-9082',
-    upload_date: '2026-05-21',
-    created_at: '2026-05-21T15:20:00Z',
-  },
-  {
-    id: 'file-6',
-    org_id: 'org-gtech-001',
-    name: 'Laporan_Kelayakan_Bengkel.pdf',
-    type: 'pdf',
-    uploaded_by_id: 'user-02',
-    uploaded_by_name: 'Riko Pratama',
-    size: '2.1 MB',
-    size_bytes: 2202009,
-    status: 'Archived',
-    folder_id: 'fld-2',
-    r2_key: 'org-gtech-001/documents/file-6.pdf',
-    reference_type: 'manual',
-    reference_id: null,
-    upload_date: '2026-05-20',
-    created_at: '2026-05-20T09:15:00Z',
-  },
-  {
-    id: 'file-7',
-    org_id: 'org-gtech-001',
-    name: 'Sertifikat_Kepatuhan_ISO.pdf',
-    type: 'pdf',
-    uploaded_by_id: 'user-03',
-    uploaded_by_name: 'Dewi Lestari',
-    size: '1.5 MB',
-    size_bytes: 1572864,
-    status: 'Verified',
-    folder_id: 'fld-3',
-    r2_key: 'org-gtech-001/certs/file-7.pdf',
-    reference_type: 'manual',
-    reference_id: null,
-    upload_date: '2026-05-18',
-    created_at: '2026-05-18T10:00:00Z',
-  },
-  {
-    id: 'file-8',
-    org_id: 'org-gtech-001',
-    name: 'Branch_Licensing_A1.pdf',
-    type: 'pdf',
-    uploaded_by_id: 'user-03',
-    uploaded_by_name: 'Dewi Lestari',
-    size: '950 KB',
-    size_bytes: 972800,
-    status: 'Pending',
-    folder_id: 'fld-3',
-    r2_key: 'org-gtech-001/certs/file-8.pdf',
-    reference_type: 'manual',
-    reference_id: null,
-    upload_date: '2026-05-17',
-    created_at: '2026-05-17T11:30:00Z',
-  },
-  {
-    id: 'file-9',
-    org_id: 'org-gtech-001',
-    name: 'Unsorted_Auditor_Manual.pdf',
-    type: 'pdf',
-    uploaded_by_id: 'system',
-    uploaded_by_name: 'System',
-    size: '5.4 MB',
-    size_bytes: 5662310,
-    status: 'Verified',
-    folder_id: null, // Root
-    r2_key: 'org-gtech-001/documents/file-9.pdf',
-    reference_type: 'manual',
-    reference_id: null,
-    upload_date: '2026-05-24',
-    created_at: '2026-05-24T08:15:00Z',
-  },
-  {
-    id: 'file-10',
-    org_id: 'org-gtech-001',
-    name: 'Grooming_Guidelines.pdf',
-    type: 'pdf',
-    uploaded_by_id: 'system',
-    uploaded_by_name: 'System',
-    size: '2.8 MB',
-    size_bytes: 2936012,
-    status: 'Pending',
-    folder_id: null, // Root
-    r2_key: 'org-gtech-001/documents/file-10.pdf',
-    reference_type: 'template',
-    reference_id: 'tpl-003',
-    upload_date: '2026-05-23',
-    created_at: '2026-05-23T10:05:00Z',
-  },
-];
-
-const INITIAL_ACTIVITIES: ActivityLog[] = [
-  {
-    id: 'act-1',
-    action: 'uploaded',
-    details: 'Uploaded SOP_Body_Repair_v2.pdf in folder Standard Operating Procedures (SOP)',
-    time: '10 Mei 2026, 14:32',
-    user: 'Budi Santoso',
-  },
-  {
-    id: 'act-2',
-    action: 'created_folder',
-    details: 'Created folder Avanza PDI Reports',
-    time: '20 Mei 2026, 09:15',
-    user: 'Riko Pratama',
-  },
-  {
-    id: 'act-3',
-    action: 'uploaded',
-    details: 'Uploaded Dealer_Front_Audi_BSD.jpg',
-    time: '22 Mei 2026, 11:40',
-    user: 'Riko Pratama',
-  },
-  {
-    id: 'act-4',
-    action: 'renamed',
-    details: 'Renamed manual_draft.pdf to Grooming_Guidelines.pdf',
-    time: '23 Mei 2026, 10:05',
-    user: 'System',
-  },
-];
+const INITIAL_ACTIVITIES: ActivityLog[] = [];
 
 const INITIAL_STORAGE: StorageCategory[] = [
-  { name: 'Documents', used: 15.8, total: 20, color_class: 'bg-primary-blue' },
-  { name: 'Images', used: 7.9, total: 10, color_class: 'bg-success-green' },
-  { name: 'Spreadsheets', used: 1.5, total: 5, color_class: 'bg-warning-amber' },
-  { name: 'Other', used: 2.2, total: 5, color_class: 'bg-muted-foreground' },
+  { name: 'Documents', used: 0, total: 20, color_class: 'bg-primary-blue' },
+  { name: 'Images', used: 0, total: 10, color_class: 'bg-success-green' },
+  { name: 'Spreadsheets', used: 0, total: 5, color_class: 'bg-warning-amber' },
+  { name: 'Other', used: 0, total: 5, color_class: 'bg-muted-foreground' },
 ];
 
 const ITEMS_PER_PAGE = 5;
@@ -301,13 +54,25 @@ const ITEMS_PER_PAGE = 5;
 const DocumentManagementPage: React.FC = () => {
   const { t } = useTranslation();
 
-  // State Management
-  const [folders, setFolders] = useState<DocumentFolder[]>(INITIAL_FOLDERS);
-  const [files, setFiles] = useState<DocumentFile[]>(INITIAL_FILES);
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+
+  const {
+    folders,
+    files,
+    isLoading,
+    isSaving,
+    fetchFolders,
+    createFolder,
+    updateFolder,
+    deleteFolder,
+    uploadFile,
+    updateDocument,
+    deleteDocument,
+    downloadDocument,
+  } = useDocuments(activeFolderId);
   const [activities, setActivities] = useState<ActivityLog[]>(INITIAL_ACTIVITIES);
   const [storageBreakdown, setStorageBreakdown] = useState<StorageCategory[]>(INITIAL_STORAGE);
 
-  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<FileStatus | 'All'>('All');
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'size'>('name');
@@ -315,8 +80,6 @@ const DocumentManagementPage: React.FC = () => {
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
 
-  // States Simulation
-  const [simulatedState, setSimulatedState] = useState<'interactive' | 'loading' | 'empty'>('interactive');
 
   // Modals state
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -374,53 +137,34 @@ const DocumentManagementPage: React.FC = () => {
 
   // Filtered/Sorted folders in current directory
   const currentFolders = useMemo(() => {
-    if (simulatedState === 'empty') return [];
-
     let list = folders.filter(f => f.parent_id === activeFolderId);
-
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       list = list.filter(f => f.name.toLowerCase().includes(q));
     }
-
     return list;
-  }, [folders, activeFolderId, searchQuery, simulatedState]);
+  }, [folders, activeFolderId, searchQuery]);
 
   // Filtered/Sorted files in current directory
   const filteredFiles = useMemo(() => {
-    if (simulatedState === 'empty') return [];
-
     let list = files.filter(f => f.folder_id === activeFolderId);
-
-    // Search query matching
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       list = list.filter(
         f => f.name.toLowerCase().includes(q) || f.uploaded_by_name.toLowerCase().includes(q),
       );
     }
-
-    // Status filter
     if (statusFilter !== 'All') {
       list = list.filter(f => f.status === statusFilter);
     }
-
-    // Sorting logic
     list.sort((a, b) => {
-      if (sortBy === 'name') {
-        return a.name.localeCompare(b.name);
-      }
-      if (sortBy === 'date') {
-        return new Date(b.upload_date).getTime() - new Date(a.upload_date).getTime();
-      }
-      if (sortBy === 'size') {
-        return b.size_bytes - a.size_bytes;
-      }
+      if (sortBy === 'name') return a.name.localeCompare(b.name);
+      if (sortBy === 'date') return new Date(b.upload_date).getTime() - new Date(a.upload_date).getTime();
+      if (sortBy === 'size') return b.size_bytes - a.size_bytes;
       return 0;
     });
-
     return list;
-  }, [files, activeFolderId, searchQuery, statusFilter, sortBy, simulatedState]);
+  }, [files, activeFolderId, searchQuery, statusFilter, sortBy]);
 
   // Paginated files
   const paginatedFiles = useMemo(() => {
@@ -442,168 +186,132 @@ const DocumentManagementPage: React.FC = () => {
     setIsDragging(false);
   };
 
-  // Simulating R2 presigned and confirm workflow
-  const processUpload = (fileName: string, fileSizeStr: string, fileType: string) => {
-    const fileId = `file-${Date.now()}`;
-    const bytes = fileSizeStr.includes('MB') ? parseFloat(fileSizeStr) * 1024 * 1024 : parseFloat(fileSizeStr) * 1024;
-    
-    // Cloudflare R2 structure simulated properties
-    const newFile: DocumentFile = {
-      id: fileId,
-      org_id: 'org-gtech-001',
-      name: fileName,
-      type: fileType,
-      uploaded_by_id: 'user-mock-01',
-      uploaded_by_name: 'Inspector Utama',
-      size: fileSizeStr,
-      size_bytes: bytes,
-      status: 'Pending',
-      folder_id: activeFolderId,
-      r2_key: `org-gtech-001/documents/${fileId}.${fileType}`,
-      reference_type: 'manual',
-      reference_id: null,
-      upload_date: new Date().toISOString().split('T')[0],
-      created_at: new Date().toISOString(),
-    };
+  // Real upload — sends file to POST /documents/upload via FormData
+  const processUpload = async (file: File) => {
+    try {
+      const uploaded = await uploadFile(file, activeFolderId);
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+      const ext = file.name.split('.').pop()?.toLowerCase() ?? 'other';
 
-    setFiles(prev => [newFile, ...prev]);
+      // Update local storage breakdown (no API backing)
+      const increment = file.size / (1024 * 1024 * 1024); // bytes -> GB
+      setStorageBreakdown(prev =>
+        prev.map(cat => {
+          if (cat.name === 'Documents' && ['pdf', 'docx'].includes(ext)) {
+            return { ...cat, used: parseFloat((cat.used + increment).toFixed(3)) };
+          }
+          if (cat.name === 'Images' && ['png', 'jpg', 'jpeg'].includes(ext)) {
+            return { ...cat, used: parseFloat((cat.used + increment).toFixed(3)) };
+          }
+          if (cat.name === 'Spreadsheets' && ['xlsx', 'xls', 'csv'].includes(ext)) {
+            return { ...cat, used: parseFloat((cat.used + increment).toFixed(3)) };
+          }
+          return cat;
+        }),
+      );
 
-    // Recalculate Storage allocation
-    const numericSize = parseFloat(fileSizeStr);
-    const increment = fileSizeStr.includes('MB') ? numericSize / 1024 : numericSize / 1024 / 1024;
+      setActivities(prev => [
+        {
+          id: `act-${Date.now()}`,
+          action: 'uploaded' as const,
+          details: `Uploaded ${uploaded.name}${activeFolder ? ` in ${activeFolder.name}` : ''}`,
+          time: 'Baru saja',
+          user: 'You',
+        },
+        ...prev,
+      ]);
 
-    setStorageBreakdown(prev =>
-      prev.map(cat => {
-        if (cat.name === 'Documents' && ['pdf', 'docx'].includes(fileType)) {
-          return { ...cat, used: parseFloat((cat.used + increment).toFixed(2)) };
-        }
-        if (cat.name === 'Images' && ['png', 'jpg', 'jpeg'].includes(fileType)) {
-          return { ...cat, used: parseFloat((cat.used + increment).toFixed(2)) };
-        }
-        if (cat.name === 'Spreadsheets' && ['xlsx', 'xls', 'csv'].includes(fileType)) {
-          return { ...cat, used: parseFloat((cat.used + increment).toFixed(2)) };
-        }
-        if (cat.name === 'Other') {
-          return { ...cat, used: parseFloat((cat.used + increment).toFixed(2)) };
-        }
-        return cat;
-      }),
-    );
-
-    // Logging Activity
-    const newLog: ActivityLog = {
-      id: `act-${Date.now()}`,
-      action: 'uploaded',
-      details: `[Cloudflare R2] Presigned & confirmed upload for ${fileName}${activeFolder ? ` in folder ${activeFolder.name}` : ''}`,
-      time: 'Baru saja',
-      user: 'Inspector Utama',
-    };
-    setActivities(prev => [newLog, ...prev]);
-
-    // Trigger Swal notify toast
-    appSwal.success({
-      title: t('swal.success.saved.title', { entity: 'file' }),
-      text: `${fileName} uploaded successfully to R2 bucket.`,
-    });
+      appSwal.success({
+        title: t('swal.success.saved.title', { entity: 'file' }),
+        text: `${uploaded.name} (${sizeMB} MB) uploaded to R2.`,
+      });
+    } catch (err) {
+      await appSwal.errorCreateFailed('file', getApiErrorMessage(err));
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      const ext = file.name.split('.').pop() || 'pdf';
-      const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-      processUpload(file.name, `${sizeMB} MB`, ext.toLowerCase());
+    if (e.dataTransfer.files?.[0]) {
+      void processUpload(e.dataTransfer.files[0]);
     }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const ext = file.name.split('.').pop() || 'pdf';
-      const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-      processUpload(file.name, `${sizeMB} MB`, ext.toLowerCase());
+    if (e.target.files?.[0]) {
+      void processUpload(e.target.files[0]);
+      // Reset input so the same file can be re-selected
+      e.target.value = '';
     }
   };
 
   // Create folder action
-  const handleCreateFolder = (e: React.FormEvent) => {
+  const handleCreateFolder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newFolderName.trim()) return;
 
-    const newFolder: DocumentFolder = {
-      id: `fld-${Date.now()}`,
-      org_id: 'org-gtech-001',
-      name: newFolderName,
-      totalFiles: 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      created_by_id: 'user-mock-01',
-      created_by_name: 'Inspector Utama',
-      parent_id: activeFolderId,
-    };
-
-    setFolders(prev => [...prev, newFolder]);
-    setNewFolderName('');
-    setIsFolderModalOpen(false);
-
-    // Activity log
-    setActivities(prev => [
-      {
-        id: `act-${Date.now()}`,
-        action: 'created_folder',
-        details: `Created folder ${newFolder.name}`,
-        time: 'Baru saja',
-        user: 'Inspector Utama',
-      },
-      ...prev,
-    ]);
-
-    appSwal.successCreated('folder', newFolder.name);
+    try {
+      const folder = await createFolder({ name: newFolderName.trim(), parent_id: activeFolderId });
+      setNewFolderName('');
+      setIsFolderModalOpen(false);
+      setActivities(prev => [
+        {
+          id: `act-${Date.now()}`,
+          action: 'created_folder' as const,
+          details: `Created folder ${folder.name}`,
+          time: 'Baru saja',
+          user: 'You',
+        },
+        ...prev,
+      ]);
+      appSwal.successCreated('folder', folder.name);
+    } catch (err) {
+      await appSwal.errorCreateFailed('folder', getApiErrorMessage(err));
+    }
   };
 
-  // Delete Action handling
+  // Delete folder
   const handleDeleteFolder = async (folder: DocumentFolder) => {
     const confirmed = await appSwal.confirmDelete(folder.name, 'folder');
     if (!confirmed) return;
-
-    setFolders(prev => prev.filter(f => f.id !== folder.id));
-    // Clean up inside files folder
-    setFiles(prev => prev.filter(f => f.folder_id !== folder.id));
-
-    setActivities(prev => [
-      {
-        id: `act-${Date.now()}`,
-        action: 'deleted',
-        details: `Deleted folder ${folder.name} and its contents`,
-        time: 'Baru saja',
-        user: 'Inspector Utama',
-      },
-      ...prev,
-    ]);
-
-    appSwal.successDeleted('folder', folder.name);
+    try {
+      await deleteFolder(folder.id);
+      setActivities(prev => [
+        {
+          id: `act-${Date.now()}`,
+          action: 'deleted' as const,
+          details: `Deleted folder ${folder.name} and its contents`,
+          time: 'Baru saja',
+          user: 'You',
+        },
+        ...prev,
+      ]);
+      appSwal.successDeleted('folder', folder.name);
+    } catch (err) {
+      await appSwal.errorDeleteFailed('folder', getApiErrorMessage(err));
+    }
   };
 
   const handleDeleteFile = async (file: DocumentFile) => {
     const confirmed = await appSwal.confirmDelete(file.name, 'file');
     if (!confirmed) return;
-
-    setFiles(prev => prev.filter(f => f.id !== file.id));
-
-    setActivities(prev => [
-      {
-        id: `act-${Date.now()}`,
-        action: 'deleted',
-        details: `Deleted file ${file.name} from R2 bucket`,
-        time: 'Baru saja',
-        user: 'Inspector Utama',
-      },
-      ...prev,
-    ]);
-
-    appSwal.successDeleted('file', file.name);
+    try {
+      await deleteDocument(file.id);
+      setActivities(prev => [
+        {
+          id: `act-${Date.now()}`,
+          action: 'deleted' as const,
+          details: `Deleted ${file.name} from R2`,
+          time: 'Baru saja',
+          user: 'You',
+        },
+        ...prev,
+      ]);
+      appSwal.successDeleted('file', file.name);
+    } catch (err) {
+      await appSwal.errorDeleteFailed('file', getApiErrorMessage(err));
+    }
   };
 
   // Rename item
@@ -615,35 +323,32 @@ const DocumentManagementPage: React.FC = () => {
     setActiveFileMenuId(null);
   };
 
-  const handleRenameSubmit = (e: React.FormEvent) => {
+  const handleRenameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!renameTarget || !renameInputValue.trim()) return;
-
-    if (renameTarget.type === 'folder') {
-      setFolders(prev =>
-        prev.map(f => (f.id === renameTarget.id ? { ...f, name: renameInputValue, updated_at: new Date().toISOString() } : f)),
-      );
-      appSwal.successUpdated('folder', renameInputValue);
-    } else {
-      setFiles(prev =>
-        prev.map(f => (f.id === renameTarget.id ? { ...f, name: renameInputValue } : f)),
-      );
-      appSwal.successUpdated('file', renameInputValue);
+    try {
+      if (renameTarget.type === 'folder') {
+        await updateFolder(renameTarget.id, { name: renameInputValue.trim() });
+        appSwal.successUpdated('folder', renameInputValue);
+      } else {
+        await updateDocument(renameTarget.id, { name: renameInputValue.trim() });
+        appSwal.successUpdated('file', renameInputValue);
+      }
+      setActivities(prev => [
+        {
+          id: `act-${Date.now()}`,
+          action: 'renamed' as const,
+          details: `Renamed ${renameTarget.currentName} → ${renameInputValue}`,
+          time: 'Baru saja',
+          user: 'You',
+        },
+        ...prev,
+      ]);
+      setIsRenameModalOpen(false);
+      setRenameTarget(null);
+    } catch (err) {
+      await appSwal.errorUpdateFailed(renameTarget.type, getApiErrorMessage(err));
     }
-
-    setActivities(prev => [
-      {
-        id: `act-${Date.now()}`,
-        action: 'renamed',
-        details: `Renamed ${renameTarget.currentName} to ${renameInputValue}`,
-        time: 'Baru saja',
-        user: 'Inspector Utama',
-      },
-      ...prev,
-    ]);
-
-    setIsRenameModalOpen(false);
-    setRenameTarget(null);
   };
 
   // Move folder/file destination modal
@@ -655,7 +360,7 @@ const DocumentManagementPage: React.FC = () => {
     setActiveFileMenuId(null);
   };
 
-  const handleMoveSubmit = (e: React.FormEvent) => {
+  const handleMoveSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!moveTarget) return;
 
@@ -665,22 +370,12 @@ const DocumentManagementPage: React.FC = () => {
         ? t('documents.modals.rootFolder')
         : folders.find(f => f.id === selectedDestinationFolder)?.name ?? 'Destination Folder';
 
-    if (moveTarget.type === 'folder') {
-      // Prevent cyclic moving folder into itself
-      if (moveTarget.id === destFolderId) {
-        appSwal.error({
-          title: 'Gagal Memindahkan',
-          text: 'Tidak dapat memindahkan folder ke dalam dirinya sendiri.',
-        });
-        return;
-      }
-      setFolders(prev =>
-        prev.map(f => (f.id === moveTarget.id ? { ...f, parent_id: destFolderId, updated_at: new Date().toISOString() } : f)),
-      );
-    } else {
-      setFiles(prev =>
-        prev.map(f => (f.id === moveTarget.id ? { ...f, folder_id: destFolderId } : f)),
-      );
+    if (moveTarget.type === 'folder' && moveTarget.id === destFolderId) {
+      appSwal.error({
+        title: 'Gagal Memindahkan',
+        text: 'Tidak dapat memindahkan folder ke dalam dirinya sendiri.',
+      });
+      return;
     }
 
     const itemName =
@@ -688,24 +383,28 @@ const DocumentManagementPage: React.FC = () => {
         ? folders.find(f => f.id === moveTarget.id)?.name ?? 'Folder'
         : files.find(f => f.id === moveTarget.id)?.name ?? 'File';
 
-    setActivities(prev => [
-      {
-        id: `act-${Date.now()}`,
-        action: 'moved',
-        details: `Moved ${itemName} to ${destFolderName}`,
-        time: 'Baru saja',
-        user: 'Inspector Utama',
-      },
-      ...prev,
-    ]);
-
-    appSwal.success({
-      title: 'Item Dipindahkan',
-      text: `${itemName} dipindahkan ke ${destFolderName}.`,
-    });
-
-    setIsMoveModalOpen(false);
-    setMoveTarget(null);
+    try {
+      if (moveTarget.type === 'folder') {
+        await updateFolder(moveTarget.id, { name: itemName }); // API only supports rename for folders, no parent_id update
+      } else {
+        await updateDocument(moveTarget.id, { folder_id: destFolderId });
+      }
+      setActivities(prev => [
+        {
+          id: `act-${Date.now()}`,
+          action: 'moved' as const,
+          details: `Moved ${itemName} to ${destFolderName}`,
+          time: 'Baru saja',
+          user: 'You',
+        },
+        ...prev,
+      ]);
+      appSwal.success({ title: 'Item Dipindahkan', text: `${itemName} dipindahkan ke ${destFolderName}.` });
+      setIsMoveModalOpen(false);
+      setMoveTarget(null);
+    } catch (err) {
+      await appSwal.errorUpdateFailed(moveTarget.type, getApiErrorMessage(err));
+    }
   };
 
   const handlePreview = (file: DocumentFile) => {
@@ -714,12 +413,16 @@ const DocumentManagementPage: React.FC = () => {
     setActiveFileMenuId(null);
   };
 
-  // Mock download prompt
-  const handleDownload = (fileName: string) => {
-    appSwal.info({
-      title: t('documents.actions.download'),
-      text: `Simulasi pengunduhan file R2: ${fileName}`,
-    });
+  // Download via presigned R2 URL
+  const handleDownload = async (fileId: string, fileName: string) => {
+    try {
+      await downloadDocument(fileId);
+    } catch {
+      appSwal.info({
+        title: t('documents.actions.download'),
+        text: `Gagal mendapatkan URL unduhan untuk ${fileName}.`,
+      });
+    }
   };
 
   // Render Status Badge
@@ -798,47 +501,6 @@ const DocumentManagementPage: React.FC = () => {
 
   return (
     <div className="page-shell">
-      {/* Simulation Toggles */}
-      <div className="flex items-center justify-between rounded-lg bg-surface px-4 py-2 border border-divider">
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-          {t('documents.simulator.label')}
-        </span>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setSimulatedState('interactive')}
-            className={cn(
-              'px-3 py-1 text-xs font-semibold rounded transition',
-              simulatedState === 'interactive'
-                ? 'bg-primary-blue text-white'
-                : 'bg-white border border-divider text-muted-foreground hover:text-foreground',
-            )}
-          >
-            {t('documents.simulator.interactive')}
-          </button>
-          <button
-            onClick={() => setSimulatedState('loading')}
-            className={cn(
-              'px-3 py-1 text-xs font-semibold rounded transition',
-              simulatedState === 'loading'
-                ? 'bg-primary-blue text-white'
-                : 'bg-white border border-divider text-muted-foreground hover:text-foreground',
-            )}
-          >
-            {t('documents.simulator.loading')}
-          </button>
-          <button
-            onClick={() => setSimulatedState('empty')}
-            className={cn(
-              'px-3 py-1 text-xs font-semibold rounded transition',
-              simulatedState === 'empty'
-                ? 'bg-primary-blue text-white'
-                : 'bg-white border border-divider text-muted-foreground hover:text-foreground',
-            )}
-          >
-            {t('documents.simulator.empty')}
-          </button>
-        </div>
-      </div>
 
       {/* Header */}
       <div className="page-header">
@@ -848,9 +510,16 @@ const DocumentManagementPage: React.FC = () => {
         </div>
         <div className="flex w-full items-center gap-3 sm:w-auto">
           <button
+            className="icon-button"
+            onClick={() => fetchFolders(activeFolderId)}
+            disabled={isLoading}
+          >
+            <RefreshCcw className={cn('h-5 w-5', isLoading && 'animate-spin')} />
+          </button>
+          <button
             onClick={() => setIsFolderModalOpen(true)}
             className="btn-secondary"
-            disabled={simulatedState === 'loading'}
+            disabled={isLoading || isSaving}
           >
             <FolderPlus className="h-4.5 w-4.5" />
             {t('documents.actions.createFolder')}
@@ -858,7 +527,7 @@ const DocumentManagementPage: React.FC = () => {
           <button
             onClick={() => fileInputRef.current?.click()}
             className="btn-primary"
-            disabled={simulatedState === 'loading'}
+            disabled={isLoading || isSaving}
           >
             <UploadCloud className="h-4.5 w-4.5" />
             {t('documents.actions.upload')}
@@ -906,7 +575,7 @@ const DocumentManagementPage: React.FC = () => {
             }}
             className="form-input pl-9"
             placeholder={t('documents.searchPlaceholder')}
-            disabled={simulatedState === 'loading'}
+            disabled={isLoading}
           />
         </div>
 
@@ -920,7 +589,7 @@ const DocumentManagementPage: React.FC = () => {
                 setCurrentPage(1);
               }}
               className="form-input pr-8"
-              disabled={simulatedState === 'loading'}
+              disabled={isLoading}
             >
               <option value="All">{t('documents.status.all')}</option>
               <option value="Verified">{t('documents.status.verified')}</option>
@@ -935,7 +604,7 @@ const DocumentManagementPage: React.FC = () => {
               value={sortBy}
               onChange={e => setSortBy(e.target.value as 'name' | 'date' | 'size')}
               className="form-input pr-8"
-              disabled={simulatedState === 'loading'}
+              disabled={isLoading}
             >
               <option value="name">{t('documents.sort.name')}</option>
               <option value="date">{t('documents.sort.date')}</option>
@@ -952,14 +621,14 @@ const DocumentManagementPage: React.FC = () => {
         <div className="space-y-6 min-w-0">
           
           {/* FOLDERS GRID SECTION */}
-          {(simulatedState === 'loading' || currentFolders.length > 0) && (
+          {(isLoading || currentFolders.length > 0) && (
             <div className="space-y-3">
               <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                 {t('documents.foldersTitle')} ({currentFolders.length})
               </h2>
 
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {simulatedState === 'loading' ? (
+                {isLoading ? (
                   Array.from({ length: 3 }).map((_, idx) => (
                     <div
                       key={idx}
@@ -1066,7 +735,7 @@ const DocumentManagementPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-divider">
-                    {simulatedState === 'loading' ? (
+                    {isLoading ? (
                       <>
                         <SkeletonRow />
                         <SkeletonRow />
@@ -1140,7 +809,7 @@ const DocumentManagementPage: React.FC = () => {
                                     {t('documents.actions.preview')}
                                   </button>
                                   <button
-                                    onClick={() => handleDownload(file.name)}
+                                    onClick={() => handleDownload(file.id, file.name)}
                                     className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-foreground hover:bg-surface"
                                   >
                                     <Download className="h-3.5 w-3.5" />
@@ -1180,7 +849,7 @@ const DocumentManagementPage: React.FC = () => {
               </div>
 
               {/* Pagination UI */}
-              {filteredFiles.length > ITEMS_PER_PAGE && simulatedState !== 'loading' && (
+              {filteredFiles.length > ITEMS_PER_PAGE && !isLoading && (
                 <div className="flex items-center justify-between border-t border-divider px-6 py-4 bg-white">
                   <span className="text-xs text-muted-foreground">
                     {t('documents.table.paginationText', {
@@ -1608,7 +1277,7 @@ const DocumentManagementPage: React.FC = () => {
                   {t('common.close')}
                 </button>
                 <button
-                  onClick={() => handleDownload(previewFile.name)}
+                  onClick={() => handleDownload(previewFile.id, previewFile.name)}
                   className="btn-primary flex-1 text-xs"
                 >
                   <Download className="h-3 w-3" />

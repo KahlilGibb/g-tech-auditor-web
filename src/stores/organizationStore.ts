@@ -24,7 +24,7 @@ export const useOrganizationStore = create<OrganizationStoreState>()((set, get) 
   fetchOrganizations: async query => {
     set({ isLoading: true, error: null });
     try {
-      const organizations = await organizationService.list(query);
+      const { organizations } = await organizationService.getOrganizations(query);
       set({ organizations, isLoading: false });
     } catch (error) {
       set({ isLoading: false, error: getApiErrorMessage(error, 'Failed to load organizations') });

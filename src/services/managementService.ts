@@ -15,6 +15,16 @@ import type {
   Site,
   SiteFormInput,
   UserFormInput,
+  GetOrganizationsRequest,
+  GetOrganizationsResponse,
+  GetGroupsRequest,
+  GetGroupsResponse,
+  GetSitesRequest,
+  GetSitesResponse,
+  CreateSiteRequest,
+  CreateSiteResponse,
+  UpdateSiteRequest,
+  UpdateSiteResponse,
 } from '../types/management';
 import {
   mockBranchApi,
@@ -400,6 +410,22 @@ export const permissionService = {
 };
 
 export const branchService = {
+  async getBranches(query?: GetGroupsRequest): Promise<GetGroupsResponse> {
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.BRANCHES.LIST, {
+        params: queryParams(query),
+      });
+      const branches = unwrapList<unknown>(response.data).map(normalizeBranch);
+      return { branches };
+    } catch (error) {
+      if (error instanceof MockInterceptError) {
+        const branches = await mockBranchApi.list(query);
+        return { branches };
+      }
+      throw error;
+    }
+  },
+
   async list(query?: ListQuery): Promise<Branch[]> {
     try {
       const response = await apiClient.get(API_ENDPOINTS.BRANCHES.LIST, {
@@ -483,6 +509,22 @@ export const branchService = {
 };
 
 export const organizationService = {
+  async getOrganizations(query?: GetOrganizationsRequest): Promise<GetOrganizationsResponse> {
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.ORGANIZATIONS.LIST, {
+        params: queryParams(query),
+      });
+      const organizations = unwrapList<unknown>(response.data).map(normalizeOrganization);
+      return { organizations };
+    } catch (error) {
+      if (error instanceof MockInterceptError) {
+        const organizations = await mockOrganizationApi.list(query);
+        return { organizations };
+      }
+      throw error;
+    }
+  },
+
   async list(query?: ListQuery): Promise<Organization[]> {
     try {
       const response = await apiClient.get(API_ENDPOINTS.ORGANIZATIONS.LIST, {
@@ -536,6 +578,51 @@ export const organizationService = {
 };
 
 export const siteService = {
+  async getSites(query?: GetSitesRequest): Promise<GetSitesResponse> {
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.SITES.LIST, {
+        params: queryParams(query),
+      });
+      const sites = unwrapList<unknown>(response.data).map(normalizeSite);
+      return { sites };
+    } catch (error) {
+      if (error instanceof MockInterceptError) {
+        const sites = await mockSiteApi.list(query);
+        return { sites };
+      }
+      throw error;
+    }
+  },
+
+  async createSite(input: CreateSiteRequest): Promise<CreateSiteResponse> {
+    try {
+      const response = await apiClient.post(API_ENDPOINTS.SITES.CREATE, sitePayload(input));
+      return normalizeSite(unwrapData(response.data));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockSiteApi.create(input);
+      throw error;
+    }
+  },
+
+  async updateSite(id: string, input: UpdateSiteRequest): Promise<UpdateSiteResponse> {
+    try {
+      const response = await apiClient.put(API_ENDPOINTS.SITES.UPDATE(id), sitePayload(input));
+      return normalizeSite(unwrapData(response.data));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockSiteApi.update(id, input);
+      throw error;
+    }
+  },
+
+  async deleteSite(id: string): Promise<void> {
+    try {
+      await apiClient.delete(API_ENDPOINTS.SITES.DELETE(id));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockSiteApi.remove(id);
+      throw error;
+    }
+  },
+
   async list(query?: ListQuery): Promise<Site[]> {
     try {
       const response = await apiClient.get(API_ENDPOINTS.SITES.LIST, {

@@ -24,7 +24,7 @@ export const useSiteStore = create<SiteStoreState>()((set, get) => ({
   fetchSites: async query => {
     set({ isLoading: true, error: null });
     try {
-      const sites = await siteService.list(query);
+      const { sites } = await siteService.getSites(query);
       set({ sites, isLoading: false });
     } catch (error) {
       set({ isLoading: false, error: getApiErrorMessage(error, 'Failed to load sites') });
@@ -34,7 +34,7 @@ export const useSiteStore = create<SiteStoreState>()((set, get) => ({
   createSite: async input => {
     set({ isSaving: true, error: null });
     try {
-      const site = await siteService.create(input);
+      const site = await siteService.createSite(input);
       set(state => ({ sites: [site, ...state.sites], isSaving: false }));
     } catch (error) {
       set({ isSaving: false, error: getApiErrorMessage(error, 'Failed to create site') });
@@ -45,7 +45,7 @@ export const useSiteStore = create<SiteStoreState>()((set, get) => ({
   updateSite: async (id, input) => {
     set({ isSaving: true, error: null });
     try {
-      const site = await siteService.update(id, input);
+      const site = await siteService.updateSite(id, input);
       set(state => ({
         sites: state.sites.map(item => (item.id === id ? site : item)),
         isSaving: false,
@@ -60,7 +60,7 @@ export const useSiteStore = create<SiteStoreState>()((set, get) => ({
     const snapshot = get().sites;
     set({ sites: snapshot.filter(site => site.id !== id), error: null });
     try {
-      await siteService.remove(id);
+      await siteService.deleteSite(id);
     } catch (error) {
       set({ sites: snapshot, error: getApiErrorMessage(error, 'Failed to delete site') });
       throw error;
