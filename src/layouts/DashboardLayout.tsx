@@ -239,6 +239,8 @@ const DashboardLayout: React.FC = () => {
   ];
 
   const closeSidebar = () => setIsSidebarOpen(false);
+  const isNavActive = (to: string) =>
+    to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
 
   const handleLogout = async () => {
     const confirmed = await appSwal.confirmLogout();
@@ -257,7 +259,7 @@ const DashboardLayout: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-screen overflow-hidden bg-background">
       {isSidebarOpen && (
         <button
           aria-label="Tutup menu"
@@ -268,12 +270,12 @@ const DashboardLayout: React.FC = () => {
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-divider bg-white shadow-xl shadow-slate-900/10 lg:static lg:shadow-none',
+          'fixed inset-y-0 left-0 z-40 flex h-dvh w-64 shrink-0 flex-col overflow-hidden border-r border-divider bg-white shadow-xl shadow-slate-900/10 lg:sticky lg:top-0 lg:h-screen lg:shadow-none',
           'transform transition-transform duration-300 ease-in-out lg:translate-x-0',
           !isSidebarOpen && '-translate-x-full',
         )}
       >
-        <div className="flex h-16 items-center gap-3 border-b border-divider px-5">
+        <div className="flex h-16 shrink-0 items-center gap-3 border-b border-divider px-5">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-blue text-white shadow-sm">
             <ShieldCheck className="h-5 w-5" />
           </div>
@@ -287,7 +289,7 @@ const DashboardLayout: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-3 py-4">
+        <div className="sidebar-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4">
           <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
             {t('nav.menuUtama')}
           </p>
@@ -298,7 +300,7 @@ const DashboardLayout: React.FC = () => {
                 to={item.to}
                 icon={item.icon}
                 label={t(`nav.${item.labelKey}`)}
-                active={location.pathname === item.to}
+                active={isNavActive(item.to)}
                 onClick={() => {
                   if (window.innerWidth < 1024) closeSidebar();
                 }}
@@ -316,7 +318,7 @@ const DashboardLayout: React.FC = () => {
                 to={item.to}
                 icon={item.icon}
                 label={t(`nav.${item.labelKey}`)}
-                active={location.pathname === item.to}
+                active={isNavActive(item.to)}
                 onClick={() => {
                   if (window.innerWidth < 1024) closeSidebar();
                 }}
@@ -325,7 +327,7 @@ const DashboardLayout: React.FC = () => {
           </nav>
         </div>
 
-        <div className="border-t border-divider p-3">
+        <div className="shrink-0 border-t border-divider p-3">
           <Link
             to="/profile"
             onClick={() => {
@@ -362,8 +364,8 @@ const DashboardLayout: React.FC = () => {
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-divider bg-white/95 px-4 backdrop-blur lg:px-6">
+      <div className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="z-20 flex h-16 shrink-0 items-center justify-between border-b border-divider bg-white/95 px-4 backdrop-blur lg:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"
@@ -429,7 +431,7 @@ const DashboardLayout: React.FC = () => {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto bg-background p-4 lg:p-6">
+        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-background p-4 lg:p-6">
           <Outlet />
         </main>
       </div>
