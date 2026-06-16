@@ -142,6 +142,8 @@
       "template": "template",
       "masterField": "master field",
       "masterFieldOption": "opsi master field",
+      "action": "tindakan",
+      "actionStatus": "status tindakan",
       "profile": "profil",
       "section": "bab",
       "question": "pertanyaan",
@@ -531,15 +533,53 @@
   },
   "actions": {
     "title": "Tindakan",
+    "subtitle": "Kelola dan pantau seluruh tindakan korektif.",
     "search": "Cari tindakan…",
     "summary": "{{count}} tindakan",
     "empty": "Belum ada tindakan",
+    "emptyDetail": "Sesuaikan filter atau buat tindakan baru.",
     "create": "Tindakan Baru",
     "filterAll": "Semua",
+    "filters": {
+      "allPriorities": "Semua prioritas"
+    },
     "priority": {
       "high": "Tinggi",
       "medium": "Sedang",
       "low": "Rendah"
+    },
+    "table": {
+      "details": "Detail Tindakan",
+      "source": "Sumber & Site",
+      "assignee": "Penanggung Jawab",
+      "status": "Status",
+      "priority": "Prioritas",
+      "dueDate": "Tenggat",
+      "actions": "Aksi"
+    },
+    "validation": {
+      "required": "Judul dan status wajib diisi."
+    },
+    "assignee": {
+      "none": "Tanpa penanggung jawab"
+    },
+    "modal": {
+      "createTitle": "Buat Tindakan",
+      "editTitle": "Edit Tindakan",
+      "description": "Field mengikuti kontrak API /actions."
+    },
+    "status": {
+      "select": "Pilih status",
+      "create": "Tambah status",
+      "edit": "Edit status",
+      "default": "Default",
+      "validation": {
+        "required": "Nama status wajib diisi."
+      },
+      "confirmChange": {
+        "title": "Ubah status tindakan?",
+        "text": "{{action}} akan dipindahkan ke {{status}}."
+      }
     },
     "fields": {
       "title": "Judul",
@@ -578,6 +618,7 @@
     },
     "workflow": {
       "manage": "Kelola Workflow",
+      "description": "Buat, edit, dan urutkan status tindakan dari API /action-statuses.",
       "changeStatus": "Ganti Status",
       "addStatus": "Tambah status…",
       "add": "Tambah",

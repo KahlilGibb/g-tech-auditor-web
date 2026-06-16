@@ -6,9 +6,16 @@ export function useActions() {
     actions, 
     workflowStatuses, 
     isLoading, 
+    isSaving,
     error, 
     fetchActions, 
-    updateActionStatus 
+    createAction,
+    updateAction,
+    deleteAction,
+    updateActionStatus,
+    createWorkflowStatus,
+    updateWorkflowStatus,
+    deleteWorkflowStatus,
   } = useActionStore();
 
   useEffect(() => {
@@ -20,8 +27,15 @@ export function useActions() {
     actions,
     workflowStatuses,
     isLoading,
+    isSaving,
     error,
     refresh: fetchActions,
+    createAction,
+    updateAction,
+    deleteAction,
     updateStatus: updateActionStatus,
+    createWorkflowStatus,
+    updateWorkflowStatus,
+    deleteWorkflowStatus,
   };
 }

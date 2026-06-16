@@ -14,6 +14,8 @@ type EntityKey =
   | 'template'
   | 'masterField'
   | 'masterFieldOption'
+  | 'action'
+  | 'actionStatus'
   | 'profile'
   | 'section'
   | 'question'

@@ -1,23 +1,25 @@
-import type { ActionItem, ActionWorkflowStatus } from '../types/action';
+import type { ActionItem, ActionStatusFormInput, ActionWorkflowStatus, CreateActionPayload } from '../types/action';
 import { apiClient, MockInterceptError } from '../lib/apiClient';
 import { API_ENDPOINTS } from '../constants/api';
-import { toRecord, toStringValue, unwrapList } from '../lib/apiResponse';
+import { toRecord, toStringValue, unwrapData, unwrapList } from '../lib/apiResponse';
 
-export const MOCK_WORKFLOW_STATUSES: ActionWorkflowStatus[] = [
-  { id: 'todo', label: 'To Do', color: '#6B7280' },
-  { id: 'in_progress', label: 'In Progress', color: '#2563EB' },
-  { id: 'completed', label: 'Completed', color: '#10B981' },
-  { id: 'cancelled', label: 'Cancelled', color: '#DC2626' },
+export let MOCK_WORKFLOW_STATUSES: ActionWorkflowStatus[] = [
+  { id: 'todo', label: 'To Do', color: '#6B7280', order: 1, isDefault: true },
+  { id: 'in_progress', label: 'In Progress', color: '#2563EB', order: 2 },
+  { id: 'completed', label: 'Completed', color: '#10B981', order: 3 },
+  { id: 'cancelled', label: 'Cancelled', color: '#DC2626', order: 4 },
 ];
 
 // TODO: Remove MOCK_ACTIONS when real API is connected.
-const MOCK_ACTIONS: ActionItem[] = [
+let MOCK_ACTIONS: ActionItem[] = [
   {
     id: 'ACT-001',
     code: '10293',
     title: 'Repair broken light in aisle 4',
+    description: 'Broken LED fixture needs replacement.',
     source: 'Warehouse Safety Check',
     assignee: 'Mark Green',
+    assigneeIds: ['user-riko'],
     dueDate: '2026-04-22T00:00:00Z',
     priority: 'High',
     workflowStatusId: 'todo',
@@ -30,8 +32,10 @@ const MOCK_ACTIONS: ActionItem[] = [
     id: 'ACT-002',
     code: '10294',
     title: 'Update fire exit signage',
+    description: 'Replace faded signs and test emergency lighting.',
     source: 'Fire Drill Audit',
     assignee: 'Safety Team',
+    assigneeIds: ['user-dina'],
     dueDate: '2026-04-25T00:00:00Z',
     priority: 'Medium',
     workflowStatusId: 'in_progress',
@@ -67,6 +71,10 @@ function normalizePriority(value: unknown): ActionItem['priority'] {
   return 'Medium';
 }
 
+function apiPriority(value: ActionItem['priority']) {
+  return value.toLowerCase();
+}
+
 function slugStatus(value: unknown, fallback = 'todo') {
   const text = toStringValue(value, fallback).trim();
   return text ? text.toLowerCase().replace(/\s+/g, '_') : fallback;
@@ -93,6 +101,28 @@ function normalizeStatus(raw: unknown): ActionWorkflowStatus {
     id,
     label: toStringValue(item.label ?? item.name ?? item.title, id.replace(/_/g, ' ')),
     color: toStringValue(item.color ?? item.hex_color ?? item.color_code, defaultStatusColor(id)),
+    order: Number(item.ord ?? item.order ?? 0) || undefined,
+    isDefault: Boolean(item.is_default ?? item.isDefault),
+  };
+}
+
+function statusPayload(input: ActionStatusFormInput) {
+  return {
+    name: input.name,
+    ord: input.order,
+    is_default: Boolean(input.isDefault),
+    color: input.color,
+  };
+}
+
+function actionPayload(input: CreateActionPayload) {
+  return {
+    title: input.title,
+    description: input.description,
+    priority: apiPriority(input.priority),
+    status_id: input.workflowStatusId,
+    due_date: input.dueDate,
+    assignee_ids: input.assigneeIds ?? [],
   };
 }
 
@@ -137,6 +167,7 @@ function normalizeAction(raw: unknown): ActionItem {
     id,
     code: toStringValue(item.code ?? item.action_code ?? item.number ?? item.reference_no, id),
     title: toStringValue(item.title ?? item.name ?? item.summary ?? item.description, 'Untitled action'),
+    description: toStringValue(item.description ?? item.notes) || undefined,
     source: toStringValue(
       item.source ??
         item.source_title ??
@@ -146,6 +177,11 @@ function normalizeAction(raw: unknown): ActionItem {
       '-',
     ),
     assignee: toStringValue(item.assignee_name ?? item.assigned_to_name ?? item.pic_name, nestedName(assignee) || '-'),
+    assigneeIds: Array.isArray(item.assignee_ids)
+      ? item.assignee_ids.map(value => toStringValue(value)).filter(Boolean)
+      : Array.isArray(item.assignees)
+        ? item.assignees.map(value => toStringValue(toRecord(value).id)).filter(Boolean)
+        : undefined,
     dueDate: toDateString(item.due_date ?? item.dueDate ?? item.deadline ?? item.target_date, createdAt),
     priority: normalizePriority(item.priority ?? item.severity),
     workflowStatusId: statusId,
@@ -159,16 +195,99 @@ function normalizeAction(raw: unknown): ActionItem {
 }
 
 export const actionService = {
-  async getActions(): Promise<ActionItem[]> {
+  async getActions(filters?: {
+    statusId?: string;
+    priority?: ActionItem['priority'] | 'all';
+    assigneeId?: string;
+    inspectionId?: string;
+  }): Promise<ActionItem[]> {
     try {
       const res = await apiClient.get<unknown>(API_ENDPOINTS.ACTIONS.LIST, {
-        params: { page: 1, limit: 50 },
+        params: {
+          page: 1,
+          limit: 50,
+          status_id: filters?.statusId && filters.statusId !== 'all' ? filters.statusId : undefined,
+          priority: filters?.priority && filters.priority !== 'all' ? apiPriority(filters.priority) : undefined,
+          assignee_id: filters?.assigneeId,
+          inspection_id: filters?.inspectionId,
+        },
       });
       return unwrapList(res.data).map(normalizeAction);
     } catch (e) {
       if (e instanceof MockInterceptError) {
         await new Promise<void>(r => setTimeout(r, 500));
         return [...MOCK_ACTIONS];
+      }
+      throw e;
+    }
+  },
+
+  async createAction(input: CreateActionPayload): Promise<ActionItem> {
+    try {
+      const res = await apiClient.post<unknown>(API_ENDPOINTS.ACTIONS.CREATE, actionPayload(input));
+      return normalizeAction(unwrapData(res.data));
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await new Promise<void>(r => setTimeout(r, 300));
+        const action: ActionItem = {
+          id: `ACT-${Date.now()}`,
+          code: String(10000 + MOCK_ACTIONS.length + 1),
+          title: input.title,
+          description: input.description,
+          source: input.source || '-',
+          assignee: input.assigneeIds?.length ? `${input.assigneeIds.length} assignee` : '-',
+          assigneeIds: input.assigneeIds,
+          dueDate: input.dueDate || new Date().toISOString(),
+          priority: input.priority,
+          workflowStatusId: input.workflowStatusId,
+          contentItems: [input.description || input.title],
+          site: input.site,
+          asset: input.asset,
+          timeline: [{ id: 'created', label: 'Created', date: new Date().toISOString() }],
+          createdAt: new Date().toISOString(),
+        };
+        MOCK_ACTIONS = [action, ...MOCK_ACTIONS];
+        return action;
+      }
+      throw e;
+    }
+  },
+
+  async updateAction(id: string, input: CreateActionPayload): Promise<ActionItem> {
+    try {
+      const res = await apiClient.put<unknown>(API_ENDPOINTS.ACTIONS.UPDATE(id), actionPayload(input));
+      return normalizeAction(unwrapData(res.data));
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await new Promise<void>(r => setTimeout(r, 300));
+        const current = MOCK_ACTIONS.find(action => action.id === id);
+        const updated: ActionItem = {
+          ...(current ?? MOCK_ACTIONS[0]),
+          id,
+          title: input.title,
+          description: input.description,
+          priority: input.priority,
+          workflowStatusId: input.workflowStatusId,
+          dueDate: input.dueDate || current?.dueDate || new Date().toISOString(),
+          assigneeIds: input.assigneeIds,
+          assignee: input.assigneeIds?.length ? `${input.assigneeIds.length} assignee` : current?.assignee ?? '-',
+          source: input.source || current?.source || '-',
+        };
+        MOCK_ACTIONS = MOCK_ACTIONS.map(action => action.id === id ? updated : action);
+        return updated;
+      }
+      throw e;
+    }
+  },
+
+  async deleteAction(id: string): Promise<void> {
+    try {
+      await apiClient.delete(API_ENDPOINTS.ACTIONS.DELETE(id));
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await new Promise<void>(r => setTimeout(r, 250));
+        MOCK_ACTIONS = MOCK_ACTIONS.filter(action => action.id !== id);
+        return;
       }
       throw e;
     }
@@ -184,6 +303,58 @@ export const actionService = {
     } catch (e) {
       if (e instanceof MockInterceptError) {
         return [...MOCK_WORKFLOW_STATUSES];
+      }
+      throw e;
+    }
+  },
+
+  async createWorkflowStatus(input: ActionStatusFormInput): Promise<ActionWorkflowStatus> {
+    try {
+      const res = await apiClient.post<unknown>(API_ENDPOINTS.ACTION_STATUSES.CREATE, statusPayload(input));
+      return normalizeStatus(unwrapData(res.data));
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        const status: ActionWorkflowStatus = {
+          id: slugStatus(input.name),
+          label: input.name,
+          color: input.color || defaultStatusColor(slugStatus(input.name)),
+          order: input.order,
+          isDefault: input.isDefault,
+        };
+        MOCK_WORKFLOW_STATUSES = [status, ...MOCK_WORKFLOW_STATUSES];
+        return status;
+      }
+      throw e;
+    }
+  },
+
+  async updateWorkflowStatus(id: string, input: ActionStatusFormInput): Promise<ActionWorkflowStatus> {
+    try {
+      const res = await apiClient.put<unknown>(API_ENDPOINTS.ACTION_STATUSES.UPDATE(id), statusPayload(input));
+      return normalizeStatus(unwrapData(res.data));
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        const updated: ActionWorkflowStatus = {
+          id,
+          label: input.name,
+          color: input.color || defaultStatusColor(id),
+          order: input.order,
+          isDefault: input.isDefault,
+        };
+        MOCK_WORKFLOW_STATUSES = MOCK_WORKFLOW_STATUSES.map(status => status.id === id ? updated : status);
+        return updated;
+      }
+      throw e;
+    }
+  },
+
+  async deleteWorkflowStatus(id: string): Promise<void> {
+    try {
+      await apiClient.delete(API_ENDPOINTS.ACTION_STATUSES.DELETE(id));
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        MOCK_WORKFLOW_STATUSES = MOCK_WORKFLOW_STATUSES.filter(status => status.id !== id);
+        return;
       }
       throw e;
     }
@@ -205,5 +376,23 @@ export const actionService = {
       }
       throw e;
     }
-  }
+  },
+
+  async addAssignee(actionId: string, userId: string): Promise<void> {
+    try {
+      await apiClient.post(API_ENDPOINTS.ACTIONS.ASSIGNEES(actionId), { user_id: userId });
+    } catch (e) {
+      if (e instanceof MockInterceptError) return;
+      throw e;
+    }
+  },
+
+  async removeAssignee(actionId: string, userId: string): Promise<void> {
+    try {
+      await apiClient.delete(API_ENDPOINTS.ACTIONS.ASSIGNEE(actionId, userId));
+    } catch (e) {
+      if (e instanceof MockInterceptError) return;
+      throw e;
+    }
+  },
 };

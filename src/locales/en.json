@@ -142,6 +142,8 @@
       "template": "template",
       "masterField": "master field",
       "masterFieldOption": "master field option",
+      "action": "action",
+      "actionStatus": "action status",
       "profile": "profile",
       "section": "section",
       "question": "question",
@@ -530,15 +532,53 @@
   },
   "actions": {
     "title": "Actions",
+    "subtitle": "Manage and track all corrective actions.",
     "search": "Search actions…",
     "summary": "{{count}} actions",
     "empty": "No actions yet",
+    "emptyDetail": "Adjust your filters or create a new action.",
     "create": "New Action",
     "filterAll": "All",
+    "filters": {
+      "allPriorities": "All priorities"
+    },
     "priority": {
       "high": "High",
       "medium": "Medium",
       "low": "Low"
+    },
+    "table": {
+      "details": "Action Details",
+      "source": "Source & Site",
+      "assignee": "Assignee",
+      "status": "Status",
+      "priority": "Priority",
+      "dueDate": "Due Date",
+      "actions": "Actions"
+    },
+    "validation": {
+      "required": "Title and status are required."
+    },
+    "assignee": {
+      "none": "No assignee"
+    },
+    "modal": {
+      "createTitle": "Create Action",
+      "editTitle": "Edit Action",
+      "description": "Fields follow the API contract for /actions."
+    },
+    "status": {
+      "select": "Select status",
+      "create": "Add status",
+      "edit": "Edit status",
+      "default": "Default",
+      "validation": {
+        "required": "Status name is required."
+      },
+      "confirmChange": {
+        "title": "Change action status?",
+        "text": "{{action}} will be moved to {{status}}."
+      }
     },
     "fields": {
       "title": "Title",
@@ -577,6 +617,7 @@
     },
     "workflow": {
       "manage": "Manage Workflow",
+      "description": "Create, edit, and order action statuses from API /action-statuses.",
       "changeStatus": "Change Status",
       "addStatus": "Add status…",
       "add": "Add",
