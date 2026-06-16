@@ -4,6 +4,7 @@ import { API_ENDPOINTS } from '../constants/api';
 import type {
   Branch,
   BranchFormInput,
+  GotifyConfig,
   ListQuery,
   ManagementUser,
   Organization,
@@ -84,6 +85,20 @@ function normalizeUser(raw: unknown): ManagementUser {
     status: toStringValue(record.status) || undefined,
     createdAt: normalizeDate(record.created_at || record.createdAt),
     updatedAt: normalizeDate(record.updated_at || record.updatedAt),
+  };
+}
+
+function normalizeGotifyConfig(raw: unknown): GotifyConfig {
+  const record = toRecord(raw);
+  const data = toRecord(record.data);
+  const source = Object.keys(data).length ? data : record;
+  return {
+    userId: toStringValue(source.user_id || source.userId) || undefined,
+    appId: toStringValue(source.app_id || source.appId) || undefined,
+    token: toStringValue(source.token) || undefined,
+    url: toStringValue(source.url || source.server_url || source.serverUrl) || undefined,
+    enabled: typeof source.enabled === 'boolean' ? source.enabled : undefined,
+    provisionedAt: normalizeDate(source.provisioned_at || source.provisionedAt),
   };
 }
 
@@ -280,6 +295,53 @@ export const userService = {
       await apiClient.delete(API_ENDPOINTS.USERS.DELETE(id));
     } catch (error) {
       if (error instanceof MockInterceptError) return mockUserApi.remove(id);
+      throw error;
+    }
+  },
+
+  async getMyGotifyConfig(): Promise<GotifyConfig> {
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.USERS.GOTIFY_CONFIG);
+      return normalizeGotifyConfig(response.data);
+    } catch (error) {
+      if (error instanceof MockInterceptError) {
+        return {
+          userId: 'mock-user',
+          appId: 'mock-gotify-app',
+          token: 'mock-token',
+          url: 'http://localhost:8181',
+          enabled: true,
+          provisionedAt: new Date().toISOString(),
+        };
+      }
+      throw error;
+    }
+  },
+
+  async provisionGotify(id: string): Promise<GotifyConfig> {
+    try {
+      const response = await apiClient.post(API_ENDPOINTS.USERS.PROVISION_GOTIFY(id));
+      return normalizeGotifyConfig(response.data);
+    } catch (error) {
+      if (error instanceof MockInterceptError) {
+        return {
+          userId: id,
+          appId: `gotify-${id}`,
+          token: `mock-token-${id}`,
+          url: 'http://localhost:8181',
+          enabled: true,
+          provisionedAt: new Date().toISOString(),
+        };
+      }
+      throw error;
+    }
+  },
+
+  async reconcileGotify(): Promise<void> {
+    try {
+      await apiClient.post(API_ENDPOINTS.USERS.RECONCILE_GOTIFY);
+    } catch (error) {
+      if (error instanceof MockInterceptError) return;
       throw error;
     }
   },

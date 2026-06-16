@@ -1,27 +1,27 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { User, Mail, Phone, MapPin, ShieldCheck, Globe, LogOut, Camera, X } from 'lucide-react';
+import { User, Mail, Phone, MapPin, ShieldCheck, Globe, LogOut, Camera, X, Building2 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { appSwal } from '../lib/appSwal';
 
-// Mock profile data
-const MOCK_PROFILE = {
-  fullName: 'John Inspector',
-  email: 'john.smith@company.com',
-  phone: '+62 812-3456-7890',
-  workLocation: 'Dealer Sunter',
-  role: 'Senior Inspector',
-  department: 'Quality Assurance',
-  avatarBase64: null,
-};
+import { useAuth } from '../hooks/useAuth';
+import { useProfileStore } from '../stores/profileStore';
 
 const ProfilePage: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const [profile, setProfile] = useState(MOCK_PROFILE);
+  const { profile, updateProfile, uploadAvatar } = useProfileStore();
+  const { logout, user } = useAuth();
+  
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(profile);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   
-  const initials = profile.fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  const displayName = profile.fullName || user?.name || 'Inspector';
+  const role = profile.role || user?.role || 'Inspector';
+  const email = user?.email || 'N/A';
+  const location = user?.groupAddress || user?.groupName || profile.workLocation || 'N/A';
+  const department = user?.organizationName || profile.department || 'N/A';
+  const initials = displayName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
   const handleLanguageChange = (code: string) => {
     i18n.changeLanguage(code);
@@ -32,9 +32,34 @@ const ProfilePage: React.FC = () => {
     const confirmed = await appSwal.confirmSave();
     if (!confirmed) return;
 
-    setProfile(formData);
-    setIsEditing(false);
-    await appSwal.successSaved('profile');
+    try {
+      await updateProfile(formData);
+      setIsEditing(false);
+      await appSwal.successSaved('profile');
+    } catch {
+      // Error handled by store
+    }
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      await uploadAvatar(file);
+    } catch {
+      // Error handled by store
+    }
+  };
+
+  const handleLogout = async () => {
+    const confirmed = await appSwal.confirmLogout();
+    if (!confirmed) return;
+    try {
+      await logout();
+      await appSwal.successLogout();
+    } catch {
+      // handled
+    }
   };
 
   return (
@@ -56,13 +81,23 @@ const ProfilePage: React.FC = () => {
                   initials
                 )}
               </div>
-              <button className="absolute -bottom-2 -right-2 p-2 bg-white rounded-full shadow-md border border-divider text-muted-foreground hover:text-primary-blue transition-colors">
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute -bottom-2 -right-2 p-2 bg-white rounded-full shadow-md border border-divider text-muted-foreground hover:text-primary-blue transition-colors"
+              >
                 <Camera className="w-4 h-4" />
               </button>
+              <input 
+                type="file" 
+                ref={fileInputRef}
+                onChange={handleAvatarChange}
+                className="hidden" 
+                accept="image/*"
+              />
             </div>
             
-            <h2 className="mt-4 text-lg font-bold text-foreground">{profile.fullName}</h2>
-            <p className="text-sm text-muted-foreground">{profile.role}</p>
+            <h2 className="mt-4 text-lg font-bold text-foreground">{displayName}</h2>
+            <p className="text-sm text-muted-foreground">{role}</p>
             
             <div className="mt-4 inline-flex items-center px-3 py-1 rounded-full bg-success-green/10 text-success-green text-xs font-bold uppercase tracking-wider">
               {t('profile.status') || 'Active'}
@@ -108,14 +143,20 @@ const ProfilePage: React.FC = () => {
               <h3 className="font-bold text-foreground">Personal Information</h3>
               {!isEditing ? (
                 <button 
-                  onClick={() => setIsEditing(true)}
+                  onClick={() => {
+                    setFormData(profile);
+                    setIsEditing(true);
+                  }}
                   className="text-sm font-semibold text-primary-blue hover:text-primary-blue-dark transition-colors"
                 >
                   Edit Profile
                 </button>
               ) : (
                 <button 
-                  onClick={() => setIsEditing(false)}
+                  onClick={() => {
+                    setFormData(profile);
+                    setIsEditing(false);
+                  }}
                   className="p-1 text-muted-foreground hover:text-foreground transition-colors bg-white rounded-full shadow-sm"
                 >
                   <X className="w-4 h-4" />
@@ -137,7 +178,7 @@ const ProfilePage: React.FC = () => {
                       className="form-input"
                     />
                   ) : (
-                    <p className="font-medium text-foreground py-2">{profile.fullName}</p>
+                    <p className="font-medium text-foreground py-2">{displayName}</p>
                   )}
                 </div>
 
@@ -145,16 +186,9 @@ const ProfilePage: React.FC = () => {
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                     <Mail className="w-3.5 h-3.5" /> Email
                   </label>
-                  {isEditing ? (
-                    <input 
-                      type="email" 
-                      value={formData.email} 
-                      onChange={e => setFormData({...formData, email: e.target.value})}
-                      className="form-input"
-                    />
-                  ) : (
-                    <p className="font-medium text-foreground py-2">{profile.email}</p>
-                  )}
+                  <p className="font-medium text-foreground py-2 text-muted-foreground cursor-not-allowed">
+                    {email} (Read Only)
+                  </p>
                 </div>
 
                 <div className="space-y-1.5">
@@ -185,7 +219,23 @@ const ProfilePage: React.FC = () => {
                       className="form-input"
                     />
                   ) : (
-                    <p className="font-medium text-foreground py-2">{profile.workLocation}</p>
+                    <p className="font-medium text-foreground py-2">{location}</p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                    <Building2 className="w-3.5 h-3.5" /> Department
+                  </label>
+                  {isEditing ? (
+                    <input 
+                      type="text" 
+                      value={formData.department} 
+                      onChange={e => setFormData({...formData, department: e.target.value})}
+                      className="form-input"
+                    />
+                  ) : (
+                    <p className="font-medium text-foreground py-2">{department}</p>
                   )}
                 </div>
 
@@ -194,7 +244,7 @@ const ProfilePage: React.FC = () => {
                     <ShieldCheck className="w-3.5 h-3.5" /> Role
                   </label>
                   <p className="font-medium text-foreground py-2 text-muted-foreground cursor-not-allowed">
-                    {profile.role} (Read Only)
+                    {role} (Read Only)
                   </p>
                 </div>
               </div>
@@ -212,7 +262,7 @@ const ProfilePage: React.FC = () => {
             </div>
             
             <div className="p-4 bg-danger-red/5 border-t border-danger-red/10 flex justify-between items-center sm:hidden">
-                <button className="flex items-center gap-2 text-danger-red font-semibold text-sm">
+                <button onClick={handleLogout} className="flex items-center gap-2 text-danger-red font-semibold text-sm">
                   <LogOut className="w-4 h-4" /> Sign Out
                 </button>
             </div>

@@ -14,6 +14,7 @@ import {
   Loader2,
   CheckSquare,
   LayoutList,
+  Send,
 } from 'lucide-react'
 import { cn } from '../utils/cn'
 import { useTemplateEditorStore } from '../stores/templateEditorStore'
@@ -414,6 +415,7 @@ export const TemplateBuilderPage: React.FC = () => {
     initCreateTemplate,
     updateTemplateInfo,
     saveTemplate,
+    publishTemplate,
     addSection,
     updateSection,
     deleteSection,
@@ -464,6 +466,31 @@ export const TemplateBuilderPage: React.FC = () => {
       navigate('/templates')
     } catch (saveError) {
       await appSwal.errorSaveFailed('template', getApiErrorMessage(saveError))
+    }
+  }
+
+  const handlePublish = async () => {
+    const confirmed = await appSwal.confirm({
+      title: t('builder.publishConfirm.title'),
+      text: isDirty ? t('builder.publishConfirm.textDirty') : t('builder.publishConfirm.text'),
+      confirmText: t('swal.buttons.yes'),
+      cancelText: t('swal.buttons.no'),
+    })
+    if (!confirmed) return
+
+    try {
+      if (isDirty) await saveTemplate()
+      await publishTemplate()
+      await appSwal.success({
+        title: t('builder.publishSuccess.title'),
+        text: t('builder.publishSuccess.text'),
+      })
+      navigate('/templates')
+    } catch (publishError) {
+      await appSwal.error({
+        title: t('builder.publishFailed.title'),
+        text: getApiErrorMessage(publishError),
+      })
     }
   }
 
@@ -555,23 +582,39 @@ export const TemplateBuilderPage: React.FC = () => {
           </div>
         </div>
 
-        <button
-          onClick={handleSave}
-          disabled={!isDirty || isSaving}
-          className={cn(
-            'flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200',
-            isDirty && !isSaving
-              ? 'bg-primary-blue text-white shadow-sm shadow-primary-blue/30 hover:bg-primary-blue-dark active:scale-95'
-              : 'bg-surface text-muted-foreground cursor-not-allowed',
-          )}
-        >
-          {isSaving ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Save className="w-4 h-4" />
-          )}
-          {t('builder.save')}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handlePublish}
+            disabled={isSaving || !template.title.trim()}
+            className={cn(
+              'flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200',
+              !isSaving && template.title.trim()
+                ? 'bg-success-green text-white shadow-sm hover:bg-success-green-light active:scale-95'
+                : 'bg-surface text-muted-foreground cursor-not-allowed',
+            )}
+          >
+            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            {t('builder.publish')}
+          </button>
+
+          <button
+            onClick={handleSave}
+            disabled={!isDirty || isSaving}
+            className={cn(
+              'flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200',
+              isDirty && !isSaving
+                ? 'bg-primary-blue text-white shadow-sm shadow-primary-blue/30 hover:bg-primary-blue-dark active:scale-95'
+                : 'bg-surface text-muted-foreground cursor-not-allowed',
+            )}
+          >
+            {isSaving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            {t('builder.save')}
+          </button>
+        </div>
       </header>
 
       {/* ── Error Banner ───────────────────────────────────────────── */}

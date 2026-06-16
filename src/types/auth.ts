@@ -8,6 +8,9 @@ export interface AuthUser {
   roleId?: string;
   branchId?: string;
   groupId?: string;
+  organizationName?: string;
+  groupName?: string;
+  groupAddress?: string;
   avatar?: string;
 }
 

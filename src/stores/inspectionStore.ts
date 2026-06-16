@@ -43,10 +43,8 @@ export const useInspectionStore = create<InspectionStoreState>()(
         
         set({ isLoading: true, error: null });
         try {
-          const [inspections, stats] = await Promise.all([
-            inspectionService.getInspections(),
-            inspectionService.getDashboardStats()
-          ]);
+          const inspections = await inspectionService.getInspections();
+          const stats = null;
           set({ inspections, stats, isLoading: false, isFetched: true });
         } catch (e) {
           set({ 

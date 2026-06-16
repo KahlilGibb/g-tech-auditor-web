@@ -95,7 +95,7 @@ export const useDocumentStore = create<DocumentStoreState>()((set, get) => ({
 
   // ─── Files ─────────────────────────────────────────────────────────────────
 
-  fetchFiles: async (_folderId) => {
+  fetchFiles: async () => {
     // NOTE: No dedicated list-files endpoint in the API collection.
     // Files are tracked locally after upload/delete. This is a no-op placeholder.
   },

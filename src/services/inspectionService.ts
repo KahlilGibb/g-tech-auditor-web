@@ -393,6 +393,40 @@ export const inspectionService = {
     }
   },
 
+  async exportReport(inspectionId: string): Promise<Blob> {
+    try {
+      const res = await apiClient.get(API_ENDPOINTS.INSPECTIONS.EXPORT_REPORT(inspectionId), {
+        responseType: 'blob',
+      });
+      return res.data as Blob;
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await new Promise<void>(r => setTimeout(r, 300));
+        return new Blob([`Mock inspection report for ${inspectionId}`], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
+      }
+      throw e;
+    }
+  },
+
+  async exportIssues(inspectionId: string): Promise<Blob> {
+    try {
+      const res = await apiClient.get(API_ENDPOINTS.INSPECTIONS.EXPORT_ISSUES(inspectionId), {
+        responseType: 'blob',
+      });
+      return res.data as Blob;
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await new Promise<void>(r => setTimeout(r, 300));
+        return new Blob([`Mock inspection issues for ${inspectionId}`], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
+      }
+      throw e;
+    }
+  },
+
   async getDashboardStats(): Promise<DashboardStatsResponse> {
     try {
       const res = await apiClient.get<DashboardStatsResponse>(API_ENDPOINTS.INSPECTIONS.DASHBOARD_STATS);

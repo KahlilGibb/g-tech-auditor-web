@@ -12,6 +12,8 @@ type EntityKey =
   | 'site'
   | 'inspection'
   | 'template'
+  | 'masterField'
+  | 'masterFieldOption'
   | 'profile'
   | 'section'
   | 'question'

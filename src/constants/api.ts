@@ -9,11 +9,14 @@ export const API_ENDPOINTS = {
   },
   USERS: {
     ME: '/users/me',
+    GOTIFY_CONFIG: '/users/me/gotify',
+    RECONCILE_GOTIFY: '/users/reconcile-gotify',
     LIST: '/users',
     CREATE: '/users',
     DETAIL: (id: string) => `/users/${id}`,
     UPDATE: (id: string) => `/users/${id}`,
     DELETE: (id: string) => `/users/${id}`,
+    PROVISION_GOTIFY: (id: string) => `/users/${id}/provision-gotify`,
   },
   ROLES: {
     LIST: '/roles',
@@ -85,6 +88,8 @@ export const API_ENDPOINTS = {
     CREATE: '/inspections',
     DETAIL: (id: string) => `/inspections/${id}`,
     SUBMIT: (id: string) => `/inspections/${id}/submit`,
+    EXPORT_REPORT: (id: string) => `/inspections/${id}/report.xlsx`,
+    EXPORT_ISSUES: (id: string) => `/inspections/${id}/issues.xlsx`,
     DELETE: (id: string) => `/inspections/${id}`,
     FIELD_VALUES: (inspectionId: string) => `/inspections/${inspectionId}/field-values`,
     FIELD_VALUE_FLAG: (inspectionId: string, valueId: string) =>
@@ -108,6 +113,7 @@ export const API_ENDPOINTS = {
     PREVIEW: (id: string) => `/templates/${id}/preview`,
     UPDATE: (id: string) => `/templates/${id}`,
     UPDATE_BUILD: (id: string) => `/templates/${id}/build`,
+    PUBLISH: (id: string) => `/templates/${id}/publish`,
     DELETE: (id: string) => `/templates/${id}`,
     VERSIONS: (templateId: string) => `/templates/${templateId}/versions`,
     VERSION: (templateId: string, versionId: string) => `/templates/${templateId}/versions/${versionId}`,
@@ -159,8 +165,12 @@ export const API_ENDPOINTS = {
   },
   NOTIFICATIONS: {
     LIST: '/notifications',
+    UNREAD_COUNT: '/notifications/unread-count',
     MARK_READ: (id: string) => `/notifications/${id}/read`,
     MARK_ALL_READ: '/notifications/read-all',
+  },
+  RULES: {
+    METADATA: '/rules/metadata',
   },
   DOCUMENTS: {
     FOLDERS: '/documents/folders',

@@ -1,17 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { RefreshCcw, Search, Filter, PlayCircle } from 'lucide-react';
+import { Download, FileSpreadsheet, RefreshCcw, Search, Filter, PlayCircle } from 'lucide-react';
 import { useInspections } from '../hooks/useInspections';
 import { SkeletonRow } from '../components/ui/SkeletonLoader';
 import { cn } from '../utils/cn';
 import { CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { inspectionService } from '../services/inspectionService';
+import { appSwal } from '../lib/appSwal';
+import { getApiErrorMessage } from '../lib/apiResponse';
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
 
 const InspectionsPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { inspections, isLoading, error, fetchInspections } = useInspections();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [exportingKey, setExportingKey] = useState<string | null>(null);
 
   useEffect(() => {
     fetchInspections();
@@ -22,6 +37,24 @@ const InspectionsPage: React.FC = () => {
     setIsRefreshing(true);
     await fetchInspections();
     setIsRefreshing(false);
+  };
+
+  const handleExport = async (inspectionId: string, type: 'report' | 'issues') => {
+    const key = `${inspectionId}-${type}`;
+    setExportingKey(key);
+    try {
+      const blob = type === 'report'
+        ? await inspectionService.exportReport(inspectionId)
+        : await inspectionService.exportIssues(inspectionId);
+      downloadBlob(blob, `${inspectionId}-${type}.xlsx`);
+    } catch (exportError) {
+      await appSwal.error({
+        title: t('inspections.export.failed'),
+        text: getApiErrorMessage(exportError),
+      });
+    } finally {
+      setExportingKey(null);
+    }
   };
 
   return (
@@ -88,6 +121,7 @@ const InspectionsPage: React.FC = () => {
                 <th className="px-6 py-4">Site</th>
                 <th className="px-6 py-4">Date</th>
                 <th className="px-6 py-4 text-right">Score</th>
+                <th className="px-6 py-4 text-right">Export</th>
                 <th className="px-6 py-4 text-right">Form</th>
               </tr>
             </thead>
@@ -102,7 +136,7 @@ const InspectionsPage: React.FC = () => {
                 </>
               ) : inspections.length === 0 && !error ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center">
+                  <td colSpan={8} className="px-6 py-12 text-center">
                     <p className="text-muted-foreground">{t('inspections.empty')}</p>
                   </td>
                 </tr>
@@ -144,6 +178,36 @@ const InspectionsPage: React.FC = () => {
                       )}>
                         {item.score || '-'}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="inline-flex items-center gap-1">
+                        <button
+                          className="rounded-lg p-2 text-muted-foreground transition hover:bg-primary-blue/10 hover:text-primary-blue disabled:opacity-50"
+                          title={t('inspections.export.report')}
+                          disabled={exportingKey === `${item.id}-report`}
+                          onClick={event => {
+                            event.stopPropagation();
+                            void handleExport(item.id, 'report');
+                          }}
+                        >
+                          {exportingKey === `${item.id}-report`
+                            ? <RefreshCcw className="h-4 w-4 animate-spin" />
+                            : <FileSpreadsheet className="h-4 w-4" />}
+                        </button>
+                        <button
+                          className="rounded-lg p-2 text-muted-foreground transition hover:bg-primary-blue/10 hover:text-primary-blue disabled:opacity-50"
+                          title={t('inspections.export.issues')}
+                          disabled={exportingKey === `${item.id}-issues`}
+                          onClick={event => {
+                            event.stopPropagation();
+                            void handleExport(item.id, 'issues');
+                          }}
+                        >
+                          {exportingKey === `${item.id}-issues`
+                            ? <RefreshCcw className="h-4 w-4 animate-spin" />
+                            : <Download className="h-4 w-4" />}
+                        </button>
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button

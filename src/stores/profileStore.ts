@@ -18,12 +18,12 @@ export type ProfileData = {
 // ─── Defaults ─────────────────────────────────────────────────────────────────
 
 const DEFAULT_PROFILE: ProfileData = {
-  fullName: 'John Smith',
-  jobTitle: 'Senior Inspector',
-  department: 'Fleet Operations',
-  phone: '+62 812-3456-7890',
-  workLocation: 'Dealer Sunter, Jakarta Utara',
-  role: 'Inspector',
+  fullName: '',
+  jobTitle: '',
+  department: '',
+  phone: '',
+  workLocation: '',
+  role: '',
   avatarBase64: null,
 }
 
@@ -37,6 +37,7 @@ interface ProfileStoreState {
   // Async (API-backed)
   fetchProfile: () => Promise<void>
   updateProfile: (updates: Partial<ProfileData>) => Promise<void>
+  uploadAvatar: (file: File) => Promise<void>
 
   // Local-only
   removeAvatar: () => void
@@ -83,6 +84,21 @@ export const useProfileStore = create<ProfileStoreState>()(
         }
       },
 
+      uploadAvatar: async (file) => {
+        set({ isLoading: true, error: null })
+        try {
+          const { avatarBase64 } = await profileService.uploadAvatar(file)
+          set(state => ({
+            profile: { ...state.profile, avatarBase64 },
+            isLoading: false,
+          }))
+        } catch (e) {
+          const message = getApiErrorMessage(e, 'Failed to upload avatar')
+          set({ isLoading: false, error: message })
+          throw e
+        }
+      },
+
       removeAvatar: () =>
         set(state => ({ profile: { ...state.profile, avatarBase64: null } })),
 
@@ -91,6 +107,7 @@ export const useProfileStore = create<ProfileStoreState>()(
     {
       name: 'gtech-profile-store',
       storage: createJSONStorage(() => localStorage),
+      version: 1, // bump version to invalidate old mock cache
     },
   ),
 )

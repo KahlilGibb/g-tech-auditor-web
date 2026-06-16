@@ -12,6 +12,8 @@ interface UserStoreState {
   createUser: (input: UserFormInput) => Promise<void>;
   updateUser: (id: string, input: UserFormInput) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
+  provisionGotify: (id: string) => Promise<void>;
+  reconcileGotify: () => Promise<void>;
   clearError: () => void;
 }
 
@@ -63,6 +65,28 @@ export const useUserStore = create<UserStoreState>()((set, get) => ({
       await userService.remove(id);
     } catch (error) {
       set({ users: snapshot, error: getApiErrorMessage(error, 'Failed to delete user') });
+      throw error;
+    }
+  },
+
+  provisionGotify: async id => {
+    set({ isSaving: true, error: null });
+    try {
+      await userService.provisionGotify(id);
+      set({ isSaving: false });
+    } catch (error) {
+      set({ isSaving: false, error: getApiErrorMessage(error, 'Failed to provision Gotify') });
+      throw error;
+    }
+  },
+
+  reconcileGotify: async () => {
+    set({ isSaving: true, error: null });
+    try {
+      await userService.reconcileGotify();
+      set({ isSaving: false });
+    } catch (error) {
+      set({ isSaving: false, error: getApiErrorMessage(error, 'Failed to reconcile Gotify') });
       throw error;
     }
   },

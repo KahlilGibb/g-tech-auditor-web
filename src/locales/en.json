@@ -127,7 +127,9 @@
       "permissionRequired": "Permission name, resource, and action are required.",
       "branchRequired": "Branch name, code, and address are required.",
       "organizationRequired": "Organization name and code are required.",
-      "siteRequired": "Site name and code are required."
+      "siteRequired": "Site name and code are required.",
+      "masterFieldRequired": "Master field name is required.",
+      "masterFieldOptionRequired": "Option label is required."
     },
     "entities": {
       "user": "user",
@@ -138,6 +140,8 @@
       "site": "site",
       "inspection": "inspection",
       "template": "template",
+      "masterField": "master field",
+      "masterFieldOption": "master field option",
       "profile": "profile",
       "section": "section",
       "question": "question",
@@ -231,6 +235,11 @@
     },
     "create": "Create Template",
     "empty": "No inspections found.",
+    "export": {
+      "report": "Download report",
+      "issues": "Download issues",
+      "failed": "Failed to export inspection"
+    },
     "emptyDetail": {
       "title": "No templates found",
       "searchHint": "Try a different keyword.",
@@ -292,6 +301,56 @@
     "subtitle": "Manage inspection form templates",
     "empty": "No templates yet. Create your first template."
   },
+  "masterFields": {
+    "title": "Master Fields",
+    "subtitle": "Manage reusable field definitions for templates and inspection forms.",
+    "search": "Search master fields...",
+    "loading": "Loading master fields...",
+    "actions": {
+      "create": "Add Master Field"
+    },
+    "stats": {
+      "total": "Total Fields",
+      "types": "Field Types",
+      "options": "Options"
+    },
+    "filters": {
+      "allTypes": "All field types"
+    },
+    "table": {
+      "field": "Field",
+      "type": "Type",
+      "options": "Options",
+      "actions": "Actions",
+      "optionCount": "{{count}} options"
+    },
+    "empty": {
+      "title": "No master fields found",
+      "subtitle": "Data from API /master-fields will appear here."
+    },
+    "modal": {
+      "createTitle": "Add Master Field",
+      "editTitle": "Edit Master Field",
+      "description": "Fields follow the API contract for /master-fields.",
+      "name": "Field Name",
+      "namePlaceholder": "e.g. Dealer cleanliness rating",
+      "type": "Field Type"
+    },
+    "options": {
+      "title": "Field Options",
+      "emptyField": "Select a master field",
+      "selectField": "Select a master field",
+      "selectFieldDesc": "Choose a field from the table to manage its option values.",
+      "labelPlaceholder": "Option label",
+      "valuePlaceholder": "option_value",
+      "add": "Add Option",
+      "loadFailed": "Failed to load options",
+      "empty": {
+        "title": "No options yet",
+        "subtitle": "Add options for choice, dropdown, or scored response fields."
+      }
+    }
+  },
   "roles": {
     "permissions": {
       "title": "Role Permissions",
@@ -328,6 +387,7 @@
     "home": "Home",
     "inspections": "Inspections",
     "templates": "Templates",
+    "masterFields": "Master Fields",
     "documents": "Documents",
     "cps": "CPS",
     "actions": "Actions",
@@ -362,6 +422,7 @@
     "title": "Edit template",
     "createTemplate": "Create Template",
     "save": "Save",
+    "publish": "Publish",
     "back": "Back",
     "templateTitlePlaceholder": "Template title",
     "addDescription": "Add description...",
@@ -425,7 +486,47 @@
       "location": "Location",
       "instruction": "Instruction"
     },
-    "replaceMedia": "Replace media attachment"
+    "replaceMedia": "Replace media attachment",
+    "publishConfirm": {
+      "title": "Publish this template?",
+      "text": "The latest draft will be published and available for inspections.",
+      "textDirty": "Unsaved changes will be saved first, then the latest draft will be published."
+    },
+    "publishSuccess": {
+      "title": "Template published",
+      "text": "The template is now available for inspections."
+    },
+    "publishFailed": {
+      "title": "Failed to publish template"
+    }
+  },
+  "users": {
+    "gotify": {
+      "reconcile": "Sync Gotify",
+      "provision": "Provision Gotify",
+      "confirmProvision": {
+        "title": "Provision Gotify?",
+        "text": "A Gotify app/token will be prepared for {{name}}."
+      },
+      "confirmReconcile": {
+        "title": "Sync Gotify users?",
+        "text": "The system will reconcile Gotify configuration for all users."
+      },
+      "successProvision": {
+        "title": "Gotify provisioned",
+        "text": "Gotify configuration for {{name}} is ready."
+      },
+      "successReconcile": {
+        "title": "Gotify synced",
+        "text": "Gotify user configuration has been reconciled."
+      },
+      "failedProvision": {
+        "title": "Failed to provision Gotify"
+      },
+      "failedReconcile": {
+        "title": "Failed to sync Gotify"
+      }
+    }
   },
   "actions": {
     "title": "Actions",

@@ -1,6 +1,7 @@
 import { apiClient, MockInterceptError } from '../lib/apiClient'
 import { API_ENDPOINTS } from '../constants/api'
-import type { NotificationItem } from '../types/notification'
+import { toRecord, toStringValue, unwrapList } from '../lib/apiResponse'
+import type { NotificationGroup, NotificationItem, NotificationType } from '../types/notification'
 
 // TODO: Remove MOCK_DATA when real API is connected.
 const MOCK_DATA: NotificationItem[] = [
@@ -50,15 +51,75 @@ const MOCK_DATA: NotificationItem[] = [
   },
 ]
 
+function normalizeNotification(raw: unknown): NotificationItem {
+  const record = toRecord(raw)
+  const createdAt =
+    toStringValue(record.created_at || record.createdAt || record.createdAtIso) ||
+    new Date().toISOString()
+  const rawType = toStringValue(record.type || record.category)
+  const type: NotificationType =
+    rawType === 'assignment' || rawType === 'due' || rawType === 'comment' || rawType === 'completed'
+      ? rawType
+      : 'comment'
+  const rawGroup = toStringValue(record.group)
+  const isRead = Boolean(record.is_read ?? record.isRead ?? record.read_at ?? record.readAt)
+  const group: NotificationGroup = rawGroup === 'today' || rawGroup === 'earlier'
+    ? rawGroup
+    : isRead
+      ? 'earlier'
+      : 'today'
+
+  return {
+    id: toStringValue(record.id || record.notification_id || record.notificationId) || crypto.randomUUID(),
+    type,
+    title: toStringValue(record.title || record.subject) || 'Notification',
+    message: toStringValue(record.message || record.body || record.description),
+    time: toStringValue(record.time || record.relative_time || record.relativeTime) || createdAt,
+    created_at: createdAt,
+    is_read: isRead,
+    group,
+    route: toStringValue(record.route || record.url || record.path) || undefined,
+  }
+}
+
+function unreadFromPayload(payload: unknown): number {
+  const record = toRecord(payload)
+  const data = toRecord(record.data)
+  const value =
+    record.count ??
+    record.unread_count ??
+    record.unreadCount ??
+    data.count ??
+    data.unread_count ??
+    data.unreadCount
+
+  return typeof value === 'number' ? value : Number(value || 0)
+}
+
 export const notificationService = {
   async getNotifications(): Promise<NotificationItem[]> {
     try {
-      const res = await apiClient.get<NotificationItem[]>(API_ENDPOINTS.NOTIFICATIONS.LIST)
-      return res.data
+      const res = await apiClient.get(API_ENDPOINTS.NOTIFICATIONS.LIST, {
+        params: { page: 1, limit: 50 },
+      })
+      return unwrapList<unknown>(res.data).map(normalizeNotification)
     } catch (e) {
       if (e instanceof MockInterceptError) {
         await new Promise<void>(r => setTimeout(r, 400))
         return [...MOCK_DATA]
+      }
+      throw e
+    }
+  },
+
+  async getUnreadCount(): Promise<number> {
+    try {
+      const res = await apiClient.get(API_ENDPOINTS.NOTIFICATIONS.UNREAD_COUNT)
+      return unreadFromPayload(res.data)
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await new Promise<void>(r => setTimeout(r, 150))
+        return MOCK_DATA.filter(item => !item.is_read).length
       }
       throw e
     }

@@ -8,6 +8,7 @@ import type {
   TemplateField,
   FieldOption,
   MasterField,
+  MasterFieldOption,
   FormType,
   FieldType,
 } from '../types/template'
@@ -147,6 +148,32 @@ function normalizeField(raw: unknown, section: TemplateSection): TemplateField {
     order: toNumberValue(record.order || record.field_order || record.fieldOrder, 1),
     logic_rules: Array.isArray(record.logic_rules) ? record.logic_rules as TemplateField['logic_rules'] : null,
     options: toArray(record.options).map(option => normalizeFieldOption(option, fieldId)),
+  }
+}
+
+function normalizeMasterFieldOption(raw: unknown, masterFieldId: string): MasterFieldOption {
+  const record = toRecord(raw)
+  return {
+    id: toStringValue(record.id || record.option_id || record.master_field_option_id) || uid(),
+    master_field_id:
+      toStringValue(record.master_field_id || record.masterFieldId) ||
+      masterFieldId,
+    label: toStringValue(record.label),
+    value: toStringValue(record.value) || toStringValue(record.label).toLowerCase().replace(/\s+/g, '_'),
+    score_value: toNumberValue(record.score_value || record.scoreValue),
+  }
+}
+
+function normalizeMasterField(raw: unknown): MasterField {
+  const record = toRecord(raw)
+  const id = toStringValue(record.id || record.master_field_id) || uid()
+  return {
+    id,
+    name: toStringValue(record.name || record.label) || 'Master field',
+    field_type: normalizeFieldType(record.field_type || record.fieldType || record.type),
+    configuration: toRecord(record.configuration || record.config),
+    created_at: toStringValue(record.created_at || record.createdAt) || now(),
+    options: toArray(record.options).map(option => normalizeMasterFieldOption(option, id)),
   }
 }
 
@@ -424,6 +451,18 @@ const _db: MockDB = {
       configuration: {},
       created_at: '2026-01-01T00:00:00Z',
     },
+    {
+      id: 'mf-006',
+      name: 'Condition rating',
+      field_type: 'multiple_choice',
+      configuration: {},
+      created_at: '2026-01-01T00:00:00Z',
+      options: [
+        { id: 'mf-006-opt-good', master_field_id: 'mf-006', label: 'Good', value: 'good', score_value: 2 },
+        { id: 'mf-006-opt-fair', master_field_id: 'mf-006', label: 'Fair', value: 'fair', score_value: 1 },
+        { id: 'mf-006-opt-poor', master_field_id: 'mf-006', label: 'Poor', value: 'poor', score_value: 0 },
+      ],
+    },
   ],
 }
 
@@ -634,6 +673,29 @@ export const templateService = {
           _db.templates[idx] = { ..._db.templates[idx], ...patch, updated_at: now() }
         }
         return
+      }
+      throw e
+    }
+  },
+
+  async publishTemplate(id: string): Promise<Template> {
+    try {
+      const res = await apiClient.post(API_ENDPOINTS.TEMPLATES.PUBLISH(id))
+      return normalizeTemplate(unwrapData(res.data))
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await rnd()
+        const idx = _db.templates.findIndex(t => t.id === id)
+        if (idx === -1) throw new Error(`Template ${id} not found`)
+
+        const publishedAt = now()
+        _db.templates[idx] = { ..._db.templates[idx], status: 'published', updated_at: publishedAt }
+        _db.versions = _db.versions.map(version =>
+          version.template_id === id
+            ? { ...version, status: 'published', published_at: publishedAt }
+            : version,
+        )
+        return _db.templates[idx]
       }
       throw e
     }
@@ -900,33 +962,167 @@ export const templateService = {
       const res = await apiClient.get(API_ENDPOINTS.MASTER_FIELDS.LIST, {
         params: { page: 1, limit: 50 },
       })
-      return unwrapList<unknown>(res.data).map(item => {
-        const record = toRecord(item)
-        return {
-          id: toStringValue(record.id || record.master_field_id) || uid(),
-          name: toStringValue(record.name || record.label) || 'Master field',
-          field_type: normalizeFieldType(record.field_type || record.fieldType || record.type),
-          configuration: toRecord(record.configuration || record.config),
-          created_at: toStringValue(record.created_at || record.createdAt) || now(),
-          options: toArray(record.options).map(option => {
-            const optionRecord = toRecord(option)
-            return {
-              id: toStringValue(optionRecord.id || optionRecord.master_field_option_id) || uid(),
-              master_field_id:
-                toStringValue(optionRecord.master_field_id || optionRecord.masterFieldId) ||
-                toStringValue(record.id || record.master_field_id) ||
-                '',
-              label: toStringValue(optionRecord.label),
-              value: toStringValue(optionRecord.value),
-              score_value: toNumberValue(optionRecord.score_value || optionRecord.scoreValue),
-            }
-          }),
-        }
-      })
+      return unwrapList<unknown>(res.data).map(normalizeMasterField)
     } catch (e) {
       if (e instanceof MockInterceptError) {
         await new Promise<void>(r => setTimeout(r, 200))
         return [..._db.masterFields]
+      }
+      throw e
+    }
+  },
+
+  async getMasterField(id: string): Promise<MasterField> {
+    try {
+      const res = await apiClient.get(API_ENDPOINTS.MASTER_FIELDS.DETAIL(id))
+      return normalizeMasterField(unwrapData(res.data))
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await rnd()
+        const masterField = _db.masterFields.find(item => item.id === id)
+        if (!masterField) throw new Error(`MasterField ${id} not found`)
+        return { ...masterField, options: [...(masterField.options ?? [])] }
+      }
+      throw e
+    }
+  },
+
+  async createMasterField(input: Pick<MasterField, 'name' | 'field_type'> & { configuration?: Record<string, unknown> }): Promise<MasterField> {
+    const payload = {
+      name: input.name,
+      field_type: apiFieldType(input.field_type),
+      configuration: input.configuration ?? {},
+    }
+
+    try {
+      const res = await apiClient.post(API_ENDPOINTS.MASTER_FIELDS.CREATE, payload)
+      return normalizeMasterField(unwrapData(res.data))
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await rnd()
+        const masterField: MasterField = {
+          id: uid(),
+          name: input.name,
+          field_type: input.field_type,
+          configuration: input.configuration ?? {},
+          created_at: now(),
+          options: [],
+        }
+        _db.masterFields = [masterField, ..._db.masterFields]
+        return masterField
+      }
+      throw e
+    }
+  },
+
+  async updateMasterField(id: string, input: Partial<Pick<MasterField, 'name' | 'field_type' | 'configuration'>>): Promise<MasterField> {
+    const payload = {
+      ...(input.name !== undefined ? { name: input.name } : {}),
+      ...(input.field_type !== undefined ? { field_type: apiFieldType(input.field_type) } : {}),
+      ...(input.configuration !== undefined ? { configuration: input.configuration } : {}),
+    }
+
+    try {
+      const res = await apiClient.put(API_ENDPOINTS.MASTER_FIELDS.UPDATE(id), payload)
+      return normalizeMasterField(unwrapData(res.data))
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await rnd()
+        const index = _db.masterFields.findIndex(item => item.id === id)
+        if (index === -1) throw new Error(`MasterField ${id} not found`)
+        _db.masterFields[index] = { ..._db.masterFields[index], ...input }
+        return _db.masterFields[index]
+      }
+      throw e
+    }
+  },
+
+  async deleteMasterField(id: string): Promise<void> {
+    try {
+      await apiClient.delete(API_ENDPOINTS.MASTER_FIELDS.DELETE(id))
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await rnd()
+        _db.masterFields = _db.masterFields.filter(item => item.id !== id)
+        _db.fields = _db.fields.map(field =>
+          field.master_field_id === id ? { ...field, master_field_id: null } : field,
+        )
+        return
+      }
+      throw e
+    }
+  },
+
+  async getMasterFieldOptions(masterFieldId: string): Promise<MasterFieldOption[]> {
+    try {
+      const res = await apiClient.get(API_ENDPOINTS.MASTER_FIELDS.OPTIONS(masterFieldId))
+      return unwrapList<unknown>(res.data).map(item => normalizeMasterFieldOption(item, masterFieldId))
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await rnd()
+        return [...(_db.masterFields.find(item => item.id === masterFieldId)?.options ?? [])]
+      }
+      throw e
+    }
+  },
+
+  async createMasterFieldOption(masterFieldId: string, input: Pick<MasterFieldOption, 'label' | 'value' | 'score_value'>): Promise<MasterFieldOption> {
+    try {
+      const res = await apiClient.post(API_ENDPOINTS.MASTER_FIELDS.OPTIONS(masterFieldId), input)
+      return normalizeMasterFieldOption(unwrapData(res.data), masterFieldId)
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await rnd()
+        const masterField = _db.masterFields.find(item => item.id === masterFieldId)
+        if (!masterField) throw new Error(`MasterField ${masterFieldId} not found`)
+        const option: MasterFieldOption = {
+          id: uid(),
+          master_field_id: masterFieldId,
+          label: input.label,
+          value: input.value || input.label.toLowerCase().replace(/\s+/g, '_'),
+          score_value: input.score_value,
+        }
+        masterField.options = [option, ...(masterField.options ?? [])]
+        return option
+      }
+      throw e
+    }
+  },
+
+  async updateMasterFieldOption(
+    masterFieldId: string,
+    optionId: string,
+    input: Partial<Pick<MasterFieldOption, 'label' | 'value' | 'score_value'>>,
+  ): Promise<MasterFieldOption> {
+    try {
+      const res = await apiClient.put(API_ENDPOINTS.MASTER_FIELDS.OPTION(masterFieldId, optionId), input)
+      return normalizeMasterFieldOption(unwrapData(res.data), masterFieldId)
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await rnd()
+        const masterField = _db.masterFields.find(item => item.id === masterFieldId)
+        const options = masterField?.options ?? []
+        const index = options.findIndex(option => option.id === optionId)
+        if (!masterField || index === -1) throw new Error(`MasterField option ${optionId} not found`)
+        options[index] = { ...options[index], ...input }
+        masterField.options = options
+        return options[index]
+      }
+      throw e
+    }
+  },
+
+  async deleteMasterFieldOption(masterFieldId: string, optionId: string): Promise<void> {
+    try {
+      await apiClient.delete(API_ENDPOINTS.MASTER_FIELDS.OPTION(masterFieldId, optionId))
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await rnd()
+        const masterField = _db.masterFields.find(item => item.id === masterFieldId)
+        if (masterField) {
+          masterField.options = (masterField.options ?? []).filter(option => option.id !== optionId)
+        }
+        return
       }
       throw e
     }

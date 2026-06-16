@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Loader2, Pencil, Plus, RefreshCcw, Search, Trash2, UserPlus, Users, X } from 'lucide-react';
+import { BellPlus, Loader2, Pencil, Plus, RefreshCcw, Search, Trash2, UserPlus, Users, X } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { useRoleStore } from '../stores/roleStore';
 import { useUserStore } from '../stores/userStore';
@@ -20,7 +20,7 @@ const EMPTY_FORM: UserFormInput = {
 
 const UsersPage: React.FC = () => {
   const { t } = useTranslation();
-  const { users, isLoading, isSaving, error, fetchUsers, createUser, updateUser, deleteUser } =
+  const { users, isLoading, isSaving, error, fetchUsers, createUser, updateUser, deleteUser, provisionGotify, reconcileGotify } =
     useUserStore();
   const { roles, fetchRoles } = useRoleStore();
   const [query, setQuery] = useState('');
@@ -28,6 +28,8 @@ const UsersPage: React.FC = () => {
   const [editingUser, setEditingUser] = useState<ManagementUser | null>(null);
   const [form, setForm] = useState<UserFormInput>(EMPTY_FORM);
   const [formError, setFormError] = useState('');
+  const [gotifyUserId, setGotifyUserId] = useState<string | null>(null);
+  const [isReconcilingGotify, setIsReconcilingGotify] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -129,6 +131,58 @@ const UsersPage: React.FC = () => {
     }
   };
 
+  const handleProvisionGotify = async (user: ManagementUser) => {
+    const confirmed = await appSwal.confirm({
+      title: t('users.gotify.confirmProvision.title'),
+      text: t('users.gotify.confirmProvision.text', { name: user.name }),
+      confirmText: t('swal.buttons.yes'),
+      cancelText: t('swal.buttons.no'),
+    });
+    if (!confirmed) return;
+
+    setGotifyUserId(user.id);
+    try {
+      await provisionGotify(user.id);
+      await appSwal.success({
+        title: t('users.gotify.successProvision.title'),
+        text: t('users.gotify.successProvision.text', { name: user.name }),
+      });
+    } catch (gotifyError) {
+      await appSwal.error({
+        title: t('users.gotify.failedProvision.title'),
+        text: getApiErrorMessage(gotifyError),
+      });
+    } finally {
+      setGotifyUserId(null);
+    }
+  };
+
+  const handleReconcileGotify = async () => {
+    const confirmed = await appSwal.confirm({
+      title: t('users.gotify.confirmReconcile.title'),
+      text: t('users.gotify.confirmReconcile.text'),
+      confirmText: t('swal.buttons.yes'),
+      cancelText: t('swal.buttons.no'),
+    });
+    if (!confirmed) return;
+
+    setIsReconcilingGotify(true);
+    try {
+      await reconcileGotify();
+      await appSwal.success({
+        title: t('users.gotify.successReconcile.title'),
+        text: t('users.gotify.successReconcile.text'),
+      });
+    } catch (gotifyError) {
+      await appSwal.error({
+        title: t('users.gotify.failedReconcile.title'),
+        text: getApiErrorMessage(gotifyError),
+      });
+    } finally {
+      setIsReconcilingGotify(false);
+    }
+  };
+
   return (
     <div className="page-shell">
       <div className="page-header">
@@ -137,6 +191,10 @@ const UsersPage: React.FC = () => {
           <p className="page-subtitle">Kelola akun, akses role, dan status user auditor.</p>
         </div>
         <div className="flex w-full items-center gap-3 sm:w-auto">
+          <button className="btn-secondary flex-1 sm:flex-none" onClick={handleReconcileGotify} disabled={isReconcilingGotify}>
+            {isReconcilingGotify ? <Loader2 className="h-4 w-4 animate-spin" /> : <BellPlus className="h-4 w-4" />}
+            {t('users.gotify.reconcile')}
+          </button>
           <button className="icon-button" onClick={() => fetchUsers()} disabled={isLoading}>
             <RefreshCcw className={cn('h-5 w-5', isLoading && 'animate-spin')} />
           </button>
@@ -215,6 +273,16 @@ const UsersPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="inline-flex items-center gap-1">
+                        <button
+                          className="rounded-lg p-2 text-muted-foreground transition hover:bg-primary-blue/10 hover:text-primary-blue disabled:opacity-50"
+                          onClick={() => handleProvisionGotify(user)}
+                          disabled={gotifyUserId === user.id}
+                          title={t('users.gotify.provision')}
+                        >
+                          {gotifyUserId === user.id
+                            ? <Loader2 className="h-4 w-4 animate-spin" />
+                            : <BellPlus className="h-4 w-4" />}
+                        </button>
                         <button
                           className="rounded-lg p-2 text-muted-foreground transition hover:bg-surface hover:text-foreground"
                           onClick={() => openEdit(user)}

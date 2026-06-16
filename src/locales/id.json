@@ -127,7 +127,9 @@
       "permissionRequired": "Nama, resource, dan action permission wajib diisi.",
       "branchRequired": "Nama, kode, dan alamat branch wajib diisi.",
       "organizationRequired": "Nama dan kode organization wajib diisi.",
-      "siteRequired": "Nama dan kode site wajib diisi."
+      "siteRequired": "Nama dan kode site wajib diisi.",
+      "masterFieldRequired": "Nama master field wajib diisi.",
+      "masterFieldOptionRequired": "Label opsi wajib diisi."
     },
     "entities": {
       "user": "user",
@@ -138,6 +140,8 @@
       "site": "site",
       "inspection": "inspeksi",
       "template": "template",
+      "masterField": "master field",
+      "masterFieldOption": "opsi master field",
       "profile": "profil",
       "section": "bab",
       "question": "pertanyaan",
@@ -231,6 +235,11 @@
     },
     "create": "Buat Template",
     "empty": "Tidak ada inspeksi ditemukan.",
+    "export": {
+      "report": "Unduh report",
+      "issues": "Unduh issues",
+      "failed": "Gagal export inspeksi"
+    },
     "emptyDetail": {
       "title": "Tidak ada template",
       "searchHint": "Coba kata kunci lain.",
@@ -292,6 +301,56 @@
     "subtitle": "Kelola template formulir inspeksi",
     "empty": "Belum ada template. Buat template pertama Anda."
   },
+  "masterFields": {
+    "title": "Master Fields",
+    "subtitle": "Kelola definisi field reusable untuk template dan form inspeksi.",
+    "search": "Cari master field...",
+    "loading": "Memuat master field...",
+    "actions": {
+      "create": "Tambah Master Field"
+    },
+    "stats": {
+      "total": "Total Field",
+      "types": "Tipe Field",
+      "options": "Opsi"
+    },
+    "filters": {
+      "allTypes": "Semua tipe field"
+    },
+    "table": {
+      "field": "Field",
+      "type": "Tipe",
+      "options": "Opsi",
+      "actions": "Aksi",
+      "optionCount": "{{count}} opsi"
+    },
+    "empty": {
+      "title": "Master field belum ada",
+      "subtitle": "Data dari API /master-fields akan tampil di sini."
+    },
+    "modal": {
+      "createTitle": "Tambah Master Field",
+      "editTitle": "Edit Master Field",
+      "description": "Field mengikuti kontrak API /master-fields.",
+      "name": "Nama Field",
+      "namePlaceholder": "cth. Penilaian kebersihan dealer",
+      "type": "Tipe Field"
+    },
+    "options": {
+      "title": "Opsi Field",
+      "emptyField": "Pilih master field",
+      "selectField": "Pilih master field",
+      "selectFieldDesc": "Pilih field dari tabel untuk mengelola nilai opsinya.",
+      "labelPlaceholder": "Label opsi",
+      "valuePlaceholder": "nilai_opsi",
+      "add": "Tambah Opsi",
+      "loadFailed": "Gagal memuat opsi",
+      "empty": {
+        "title": "Belum ada opsi",
+        "subtitle": "Tambahkan opsi untuk pilihan, dropdown, atau jawaban berskor."
+      }
+    }
+  },
   "roles": {
     "permissions": {
       "title": "Permission Role",
@@ -328,6 +387,7 @@
     "home": "Beranda",
     "inspections": "Inspeksi",
     "templates": "Templates",
+    "masterFields": "Master Fields",
     "documents": "Dokumen",
     "cps": "CPS",
     "actions": "Tindakan",
@@ -362,6 +422,7 @@
     "title": " Template Builder",
     "createTemplate": "Buat Template",
     "save": "Simpan",
+    "publish": "Publish",
     "back": "Kembali",
     "templateTitlePlaceholder": "Judul template",
     "addDescription": "Tambahkan deskripsi...",
@@ -426,7 +487,47 @@
       "location": "Lokasi",
       "instruction": "Instruksi"
     },
-    "replaceMedia": "Ganti lampiran media"
+    "replaceMedia": "Ganti lampiran media",
+    "publishConfirm": {
+      "title": "Publish template ini?",
+      "text": "Draft terbaru akan dipublish dan tersedia untuk inspeksi.",
+      "textDirty": "Perubahan yang belum disimpan akan disimpan dulu, lalu draft terbaru akan dipublish."
+    },
+    "publishSuccess": {
+      "title": "Template dipublish",
+      "text": "Template sudah tersedia untuk inspeksi."
+    },
+    "publishFailed": {
+      "title": "Gagal publish template"
+    }
+  },
+  "users": {
+    "gotify": {
+      "reconcile": "Sync Gotify",
+      "provision": "Provision Gotify",
+      "confirmProvision": {
+        "title": "Provision Gotify?",
+        "text": "Aplikasi/token Gotify akan disiapkan untuk {{name}}."
+      },
+      "confirmReconcile": {
+        "title": "Sync user Gotify?",
+        "text": "Sistem akan menyelaraskan konfigurasi Gotify untuk semua user."
+      },
+      "successProvision": {
+        "title": "Gotify berhasil disiapkan",
+        "text": "Konfigurasi Gotify untuk {{name}} sudah siap."
+      },
+      "successReconcile": {
+        "title": "Gotify tersinkron",
+        "text": "Konfigurasi user Gotify berhasil diselaraskan."
+      },
+      "failedProvision": {
+        "title": "Gagal provision Gotify"
+      },
+      "failedReconcile": {
+        "title": "Gagal sync Gotify"
+      }
+    }
   },
   "actions": {
     "title": "Tindakan",

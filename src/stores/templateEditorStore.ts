@@ -33,6 +33,7 @@ interface TemplateEditorState {
     patch: Partial<Pick<Template, 'title' | 'description' | 'form_type' | 'scoring_enabled'>>,
   ) => void
   saveTemplate: () => Promise<void>
+  publishTemplate: () => Promise<void>
 
   addSection: () => Promise<void>
   updateSection: (
@@ -141,6 +142,26 @@ export const useTemplateEditorStore = create<TemplateEditorState>()((set, get) =
       })
     } catch (e) {
       set({ isSaving: false, error: getApiErrorMessage(e, 'Failed to save template') })
+      throw e
+    }
+  },
+
+  publishTemplate: async () => {
+    const { template } = get()
+    if (!template) return
+    set({ isSaving: true, error: null })
+    try {
+      const published = await templateService.publishTemplate(template.id)
+      set(state => ({
+        template: published,
+        version: state.version
+          ? { ...state.version, status: 'published', published_at: new Date().toISOString() }
+          : state.version,
+        isSaving: false,
+        isDirty: false,
+      }))
+    } catch (e) {
+      set({ isSaving: false, error: getApiErrorMessage(e, 'Failed to publish template') })
       throw e
     }
   },

@@ -18,6 +18,8 @@ function normalizeUser(payload: unknown): AuthUser {
   const role = toRecord(source.role);
   const organization = toRecord(source.organization);
   const branch = toRecord(source.branch);
+  const groups = Array.isArray(source.groups) ? source.groups.map(toRecord) : [];
+  const primaryGroup = groups[0] ?? {};
 
   return {
     id: toStringValue(source.id || source.user_id),
@@ -58,6 +60,15 @@ function normalizeUser(payload: unknown): AuthUser {
       toStringValue(source.branch_id) ||
       toStringValue(source.branchId) ||
       toStringValue(branch.id) ||
+      undefined,
+    organizationName: toStringValue(organization.name) || undefined,
+    groupName:
+      toStringValue(primaryGroup.name) ||
+      toStringValue(branch.name) ||
+      undefined,
+    groupAddress:
+      toStringValue(primaryGroup.address) ||
+      toStringValue(branch.address) ||
       undefined,
     avatar: toStringValue(source.avatar_url) || toStringValue(source.avatar) || undefined,
   };

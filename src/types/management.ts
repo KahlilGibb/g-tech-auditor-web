@@ -33,6 +33,15 @@ export interface UserFormInput {
   status?: EntityStatus;
 }
 
+export interface GotifyConfig {
+  userId?: string;
+  appId?: string;
+  token?: string;
+  url?: string;
+  enabled?: boolean;
+  provisionedAt?: string;
+}
+
 export interface Role {
   id: string;
   name: string;
@@ -122,24 +131,23 @@ export interface SiteFormInput {
   status?: EntityStatus;
 }
 
-export interface GetOrganizationsRequest extends ListQuery {}
+export type GetOrganizationsRequest = ListQuery
 export interface GetOrganizationsResponse {
   organizations: Organization[];
 }
 
-export interface GetGroupsRequest extends ListQuery {}
+export type GetGroupsRequest = ListQuery
 export interface GetGroupsResponse {
   branches: Branch[];
 }
 
-export interface GetSitesRequest extends ListQuery {}
+export type GetSitesRequest = ListQuery
 export interface GetSitesResponse {
   sites: Site[];
 }
 
-export interface CreateSiteRequest extends SiteFormInput {}
-export interface CreateSiteResponse extends Site {}
+export type CreateSiteRequest = SiteFormInput
+export type CreateSiteResponse = Site
 
-export interface UpdateSiteRequest extends SiteFormInput {}
-export interface UpdateSiteResponse extends Site {}
-
+export type UpdateSiteRequest = SiteFormInput
+export type UpdateSiteResponse = Site

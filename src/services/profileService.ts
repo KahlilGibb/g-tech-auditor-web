@@ -37,6 +37,28 @@ export const profileService = {
       throw e
     }
   },
+
+  /**
+   * Upload avatar image.
+   */
+  async uploadAvatar(file: File): Promise<{ avatarBase64: string }> {
+    try {
+      const formData = new FormData()
+      formData.append('avatar', file)
+      const res = await apiClient.post<{ avatarBase64: string }>(
+        API_ENDPOINTS.PROFILE.UPLOAD_AVATAR,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      )
+      return res.data
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await new Promise<void>(r => setTimeout(r, 500))
+        return { avatarBase64: 'mock_base64_string' }
+      }
+      throw e
+    }
+  },
 }
 
 /**

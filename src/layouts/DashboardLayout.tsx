@@ -12,6 +12,7 @@ import {
   ChevronRight,
   ClipboardCheck,
   ClipboardList,
+  Database,
   FileText,
   FolderOpen,
   GraduationCap,
@@ -86,7 +87,7 @@ const NotificationPanel: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
   const todayNotifs = notifications.filter(notification => notification.group === 'today');
   const earlierNotifs = notifications.filter(notification => notification.group === 'earlier');
-  const unreadCount = notifications.filter(notification => !notification.is_read).length;
+  const unreadCount = useNotificationStore(state => state.unreadCount);
 
   const TypeIcon = ({ type }: { type: string }) => {
     if (type === 'assignment') return <ClipboardList className="h-4 w-4" />;
@@ -202,9 +203,7 @@ const DashboardLayout: React.FC = () => {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
 
   const { profile } = useProfileStore();
-  const unreadCount = useNotificationStore(state =>
-    state.notifications.filter(notification => !notification.is_read).length,
-  );
+  const unreadCount = useNotificationStore(state => state.unreadCount);
   const fetchNotifications = useNotificationStore(state => state.fetchNotifications);
 
   useEffect(() => {
@@ -224,6 +223,7 @@ const DashboardLayout: React.FC = () => {
     { to: '/', icon: LayoutDashboard, labelKey: 'home' },
     { to: '/inspections', icon: ClipboardCheck, labelKey: 'inspections' },
     { to: '/templates', icon: FileText, labelKey: 'templates' },
+    { to: '/master-fields', icon: Database, labelKey: 'masterFields' },
     { to: '/documents', icon: FolderOpen, labelKey: 'documents' },
     { to: '/actions', icon: CheckSquare, labelKey: 'actions' },
     { to: '/cps', icon: Shield, labelKey: 'cps' },
