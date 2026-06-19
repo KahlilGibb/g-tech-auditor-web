@@ -6,6 +6,7 @@ import { getApiErrorMessage } from '../lib/apiResponse';
 import { useRoleStore } from '../stores/roleStore';
 import type { Permission, PermissionFormInput } from '../types/management';
 import { cn } from '../utils/cn';
+import { Can } from '../components/rbac/Can';
 
 const EMPTY_FORM: PermissionFormInput = {
   name: '',
@@ -120,10 +121,12 @@ const PermissionsPage: React.FC = () => {
           <button className="icon-button" onClick={() => fetchPermissions()} disabled={isLoading}>
             <RefreshCcw className={cn('h-5 w-5', isLoading && 'animate-spin')} />
           </button>
-          <button className="btn-primary flex-1 sm:flex-none" onClick={openCreate}>
-            <Plus className="h-4 w-4" />
-            Tambah Permission
-          </button>
+          <Can resource="permissions" action="create">
+            <button className="btn-primary flex-1 sm:flex-none" onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              Tambah Permission
+            </button>
+          </Can>
         </div>
       </div>
 
@@ -224,12 +227,14 @@ const PermissionsPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button
-                        className="rounded-lg p-2 text-muted-foreground transition hover:bg-danger-red/10 hover:text-danger-red"
-                        onClick={() => handleDelete(permission)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <Can resource="permissions" action="delete">
+                        <button
+                          className="rounded-lg p-2 text-muted-foreground transition hover:bg-danger-red/10 hover:text-danger-red"
+                          onClick={() => handleDelete(permission)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </Can>
                     </td>
                   </tr>
                 ))
@@ -241,7 +246,7 @@ const PermissionsPage: React.FC = () => {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-          <form onSubmit={handleSubmit} className="w-full max-w-lg rounded-lg border border-divider bg-white shadow-xl">
+          <form onSubmit={handleSubmit} className="w-full max-w-lg rounded-lg border border-divider bg-card shadow-xl">
             <div className="flex items-center justify-between border-b border-divider px-5 py-4">
               <div>
                 <h2 className="text-base font-semibold text-foreground">Tambah Permission</h2>

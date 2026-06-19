@@ -39,6 +39,7 @@ import type {
   FileStatus,
   ReferenceType,
 } from '../types/document';
+import { Can } from '../components/rbac/Can';
 
 const INITIAL_ACTIVITIES: ActivityLog[] = [];
 
@@ -516,22 +517,24 @@ const DocumentManagementPage: React.FC = () => {
           >
             <RefreshCcw className={cn('h-5 w-5', isLoading && 'animate-spin')} />
           </button>
-          <button
-            onClick={() => setIsFolderModalOpen(true)}
-            className="btn-secondary"
-            disabled={isLoading || isSaving}
-          >
-            <FolderPlus className="h-4.5 w-4.5" />
-            {t('documents.actions.createFolder')}
-          </button>
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="btn-primary"
-            disabled={isLoading || isSaving}
-          >
-            <UploadCloud className="h-4.5 w-4.5" />
-            {t('documents.actions.upload')}
-          </button>
+          <Can resource="documents" action="create">
+            <button
+              onClick={() => setIsFolderModalOpen(true)}
+              className="btn-secondary"
+              disabled={isLoading || isSaving}
+            >
+              <FolderPlus className="h-4.5 w-4.5" />
+              {t('documents.actions.createFolder')}
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="btn-primary"
+              disabled={isLoading || isSaving}
+            >
+              <UploadCloud className="h-4.5 w-4.5" />
+              {t('documents.actions.upload')}
+            </button>
+          </Can>
           <input
             type="file"
             ref={fileInputRef}
@@ -632,7 +635,7 @@ const DocumentManagementPage: React.FC = () => {
                   Array.from({ length: 3 }).map((_, idx) => (
                     <div
                       key={idx}
-                      className="bg-white p-4 rounded-lg border border-divider shadow-sm animate-pulse flex items-center gap-3"
+                      className="bg-card p-4 rounded-lg border border-divider shadow-sm animate-pulse flex items-center gap-3"
                     >
                       <div className="h-10 w-10 bg-surface rounded-lg shrink-0"></div>
                       <div className="flex-1 space-y-2">
@@ -645,7 +648,7 @@ const DocumentManagementPage: React.FC = () => {
                   currentFolders.map(folder => (
                     <div
                       key={folder.id}
-                      className="group relative flex items-center justify-between rounded-lg border border-divider bg-white p-4 transition hover:border-primary-blue/30 hover:shadow-md cursor-pointer"
+                      className="group relative flex items-center justify-between rounded-lg border border-divider bg-card p-4 transition hover:border-primary-blue/30 hover:shadow-md cursor-pointer"
                       onClick={() => {
                         setActiveFolderId(folder.id);
                         setCurrentPage(1);
@@ -681,29 +684,33 @@ const DocumentManagementPage: React.FC = () => {
                           <MoreVertical className="h-4 w-4" />
                         </button>
                         {activeFolderMenuId === folder.id && (
-                          <div className="absolute right-0 top-full z-10 mt-1 w-36 rounded-lg border border-divider bg-white p-1 shadow-lg animate-fade-in">
-                            <button
-                              onClick={() => openRenameModal(folder.id, 'folder', folder.name)}
-                              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-foreground hover:bg-surface"
-                            >
-                              <Edit2 className="h-3.5 w-3.5" />
-                              {t('documents.actions.rename')}
-                            </button>
-                            <button
-                              onClick={() => openMoveModal(folder.id, 'folder')}
-                              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-foreground hover:bg-surface"
-                            >
-                              <Move className="h-3.5 w-3.5" />
-                              {t('documents.actions.move')}
-                            </button>
-                            <hr className="my-1 border-divider" />
-                            <button
-                              onClick={() => handleDeleteFolder(folder)}
-                              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-semibold text-danger-red hover:bg-danger-red/5"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              {t('documents.actions.delete')}
-                            </button>
+                          <div className="absolute right-0 top-full z-10 mt-1 w-36 rounded-lg border border-divider bg-card p-1 shadow-lg animate-fade-in">
+                            <Can resource="documents" action="update">
+                              <button
+                                onClick={() => openRenameModal(folder.id, 'folder', folder.name)}
+                                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-foreground hover:bg-surface"
+                              >
+                                <Edit2 className="h-3.5 w-3.5" />
+                                {t('documents.actions.rename')}
+                              </button>
+                              <button
+                                onClick={() => openMoveModal(folder.id, 'folder')}
+                                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-foreground hover:bg-surface"
+                              >
+                                <Move className="h-3.5 w-3.5" />
+                                {t('documents.actions.move')}
+                              </button>
+                            </Can>
+                            <Can resource="documents" action="delete">
+                              <hr className="my-1 border-divider" />
+                              <button
+                                onClick={() => handleDeleteFolder(folder)}
+                                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-semibold text-danger-red hover:bg-danger-red/5"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                                {t('documents.actions.delete')}
+                              </button>
+                            </Can>
                           </div>
                         )}
                       </div>
@@ -800,7 +807,7 @@ const DocumentManagementPage: React.FC = () => {
                                 <MoreVertical className="h-4 w-4" />
                               </button>
                               {activeFileMenuId === file.id && (
-                                <div className="absolute right-0 top-full z-10 mt-1 w-40 rounded-lg border border-divider bg-white p-1 shadow-lg animate-fade-in">
+                                <div className="absolute right-0 top-full z-10 mt-1 w-40 rounded-lg border border-divider bg-card p-1 shadow-lg animate-fade-in">
                                   <button
                                     onClick={() => handlePreview(file)}
                                     className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-foreground hover:bg-surface"
@@ -815,28 +822,32 @@ const DocumentManagementPage: React.FC = () => {
                                     <Download className="h-3.5 w-3.5" />
                                     {t('documents.actions.download')}
                                   </button>
-                                  <button
-                                    onClick={() => openRenameModal(file.id, 'file', file.name)}
-                                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-foreground hover:bg-surface"
-                                  >
-                                    <Edit2 className="h-3.5 w-3.5" />
-                                    {t('documents.actions.rename')}
-                                  </button>
-                                  <button
-                                    onClick={() => openMoveModal(file.id, 'file')}
-                                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-foreground hover:bg-surface"
-                                  >
-                                    <Move className="h-3.5 w-3.5" />
-                                    {t('documents.actions.move')}
-                                  </button>
-                                  <hr className="my-1 border-divider" />
-                                  <button
-                                    onClick={() => handleDeleteFile(file)}
-                                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-semibold text-danger-red hover:bg-danger-red/5"
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                    {t('documents.actions.delete')}
-                                  </button>
+                                  <Can resource="documents" action="update">
+                                    <button
+                                      onClick={() => openRenameModal(file.id, 'file', file.name)}
+                                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-foreground hover:bg-surface"
+                                    >
+                                      <Edit2 className="h-3.5 w-3.5" />
+                                      {t('documents.actions.rename')}
+                                    </button>
+                                    <button
+                                      onClick={() => openMoveModal(file.id, 'file')}
+                                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-foreground hover:bg-surface"
+                                    >
+                                      <Move className="h-3.5 w-3.5" />
+                                      {t('documents.actions.move')}
+                                    </button>
+                                  </Can>
+                                  <Can resource="documents" action="delete">
+                                    <hr className="my-1 border-divider" />
+                                    <button
+                                      onClick={() => handleDeleteFile(file)}
+                                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-semibold text-danger-red hover:bg-danger-red/5"
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                      {t('documents.actions.delete')}
+                                    </button>
+                                  </Can>
                                 </div>
                               )}
                             </div>
@@ -850,7 +861,7 @@ const DocumentManagementPage: React.FC = () => {
 
               {/* Pagination UI */}
               {filteredFiles.length > ITEMS_PER_PAGE && !isLoading && (
-                <div className="flex items-center justify-between border-t border-divider px-6 py-4 bg-white">
+                <div className="flex items-center justify-between border-t border-divider px-6 py-4 bg-card">
                   <span className="text-xs text-muted-foreground">
                     {t('documents.table.paginationText', {
                       start: (currentPage - 1) * ITEMS_PER_PAGE + 1,
@@ -891,7 +902,7 @@ const DocumentManagementPage: React.FC = () => {
               'border-2 border-dashed rounded-lg p-8 text-center transition flex flex-col items-center justify-center gap-3 cursor-pointer',
               isDragging
                 ? 'border-primary-blue bg-primary-blue/5'
-                : 'border-divider bg-white hover:border-primary-blue/30',
+                : 'border-divider bg-card hover:border-primary-blue/30',
             )}
             onClick={() => fileInputRef.current?.click()}
           >
@@ -996,7 +1007,7 @@ const DocumentManagementPage: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
           <form
             onSubmit={handleCreateFolder}
-            className="w-full max-w-md rounded-lg border border-divider bg-white shadow-xl animate-fade-in-scale"
+            className="w-full max-w-md rounded-lg border border-divider bg-card shadow-xl animate-fade-in-scale"
           >
             <div className="flex items-center justify-between border-b border-divider px-5 py-4">
               <h2 className="text-base font-semibold text-foreground">
@@ -1048,7 +1059,7 @@ const DocumentManagementPage: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
           <form
             onSubmit={handleRenameSubmit}
-            className="w-full max-w-md rounded-lg border border-divider bg-white shadow-xl animate-fade-in-scale"
+            className="w-full max-w-md rounded-lg border border-divider bg-card shadow-xl animate-fade-in-scale"
           >
             <div className="flex items-center justify-between border-b border-divider px-5 py-4">
               <h2 className="text-base font-semibold text-foreground">
@@ -1098,7 +1109,7 @@ const DocumentManagementPage: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
           <form
             onSubmit={handleMoveSubmit}
-            className="w-full max-w-md rounded-lg border border-divider bg-white shadow-xl animate-fade-in-scale"
+            className="w-full max-w-md rounded-lg border border-divider bg-card shadow-xl animate-fade-in-scale"
           >
             <div className="flex items-center justify-between border-b border-divider px-5 py-4">
               <h2 className="text-base font-semibold text-foreground">
@@ -1152,14 +1163,14 @@ const DocumentManagementPage: React.FC = () => {
       {/* PREVIEW MODAL */}
       {isPreviewOpen && previewFile && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4">
-          <div className="w-full max-w-3xl rounded-lg border border-divider bg-white shadow-2xl flex flex-col md:flex-row overflow-hidden animate-fade-in-scale">
+          <div className="w-full max-w-3xl rounded-lg border border-divider bg-card shadow-2xl flex flex-col md:flex-row overflow-hidden animate-fade-in-scale">
             
             {/* Left Box: Graphic / File View */}
             <div className="flex-1 bg-surface p-6 flex items-center justify-center border-r border-divider min-h-[300px] max-h-[450px]">
               {['png', 'jpg', 'jpeg'].includes(previewFile.type.toLowerCase()) ? (
                 // Simulated gorgeous image render
                 <div className="flex flex-col items-center justify-center text-center">
-                  <div className="rounded-lg border border-divider overflow-hidden bg-white max-w-full max-h-[320px] shadow-sm">
+                  <div className="rounded-lg border border-divider overflow-hidden bg-card max-w-full max-h-[320px] shadow-sm">
                     <img
                       src="/api/placeholder/400/300"
                       alt={previewFile.name}

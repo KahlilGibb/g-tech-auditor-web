@@ -1,3 +1,10 @@
+export interface AuthPermission {
+  id?: string;
+  name: string;
+  resource?: string;
+  action?: string;
+}
+
 export interface AuthUser {
   id: string;
   email: string;
@@ -12,6 +19,7 @@ export interface AuthUser {
   groupName?: string;
   groupAddress?: string;
   avatar?: string;
+  permissions?: AuthPermission[];
 }
 
 export interface AuthState {

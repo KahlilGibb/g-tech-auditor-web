@@ -93,7 +93,7 @@ export default function FieldTypePicker({
       {/* Sheet */}
       <div
         ref={sheetRef}
-        className="relative w-full sm:max-w-lg bg-white rounded-t-[28px] sm:rounded-2xl shadow-2xl transition-transform duration-300 ease-out"
+        className="relative w-full sm:max-w-lg bg-card rounded-t-[28px] sm:rounded-2xl shadow-2xl transition-transform duration-300 ease-out"
         style={{
           transform: visible ? 'translateY(0)' : 'translateY(100%)',
           maxHeight: '85dvh',

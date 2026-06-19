@@ -36,6 +36,8 @@ import { useProfileStore } from '../stores/profileStore';
 import { cn } from '../utils/cn';
 import { appSwal } from '../lib/appSwal';
 import { getApiErrorMessage } from '../lib/apiResponse';
+import { NAV_PERMISSIONS, type NavPermissionRequirement } from '../constants/rbac';
+import { useRbac } from '../hooks/useRbac';
 
 const SidebarItem: React.FC<{
   to: string;
@@ -149,14 +151,14 @@ const NotificationPanel: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   return (
     <div
       ref={panelRef}
-      className="absolute right-0 top-full z-50 mt-2 w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-lg border border-divider bg-white shadow-xl shadow-slate-900/10"
+      className="absolute right-0 top-full z-50 mt-2 w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-lg border border-divider bg-card shadow-xl shadow-black/40"
     >
       <div className="flex items-center justify-between border-b border-divider px-4 py-3">
         <div className="flex items-center gap-2">
           <BellRing className="h-4 w-4 text-primary-blue" />
           <span className="text-sm font-semibold text-foreground">{t('nav.notifications')}</span>
           {unreadCount > 0 && (
-            <span className="rounded-full bg-primary-blue px-1.5 py-0.5 text-[10px] font-semibold text-white">
+            <span className="rounded-full bg-primary-blue px-1.5 py-0.5 text-[10px] font-semibold text-[#181a20]">
               {unreadCount}
             </span>
           )}
@@ -197,6 +199,7 @@ const NotificationPanel: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 const DashboardLayout: React.FC = () => {
   const { t } = useTranslation();
   const { logout, user } = useAuth();
+  const { canRequirement } = useRbac();
   const navigate = useNavigate();
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -219,26 +222,54 @@ const DashboardLayout: React.FC = () => {
     .substring(0, 2)
     .toUpperCase();
 
-  const mainNavItems = [
+  const mainNavItems: Array<{
+    to: string;
+    icon: React.ElementType;
+    labelKey: string;
+    permission?: NavPermissionRequirement;
+  }> = [
     { to: '/', icon: LayoutDashboard, labelKey: 'home' },
-    { to: '/inspections', icon: ClipboardCheck, labelKey: 'inspections' },
-    { to: '/templates', icon: FileText, labelKey: 'templates' },
-    { to: '/master-fields', icon: Database, labelKey: 'masterFields' },
-    { to: '/documents', icon: FolderOpen, labelKey: 'documents' },
-    { to: '/actions', icon: CheckSquare, labelKey: 'actions' },
-    { to: '/cps', icon: Shield, labelKey: 'cps' },
-    { to: '/training', icon: GraduationCap, labelKey: 'training' },
+    {
+      to: '/inspections',
+      icon: ClipboardCheck,
+      labelKey: 'inspections',
+      permission: NAV_PERMISSIONS.inspections,
+    },
+    { to: '/templates', icon: FileText, labelKey: 'templates', permission: NAV_PERMISSIONS.templates },
+    {
+      to: '/master-fields',
+      icon: Database,
+      labelKey: 'masterFields',
+      permission: NAV_PERMISSIONS.masterFields,
+    },
+    { to: '/documents', icon: FolderOpen, labelKey: 'documents', permission: NAV_PERMISSIONS.documents },
+    { to: '/actions', icon: CheckSquare, labelKey: 'actions', permission: NAV_PERMISSIONS.actions },
+    { to: '/cps', icon: Shield, labelKey: 'cps', permission: NAV_PERMISSIONS.cps },
+    { to: '/training', icon: GraduationCap, labelKey: 'training', permission: NAV_PERMISSIONS.training },
   ];
 
-  const adminNavItems = [
-    { to: '/users', icon: Users, labelKey: 'users' },
-    { to: '/roles', icon: UserCog, labelKey: 'roles' },
-    { to: '/permissions', icon: KeyRound, labelKey: 'permissions' },
-    { to: '/organizations', icon: Building2, labelKey: 'organizations' },
-    { to: '/branches', icon: Building2, labelKey: 'branches' },
-    { to: '/sites', icon: MapPinned, labelKey: 'sites' },
+  const adminNavItems: Array<{
+    to: string;
+    icon: React.ElementType;
+    labelKey: string;
+    permission?: NavPermissionRequirement;
+  }> = [
+    { to: '/users', icon: Users, labelKey: 'users', permission: NAV_PERMISSIONS.users },
+    { to: '/roles', icon: UserCog, labelKey: 'roles', permission: NAV_PERMISSIONS.roles },
+    { to: '/permissions', icon: KeyRound, labelKey: 'permissions', permission: NAV_PERMISSIONS.permissions },
+    {
+      to: '/organizations',
+      icon: Building2,
+      labelKey: 'organizations',
+      permission: NAV_PERMISSIONS.organizations,
+    },
+    { to: '/branches', icon: Building2, labelKey: 'branches', permission: NAV_PERMISSIONS.branches },
+    { to: '/sites', icon: MapPinned, labelKey: 'sites', permission: NAV_PERMISSIONS.sites },
     { to: '/settings', icon: Settings, labelKey: 'settings' },
   ];
+
+  const visibleMainNavItems = mainNavItems.filter(item => canRequirement(item.permission));
+  const visibleAdminNavItems = adminNavItems.filter(item => canRequirement(item.permission));
 
   const closeSidebar = () => setIsSidebarOpen(false);
   const isNavActive = (to: string) =>
@@ -272,13 +303,13 @@ const DashboardLayout: React.FC = () => {
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-40 flex h-dvh w-64 shrink-0 flex-col overflow-hidden border-r border-divider bg-white shadow-xl shadow-slate-900/10 lg:sticky lg:top-0 lg:h-screen lg:shadow-none',
+          'fixed inset-y-0 left-0 z-40 flex h-dvh w-64 shrink-0 flex-col overflow-hidden border-r border-divider bg-card shadow-xl shadow-slate-900/10 lg:sticky lg:top-0 lg:h-screen lg:shadow-none',
           'transform transition-transform duration-300 ease-in-out lg:translate-x-0',
           !isSidebarOpen && '-translate-x-full',
         )}
       >
         <div className="flex h-16 shrink-0 items-center gap-3 border-b border-divider px-5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-blue text-white shadow-sm">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-blue text-[#181a20] shadow-sm">
             <ShieldCheck className="h-5 w-5" />
           </div>
           <div className="min-w-0">
@@ -296,7 +327,7 @@ const DashboardLayout: React.FC = () => {
             {t('nav.menuUtama')}
           </p>
           <nav className="space-y-1">
-            {mainNavItems.map(item => (
+            {visibleMainNavItems.map(item => (
               <SidebarItem
                 key={item.to}
                 to={item.to}
@@ -314,7 +345,7 @@ const DashboardLayout: React.FC = () => {
             {t('nav.administrasi')}
           </p>
           <nav className="space-y-1">
-            {adminNavItems.map(item => (
+            {visibleAdminNavItems.map(item => (
               <SidebarItem
                 key={item.to}
                 to={item.to}
@@ -367,7 +398,7 @@ const DashboardLayout: React.FC = () => {
       </aside>
 
       <div className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="z-20 flex h-16 shrink-0 items-center justify-between border-b border-divider bg-white/95 px-4 backdrop-blur lg:px-6">
+        <header className="z-20 flex h-16 shrink-0 items-center justify-between border-b border-divider bg-card/95 px-4 backdrop-blur lg:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"
@@ -383,7 +414,7 @@ const DashboardLayout: React.FC = () => {
               <input
                 type="text"
                 placeholder={t('nav.searchPlaceholder')}
-                className="h-10 w-72 rounded-lg border border-divider bg-surface pl-9 pr-4 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary-blue focus:bg-white focus:ring-4 focus:ring-primary-blue/10"
+                className="h-10 w-72 rounded-lg border border-divider bg-surface pl-9 pr-4 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary-blue focus:bg-card focus:ring-4 focus:ring-primary-blue/10"
               />
             </div>
           </div>

@@ -7,6 +7,7 @@ import type { ManagementUser, UserFormInput } from '../types/management';
 import { appSwal } from '../lib/appSwal';
 import { getApiErrorMessage } from '../lib/apiResponse';
 import { useTranslation } from 'react-i18next';
+import { Can } from '../components/rbac/Can';
 
 const EMPTY_FORM: UserFormInput = {
   username: '',
@@ -191,17 +192,21 @@ const UsersPage: React.FC = () => {
           <p className="page-subtitle">Kelola akun, akses role, dan status user auditor.</p>
         </div>
         <div className="flex w-full items-center gap-3 sm:w-auto">
-          <button className="btn-secondary flex-1 sm:flex-none" onClick={handleReconcileGotify} disabled={isReconcilingGotify}>
-            {isReconcilingGotify ? <Loader2 className="h-4 w-4 animate-spin" /> : <BellPlus className="h-4 w-4" />}
-            {t('users.gotify.reconcile')}
-          </button>
+          <Can resource="users" action="update">
+            <button className="btn-secondary flex-1 sm:flex-none" onClick={handleReconcileGotify} disabled={isReconcilingGotify}>
+              {isReconcilingGotify ? <Loader2 className="h-4 w-4 animate-spin" /> : <BellPlus className="h-4 w-4" />}
+              {t('users.gotify.reconcile')}
+            </button>
+          </Can>
           <button className="icon-button" onClick={() => fetchUsers()} disabled={isLoading}>
             <RefreshCcw className={cn('h-5 w-5', isLoading && 'animate-spin')} />
           </button>
-          <button className="btn-primary flex-1 sm:flex-none" onClick={openCreate}>
-            <UserPlus className="h-4 w-4" />
-            Tambah User
-          </button>
+          <Can resource="users" action="create">
+            <button className="btn-primary flex-1 sm:flex-none" onClick={openCreate}>
+              <UserPlus className="h-4 w-4" />
+              Tambah User
+            </button>
+          </Can>
         </div>
       </div>
 
@@ -215,7 +220,7 @@ const UsersPage: React.FC = () => {
             placeholder="Cari nama, email, username, atau role..."
           />
         </div>
-        <div className="rounded-lg border border-divider bg-white px-3 py-2 text-sm text-muted-foreground shadow-sm">
+        <div className="rounded-lg border border-divider bg-card px-3 py-2 text-sm text-muted-foreground shadow-sm">
           {filteredUsers.length} user
         </div>
       </div>
@@ -273,28 +278,32 @@ const UsersPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="inline-flex items-center gap-1">
-                        <button
-                          className="rounded-lg p-2 text-muted-foreground transition hover:bg-primary-blue/10 hover:text-primary-blue disabled:opacity-50"
-                          onClick={() => handleProvisionGotify(user)}
-                          disabled={gotifyUserId === user.id}
-                          title={t('users.gotify.provision')}
-                        >
-                          {gotifyUserId === user.id
-                            ? <Loader2 className="h-4 w-4 animate-spin" />
-                            : <BellPlus className="h-4 w-4" />}
-                        </button>
-                        <button
-                          className="rounded-lg p-2 text-muted-foreground transition hover:bg-surface hover:text-foreground"
-                          onClick={() => openEdit(user)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          className="rounded-lg p-2 text-muted-foreground transition hover:bg-danger-red/10 hover:text-danger-red"
-                          onClick={() => handleDelete(user)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        <Can resource="users" action="update">
+                          <button
+                            className="rounded-lg p-2 text-muted-foreground transition hover:bg-primary-blue/10 hover:text-primary-blue disabled:opacity-50"
+                            onClick={() => handleProvisionGotify(user)}
+                            disabled={gotifyUserId === user.id}
+                            title={t('users.gotify.provision')}
+                          >
+                            {gotifyUserId === user.id
+                              ? <Loader2 className="h-4 w-4 animate-spin" />
+                              : <BellPlus className="h-4 w-4" />}
+                          </button>
+                          <button
+                            className="rounded-lg p-2 text-muted-foreground transition hover:bg-surface hover:text-foreground"
+                            onClick={() => openEdit(user)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                        </Can>
+                        <Can resource="users" action="delete">
+                          <button
+                            className="rounded-lg p-2 text-muted-foreground transition hover:bg-danger-red/10 hover:text-danger-red"
+                            onClick={() => handleDelete(user)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </Can>
                       </div>
                     </td>
                   </tr>
@@ -307,7 +316,7 @@ const UsersPage: React.FC = () => {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-          <form onSubmit={handleSubmit} className="w-full max-w-xl rounded-lg border border-divider bg-white shadow-xl">
+          <form onSubmit={handleSubmit} className="w-full max-w-xl rounded-lg border border-divider bg-card shadow-xl">
             <div className="flex items-center justify-between border-b border-divider px-5 py-4">
               <div>
                 <h2 className="text-base font-semibold text-foreground">

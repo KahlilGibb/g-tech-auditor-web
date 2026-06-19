@@ -223,6 +223,8 @@ function normalizeUserInput(input: UserFormInput, existing?: ManagementUser): Ma
 }
 
 function authUserFromManagementUser(user: ManagementUser): AuthUser {
+  const userPermissionIds = user.roleId ? rolePermissions[user.roleId] ?? [] : [];
+
   return {
     id: user.id,
     username: user.username,
@@ -233,6 +235,7 @@ function authUserFromManagementUser(user: ManagementUser): AuthUser {
     branchId: user.branchId,
     groupId: user.groupId ?? user.branchId,
     orgId: 'org-gtech-demo',
+    permissions: permissions.filter(permission => userPermissionIds.includes(permission.id)),
   };
 }
 

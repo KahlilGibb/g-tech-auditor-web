@@ -6,6 +6,8 @@ import type { Role, RoleFormInput } from '../types/management';
 import { appSwal } from '../lib/appSwal';
 import { getApiErrorMessage } from '../lib/apiResponse';
 import { useTranslation } from 'react-i18next';
+import { Can } from '../components/rbac/Can';
+import { useRbac } from '../hooks/useRbac';
 
 const EMPTY_FORM: RoleFormInput = {
   name: '',
@@ -14,6 +16,7 @@ const EMPTY_FORM: RoleFormInput = {
 
 const RolesPage: React.FC = () => {
   const { t } = useTranslation();
+  const { can } = useRbac();
   const {
     roles,
     permissions,
@@ -175,10 +178,12 @@ const RolesPage: React.FC = () => {
           <button className="icon-button" onClick={() => fetchRoles()} disabled={isLoading}>
             <RefreshCcw className={cn('h-5 w-5', isLoading && 'animate-spin')} />
           </button>
-          <button className="btn-primary flex-1 sm:flex-none" onClick={openCreate}>
-            <Plus className="h-4 w-4" />
-            Tambah Role
-          </button>
+          <Can resource="roles" action="create">
+            <button className="btn-primary flex-1 sm:flex-none" onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              Tambah Role
+            </button>
+          </Can>
         </div>
       </div>
 
@@ -192,7 +197,7 @@ const RolesPage: React.FC = () => {
             placeholder="Cari role..."
           />
         </div>
-        <div className="rounded-lg border border-divider bg-white px-3 py-2 text-sm text-muted-foreground shadow-sm">
+        <div className="rounded-lg border border-divider bg-card px-3 py-2 text-sm text-muted-foreground shadow-sm">
           {filteredRoles.length} role
         </div>
       </div>
@@ -246,7 +251,7 @@ const RolesPage: React.FC = () => {
                               'inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-semibold transition',
                               isSelected
                                 ? 'border-primary-blue/30 bg-primary-blue/10 text-primary-blue'
-                                : 'border-divider bg-white text-muted-foreground hover:bg-surface hover:text-foreground',
+                                : 'border-divider bg-card text-muted-foreground hover:bg-surface hover:text-foreground',
                             )}
                             onClick={() => openPermissions(role)}
                           >
@@ -261,18 +266,22 @@ const RolesPage: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="inline-flex items-center gap-1">
-                            <button
-                              className="rounded-lg p-2 text-muted-foreground transition hover:bg-surface hover:text-foreground"
-                              onClick={() => openEdit(role)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </button>
-                            <button
-                              className="rounded-lg p-2 text-muted-foreground transition hover:bg-danger-red/10 hover:text-danger-red"
-                              onClick={() => handleDelete(role)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            <Can resource="roles" action="update">
+                              <button
+                                className="rounded-lg p-2 text-muted-foreground transition hover:bg-surface hover:text-foreground"
+                                onClick={() => openEdit(role)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </button>
+                            </Can>
+                            <Can resource="roles" action="delete">
+                              <button
+                                className="rounded-lg p-2 text-muted-foreground transition hover:bg-danger-red/10 hover:text-danger-red"
+                                onClick={() => handleDelete(role)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </Can>
                           </div>
                         </td>
                       </tr>
@@ -336,19 +345,19 @@ const RolesPage: React.FC = () => {
                       return (
                         <button
                           key={permission.id}
-                          disabled={isSaving}
+                          disabled={isSaving || !can('roles', 'update')}
                           onClick={() => handleTogglePermission(permission.id, assigned)}
                           className={cn(
                             'flex w-full items-start gap-3 rounded-lg border p-3 text-left transition',
                             assigned
                               ? 'border-primary-blue/25 bg-primary-blue/[0.04]'
-                              : 'border-divider bg-white hover:border-primary-blue/30 hover:bg-surface',
+                              : 'border-divider bg-card hover:border-primary-blue/30 hover:bg-surface',
                           )}
                         >
                           <span
                             className={cn(
                               'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border',
-                              assigned ? 'border-primary-blue bg-primary-blue text-white' : 'border-divider bg-white',
+                              assigned ? 'border-primary-blue bg-primary-blue text-[#181a20]' : 'border-divider bg-card',
                             )}
                           >
                             {assigned && <Check className="h-3.5 w-3.5" />}
@@ -377,7 +386,7 @@ const RolesPage: React.FC = () => {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-          <form onSubmit={handleSubmit} className="w-full max-w-lg rounded-lg border border-divider bg-white shadow-xl">
+          <form onSubmit={handleSubmit} className="w-full max-w-lg rounded-lg border border-divider bg-card shadow-xl">
             <div className="flex items-center justify-between border-b border-divider px-5 py-4">
               <div>
                 <h2 className="text-base font-semibold text-foreground">

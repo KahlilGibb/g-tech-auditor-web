@@ -19,6 +19,7 @@ import { useMasterFieldStore, type MasterFieldInput, type MasterFieldOptionInput
 import type { FieldType, MasterField, MasterFieldOption } from '../types/template'
 import { FIELD_TYPES, fieldTypeColor, fieldTypeLabel } from '../types/template'
 import { cn } from '../utils/cn'
+import { Can } from '../components/rbac/Can'
 
 const EMPTY_FIELD_FORM: MasterFieldInput = {
   name: '',
@@ -252,10 +253,12 @@ const MasterFieldsPage: React.FC = () => {
           >
             <RefreshCcw className={cn('h-5 w-5', isLoading && 'animate-spin')} />
           </button>
-          <button className="btn-primary flex-1 sm:flex-none" onClick={openCreate}>
-            <Plus className="h-4 w-4" />
-            {t('masterFields.actions.create')}
-          </button>
+          <Can resource="templates" action="write">
+            <button className="btn-primary flex-1 sm:flex-none" onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              {t('masterFields.actions.create')}
+            </button>
+          </Can>
         </div>
       </div>
 
@@ -374,20 +377,22 @@ const MasterFieldsPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex justify-end gap-1">
-                          <button
-                            className="rounded-lg p-2 text-muted-foreground transition hover:bg-surface hover:text-foreground"
-                            onClick={() => openEdit(field)}
-                            aria-label={t('common.edit')}
-                          >
-                            <Edit3 className="h-4 w-4" />
-                          </button>
-                          <button
-                            className="rounded-lg p-2 text-muted-foreground transition hover:bg-danger-red/10 hover:text-danger-red"
-                            onClick={() => handleDeleteField(field)}
-                            aria-label={t('common.delete')}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          <Can resource="templates" action="write">
+                            <button
+                              className="rounded-lg p-2 text-muted-foreground transition hover:bg-surface hover:text-foreground"
+                              onClick={() => openEdit(field)}
+                              aria-label={t('common.edit')}
+                            >
+                              <Edit3 className="h-4 w-4" />
+                            </button>
+                            <button
+                              className="rounded-lg p-2 text-muted-foreground transition hover:bg-danger-red/10 hover:text-danger-red"
+                              onClick={() => handleDeleteField(field)}
+                              aria-label={t('common.delete')}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </Can>
                         </div>
                       </td>
                     </tr>
@@ -411,7 +416,8 @@ const MasterFieldsPage: React.FC = () => {
 
           {selectedField ? (
             <div className="space-y-4 p-5">
-              <form onSubmit={handleOptionSubmit} className="rounded-lg border border-divider bg-surface p-3">
+              <Can resource="templates" action="write">
+                <form onSubmit={handleOptionSubmit} className="rounded-lg border border-divider bg-surface p-3">
                 {optionError && (
                   <div className="mb-3 rounded-lg border border-danger-red/20 bg-danger-red/10 p-3 text-sm text-danger-red">
                     {optionError}
@@ -458,7 +464,8 @@ const MasterFieldsPage: React.FC = () => {
                     {editingOption ? t('common.save') : t('masterFields.options.add')}
                   </button>
                 </div>
-              </form>
+                </form>
+              </Can>
 
               <div className="space-y-2">
                 {(selectedField.options ?? []).length === 0 ? (
@@ -469,7 +476,7 @@ const MasterFieldsPage: React.FC = () => {
                   </div>
                 ) : (
                   (selectedField.options ?? []).map(option => (
-                    <div key={option.id} className="rounded-lg border border-divider bg-white p-3">
+                    <div key={option.id} className="rounded-lg border border-divider bg-card p-3">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <p className="truncate text-sm font-semibold text-foreground">{option.label}</p>
@@ -480,23 +487,25 @@ const MasterFieldsPage: React.FC = () => {
                         </span>
                       </div>
                       <div className="mt-3 flex justify-end gap-1">
-                        <button
-                          className="rounded-lg p-2 text-muted-foreground transition hover:bg-surface hover:text-foreground"
-                          onClick={() => {
-                            setEditingOption(option)
-                            setOptionForm(optionFormFrom(option))
-                          }}
-                          aria-label={t('common.edit')}
-                        >
-                          <Edit3 className="h-4 w-4" />
-                        </button>
-                        <button
-                          className="rounded-lg p-2 text-muted-foreground transition hover:bg-danger-red/10 hover:text-danger-red"
-                          onClick={() => handleDeleteOption(option)}
-                          aria-label={t('common.delete')}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        <Can resource="templates" action="write">
+                          <button
+                            className="rounded-lg p-2 text-muted-foreground transition hover:bg-surface hover:text-foreground"
+                            onClick={() => {
+                              setEditingOption(option)
+                              setOptionForm(optionFormFrom(option))
+                            }}
+                            aria-label={t('common.edit')}
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </button>
+                          <button
+                            className="rounded-lg p-2 text-muted-foreground transition hover:bg-danger-red/10 hover:text-danger-red"
+                            onClick={() => handleDeleteOption(option)}
+                            aria-label={t('common.delete')}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </Can>
                       </div>
                     </div>
                   ))
@@ -515,7 +524,7 @@ const MasterFieldsPage: React.FC = () => {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-          <form onSubmit={handleFieldSubmit} className="w-full max-w-lg rounded-lg border border-divider bg-white shadow-xl">
+          <form onSubmit={handleFieldSubmit} className="w-full max-w-lg rounded-lg border border-divider bg-card shadow-xl">
             <div className="flex items-center justify-between border-b border-divider px-5 py-4">
               <div>
                 <h2 className="text-base font-semibold text-foreground">

@@ -66,7 +66,7 @@ const FieldRow: React.FC<FieldRowProps> = ({
 
   return (
     <div
-      className="bg-white rounded-xl border border-divider overflow-hidden group transition-shadow duration-150 hover:shadow-sm animate-slide-in-down"
+      className="bg-card rounded-xl border border-divider overflow-hidden group transition-shadow duration-150 hover:shadow-sm animate-slide-in-down"
     >
       {/* Main row */}
       <div className="flex items-start gap-3 p-3">
@@ -210,7 +210,7 @@ const SectionCard: React.FC<SectionCardProps> = ({
 
   return (
     <>
-      <div className="bg-white rounded-2xl border border-divider shadow-sm overflow-hidden animate-fade-in-scale">
+      <div className="bg-card rounded-2xl border border-divider shadow-sm overflow-hidden animate-fade-in-scale">
         {/* Section Header */}
         <div
           className={cn(
@@ -224,20 +224,20 @@ const SectionCard: React.FC<SectionCardProps> = ({
             <button
               onClick={(e) => { e.stopPropagation(); onMoveUp() }}
               disabled={index === 0}
-              className="p-0.5 rounded hover:bg-white disabled:opacity-20 text-muted-foreground hover:text-foreground transition-all"
+              className="p-0.5 rounded hover:bg-card disabled:opacity-20 text-muted-foreground hover:text-foreground transition-all"
             >
               <ChevronUp className="w-3.5 h-3.5" />
             </button>
             <div className={cn(
               'w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0',
-              isExpanded ? 'bg-primary-blue text-white' : 'bg-surface text-muted-foreground',
+              isExpanded ? 'bg-primary-blue text-[#181a20]' : 'bg-surface text-muted-foreground',
             )}>
               {index + 1}
             </div>
             <button
               onClick={(e) => { e.stopPropagation(); onMoveDown() }}
               disabled={index === total - 1}
-              className="p-0.5 rounded hover:bg-white disabled:opacity-20 text-muted-foreground hover:text-foreground transition-all"
+              className="p-0.5 rounded hover:bg-card disabled:opacity-20 text-muted-foreground hover:text-foreground transition-all"
             >
               <ChevronDown className="w-3.5 h-3.5" />
             </button>
@@ -271,7 +271,7 @@ const SectionCard: React.FC<SectionCardProps> = ({
             <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
               <button
                 onClick={() => setShowMenu(!showMenu)}
-                className="p-1.5 rounded-lg hover:bg-white text-muted-foreground hover:text-foreground transition-colors"
+                className="p-1.5 rounded-lg hover:bg-card text-muted-foreground hover:text-foreground transition-colors"
               >
                 <MoreVertical className="w-4 h-4" />
               </button>
@@ -281,7 +281,7 @@ const SectionCard: React.FC<SectionCardProps> = ({
                     className="fixed inset-0 z-20"
                     onClick={() => setShowMenu(false)}
                   />
-                  <div className="absolute right-0 top-8 z-30 w-40 bg-white rounded-xl border border-divider shadow-xl overflow-hidden animate-fade-in-scale">
+                  <div className="absolute right-0 top-8 z-30 w-40 bg-card rounded-xl border border-divider shadow-xl overflow-hidden animate-fade-in-scale">
                     <button
                       onClick={() => { onDuplicate(); setShowMenu(false) }}
                       className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-foreground hover:bg-surface transition-colors"
@@ -319,7 +319,7 @@ const SectionCard: React.FC<SectionCardProps> = ({
                 value={section.description || ''}
                 onChange={(e) => onUpdateSection({ description: e.target.value })}
                 placeholder="Deskripsi bab (opsional)..."
-                className="w-full text-xs text-muted-foreground bg-white border border-divider rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-blue/20 focus:border-primary-blue/40 placeholder:text-muted-foreground/40 transition-all"
+                className="w-full text-xs text-muted-foreground bg-card border border-divider rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-blue/20 focus:border-primary-blue/40 placeholder:text-muted-foreground/40 transition-all"
               />
 
               {/* Fields table header */}
@@ -556,7 +556,7 @@ export const TemplateBuilderPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-surface flex flex-col">
       {/* ── Sticky Header ──────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 h-14 bg-white border-b border-divider flex items-center justify-between px-4 sm:px-6">
+      <header className="sticky top-0 z-30 h-14 bg-card border-b border-divider flex items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-3">
           <button
             onClick={handleBack}
@@ -603,7 +603,7 @@ export const TemplateBuilderPage: React.FC = () => {
             className={cn(
               'flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200',
               isDirty && !isSaving
-                ? 'bg-primary-blue text-white shadow-sm shadow-primary-blue/30 hover:bg-primary-blue-dark active:scale-95'
+                ? 'bg-primary-blue text-[#181a20] shadow-sm shadow-primary-blue/30 hover:bg-primary-blue-dark active:scale-95'
                 : 'bg-surface text-muted-foreground cursor-not-allowed',
             )}
           >
@@ -629,7 +629,7 @@ export const TemplateBuilderPage: React.FC = () => {
       <div className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 py-6 space-y-4">
 
         {/* ── Template Config Card ─────────────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-divider shadow-sm p-5 space-y-4 animate-fade-in-scale">
+        <div className="bg-card rounded-2xl border border-divider shadow-sm p-5 space-y-4 animate-fade-in-scale">
           {/* Title */}
           <input
             type="text"
@@ -666,7 +666,7 @@ export const TemplateBuilderPage: React.FC = () => {
                     className={cn(
                       'px-4 py-1.5 rounded-lg text-xs font-bold capitalize transition-all duration-200',
                       template.form_type === ft
-                        ? 'bg-white text-primary-blue shadow-sm'
+                        ? 'bg-card text-primary-blue shadow-sm'
                         : 'text-muted-foreground hover:text-foreground',
                     )}
                   >
@@ -691,7 +691,7 @@ export const TemplateBuilderPage: React.FC = () => {
               >
                 <span
                   className={cn(
-                    'absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200',
+                    'absolute top-0.5 w-4 h-4 bg-card rounded-full shadow-sm transition-transform duration-200',
                     template.scoring_enabled ? 'translate-x-5' : 'translate-x-0.5',
                   )}
                 />

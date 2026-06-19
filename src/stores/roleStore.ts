@@ -130,7 +130,10 @@ export const useRoleStore = create<RoleStoreState>()((set, get) => ({
         permissionsByRoleId: { ...state.permissionsByRoleId, [id]: permissions },
       }));
     } catch (error) {
-      set({ error: getApiErrorMessage(error, 'Failed to load role permissions') });
+      set(state => ({
+        permissionsByRoleId: { ...state.permissionsByRoleId, [id]: [] },
+        error: getApiErrorMessage(error, 'Failed to load role permissions'),
+      }));
     }
   },
 

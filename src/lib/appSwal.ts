@@ -70,6 +70,7 @@ const toast = Swal.mixin({
   customClass: {
     popup: 'gtech-swal-toast',
     title: 'gtech-swal-toast-title',
+    htmlContainer: 'gtech-swal-toast-html',
   },
 });
 

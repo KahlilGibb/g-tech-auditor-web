@@ -25,6 +25,8 @@ import { appSwal } from '../lib/appSwal';
 import { getApiErrorMessage } from '../lib/apiResponse';
 import { cn } from '../utils/cn';
 import type { ActionItem, ActionPriority, ActionStatusFormInput, CreateActionPayload } from '../types/action';
+import { Can } from '../components/rbac/Can';
+import { useRbac } from '../hooks/useRbac';
 
 const PRIORITIES: ActionPriority[] = ['High', 'Medium', 'Low'];
 
@@ -79,6 +81,7 @@ const PriorityBadge: React.FC<{ priority: ActionPriority }> = ({ priority }) => 
 
 const ActionsPage: React.FC = () => {
   const { t } = useTranslation();
+  const { can } = useRbac();
   const {
     actions,
     workflowStatuses,
@@ -296,17 +299,21 @@ const ActionsPage: React.FC = () => {
           <p className="page-subtitle">{t('actions.subtitle')}</p>
         </div>
         <div className="flex w-full items-center gap-3 sm:w-auto">
-          <button className="btn-secondary flex-1 sm:flex-none" onClick={() => setIsWorkflowModalOpen(true)}>
-            <Settings2 className="h-4 w-4" />
-            {t('actions.workflow.manage')}
-          </button>
+          <Can resource="actions" action="update">
+            <button className="btn-secondary flex-1 sm:flex-none" onClick={() => setIsWorkflowModalOpen(true)}>
+              <Settings2 className="h-4 w-4" />
+              {t('actions.workflow.manage')}
+            </button>
+          </Can>
           <button className="icon-button" onClick={() => refresh(true)} disabled={isLoading}>
             <RefreshCcw className={cn('h-5 w-5', isLoading && 'animate-spin')} />
           </button>
-          <button className="btn-primary flex-1 sm:flex-none" onClick={openCreateAction}>
-            <Plus className="h-4 w-4" />
-            {t('actions.create')}
-          </button>
+          <Can resource="actions" action="create">
+            <button className="btn-primary flex-1 sm:flex-none" onClick={openCreateAction}>
+              <Plus className="h-4 w-4" />
+              {t('actions.create')}
+            </button>
+          </Can>
         </div>
       </div>
 
@@ -433,6 +440,7 @@ const ActionsPage: React.FC = () => {
                           <select
                             className="form-input min-w-36 py-2"
                             value={action.workflowStatusId}
+                            disabled={!can('actions', 'update')}
                             onChange={event => void handleStatusChange(action, event.target.value)}
                           >
                             {workflowStatuses.map(item => (
@@ -452,18 +460,22 @@ const ActionsPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="inline-flex items-center gap-1">
-                          <button
-                            className="rounded-lg p-2 text-muted-foreground transition hover:bg-surface hover:text-foreground"
-                            onClick={() => openEditAction(action)}
-                          >
-                            <Edit3 className="h-4 w-4" />
-                          </button>
-                          <button
-                            className="rounded-lg p-2 text-muted-foreground transition hover:bg-danger-red/10 hover:text-danger-red"
-                            onClick={() => handleDeleteAction(action)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          <Can resource="actions" action="update">
+                            <button
+                              className="rounded-lg p-2 text-muted-foreground transition hover:bg-surface hover:text-foreground"
+                              onClick={() => openEditAction(action)}
+                            >
+                              <Edit3 className="h-4 w-4" />
+                            </button>
+                          </Can>
+                          <Can resource="actions" action="delete">
+                            <button
+                              className="rounded-lg p-2 text-muted-foreground transition hover:bg-danger-red/10 hover:text-danger-red"
+                              onClick={() => handleDeleteAction(action)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </Can>
                         </div>
                       </td>
                     </tr>
@@ -477,7 +489,7 @@ const ActionsPage: React.FC = () => {
 
       {isActionModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-          <form onSubmit={handleActionSubmit} className="w-full max-w-2xl rounded-lg border border-divider bg-white shadow-xl">
+          <form onSubmit={handleActionSubmit} className="w-full max-w-2xl rounded-lg border border-divider bg-card shadow-xl">
             <div className="flex items-center justify-between border-b border-divider px-5 py-4">
               <div>
                 <h2 className="text-base font-semibold text-foreground">
@@ -597,7 +609,7 @@ const ActionsPage: React.FC = () => {
 
       {isWorkflowModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-          <div className="w-full max-w-3xl rounded-lg border border-divider bg-white shadow-xl">
+          <div className="w-full max-w-3xl rounded-lg border border-divider bg-card shadow-xl">
             <div className="flex items-center justify-between border-b border-divider px-5 py-4">
               <div>
                 <h2 className="text-base font-semibold text-foreground">{t('actions.workflow.manage')}</h2>

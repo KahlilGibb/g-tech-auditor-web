@@ -74,7 +74,7 @@ const ProfilePage: React.FC = () => {
         <div className="md:col-span-1 space-y-6">
           <div className="panel p-6 text-center">
             <div className="relative inline-block">
-              <div className="w-24 h-24 rounded-2xl bg-primary-blue text-white flex items-center justify-center text-3xl font-bold mx-auto overflow-hidden border-4 border-surface shadow-sm">
+              <div className="w-24 h-24 rounded-2xl bg-primary-blue text-[#181a20] flex items-center justify-center text-3xl font-bold mx-auto overflow-hidden border-4 border-surface shadow-sm">
                 {profile.avatarBase64 ? (
                   <img src={`data:image/jpeg;base64,${profile.avatarBase64}`} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
@@ -83,7 +83,7 @@ const ProfilePage: React.FC = () => {
               </div>
               <button 
                 onClick={() => fileInputRef.current?.click()}
-                className="absolute -bottom-2 -right-2 p-2 bg-white rounded-full shadow-md border border-divider text-muted-foreground hover:text-primary-blue transition-colors"
+                className="absolute -bottom-2 -right-2 p-2 bg-card rounded-full shadow-md border border-divider text-muted-foreground hover:text-primary-blue transition-colors"
               >
                 <Camera className="w-4 h-4" />
               </button>
@@ -115,7 +115,7 @@ const ProfilePage: React.FC = () => {
                 className={cn(
                   "flex-1 py-2 rounded-xl text-sm font-semibold transition-all border",
                   i18n.language === 'en' 
-                    ? "bg-primary-blue text-white border-primary-blue shadow-sm" 
+                    ? "bg-primary-blue text-[#181a20] border-primary-blue shadow-sm" 
                     : "bg-surface text-muted-foreground border-divider hover:bg-surface/80"
                 )}
               >
@@ -126,7 +126,7 @@ const ProfilePage: React.FC = () => {
                 className={cn(
                   "flex-1 py-2 rounded-xl text-sm font-semibold transition-all border",
                   i18n.language === 'id' 
-                    ? "bg-primary-blue text-white border-primary-blue shadow-sm" 
+                    ? "bg-primary-blue text-[#181a20] border-primary-blue shadow-sm" 
                     : "bg-surface text-muted-foreground border-divider hover:bg-surface/80"
                 )}
               >
@@ -157,7 +157,7 @@ const ProfilePage: React.FC = () => {
                     setFormData(profile);
                     setIsEditing(false);
                   }}
-                  className="p-1 text-muted-foreground hover:text-foreground transition-colors bg-white rounded-full shadow-sm"
+                  className="p-1 text-muted-foreground hover:text-foreground transition-colors bg-card rounded-full shadow-sm"
                 >
                   <X className="w-4 h-4" />
                 </button>

@@ -8,6 +8,7 @@ import { useOrganizations } from '../hooks/useOrganizations';
 import { useSites } from '../hooks/useSites';
 import type { Site, SiteFormInput } from '../types/management';
 import { cn } from '../utils/cn';
+import { Can } from '../components/rbac/Can';
 
 const EMPTY_FORM: SiteFormInput = {
   name: '',
@@ -127,10 +128,12 @@ const SitesPage: React.FC = () => {
           <button className="icon-button" onClick={() => fetchSites()} disabled={isLoading}>
             <RefreshCcw className={cn('h-5 w-5', isLoading && 'animate-spin')} />
           </button>
-          <button className="btn-primary flex-1 sm:flex-none" onClick={openCreate}>
-            <Plus className="h-4 w-4" />
-            Tambah Site
-          </button>
+          <Can resource="sites" action="create">
+            <button className="btn-primary flex-1 sm:flex-none" onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              Tambah Site
+            </button>
+          </Can>
         </div>
       </div>
 
@@ -144,7 +147,7 @@ const SitesPage: React.FC = () => {
             placeholder="Cari site, branch, atau organization..."
           />
         </div>
-        <div className="rounded-lg border border-divider bg-white px-3 py-2 text-sm text-muted-foreground shadow-sm">
+        <div className="rounded-lg border border-divider bg-card px-3 py-2 text-sm text-muted-foreground shadow-sm">
           {filteredSites.length} site
         </div>
       </div>
@@ -205,18 +208,22 @@ const SitesPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="inline-flex items-center gap-1">
-                        <button
-                          className="rounded-lg p-2 text-muted-foreground transition hover:bg-surface hover:text-foreground"
-                          onClick={() => openEdit(site)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          className="rounded-lg p-2 text-muted-foreground transition hover:bg-danger-red/10 hover:text-danger-red"
-                          onClick={() => handleDelete(site)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        <Can resource="sites" action="update">
+                          <button
+                            className="rounded-lg p-2 text-muted-foreground transition hover:bg-surface hover:text-foreground"
+                            onClick={() => openEdit(site)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                        </Can>
+                        <Can resource="sites" action="delete">
+                          <button
+                            className="rounded-lg p-2 text-muted-foreground transition hover:bg-danger-red/10 hover:text-danger-red"
+                            onClick={() => handleDelete(site)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </Can>
                       </div>
                     </td>
                   </tr>
@@ -229,7 +236,7 @@ const SitesPage: React.FC = () => {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-          <form onSubmit={handleSubmit} className="w-full max-w-lg rounded-lg border border-divider bg-white shadow-xl">
+          <form onSubmit={handleSubmit} className="w-full max-w-lg rounded-lg border border-divider bg-card shadow-xl">
             <div className="flex items-center justify-between border-b border-divider px-5 py-4">
               <div>
                 <h2 className="text-base font-semibold text-foreground">

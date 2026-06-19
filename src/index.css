@@ -1,32 +1,32 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary-blue: #1F5EFF;
-  --color-primary-blue-dark: #174BC7;
-  --color-primary-blue-light: #4C7DFF;
-  --color-danger-red: #C2413D;
-  --color-danger-red-light: #E0524D;
-  --color-warning-amber: #B7791F;
-  --color-success-green: #0F8A5F;
-  --color-success-green-light: #22A06B;
+  --color-primary-blue: #fcd535;
+  --color-primary-blue-dark: #f0b90b;
+  --color-primary-blue-light: #fcd535;
+  --color-danger-red: #f6465d;
+  --color-danger-red-light: #ff7083;
+  --color-warning-amber: #fcd535;
+  --color-success-green: #0ecb81;
+  --color-success-green-light: #2bc88b;
 
-  --color-background: #F7F8FA;
-  --color-foreground: #182230;
-  --color-card: #FFFFFF;
-  --color-surface: #F5F7FA;
-  --color-surface-elevated: #FFFFFF;
-  --color-secondary: #EEF2F6;
-  --color-muted-foreground: #667085;
-  --color-divider: #DDE3EA;
+  --color-background: #0b0e11;
+  --color-foreground: #eaecef;
+  --color-card: #1e2329;
+  --color-surface: #2b3139;
+  --color-surface-elevated: #2b3139;
+  --color-secondary: #2b3139;
+  --color-muted-foreground: #707a8a;
+  --color-divider: #2b3139;
 }
 
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color-scheme: light;
-  color: #182230;
-  background-color: #F7F8FA;
+  color-scheme: dark;
+  color: #eaecef;
+  background-color: #0b0e11;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -69,7 +69,7 @@ body {
   }
 
   ::selection {
-    background: rgb(31 94 255 / 18%);
+    background: rgb(252 213 53 / 18%);
   }
 }
 
@@ -91,7 +91,7 @@ body {
   }
 
   .panel {
-    @apply rounded-lg border border-divider bg-white shadow-sm;
+    @apply rounded-lg border border-divider bg-card shadow-sm;
   }
 
   .panel-header {
@@ -103,19 +103,19 @@ body {
   }
 
   .form-input {
-    @apply w-full rounded-lg border border-divider bg-white px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary-blue focus:ring-4 focus:ring-primary-blue/10;
+    @apply w-full rounded-lg border border-divider bg-background px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-primary-blue focus:ring-4 focus:ring-primary-blue/10;
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-primary-blue px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-blue-dark disabled:opacity-60;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-primary-blue px-4 py-2.5 text-sm font-semibold text-[#181a20] shadow-sm transition hover:bg-primary-blue-dark disabled:opacity-60;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-divider bg-white px-4 py-2.5 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary-blue/30 hover:bg-surface disabled:opacity-60;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-divider bg-card px-4 py-2.5 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary-blue/30 hover:bg-surface disabled:opacity-60;
   }
 
   .icon-button {
-    @apply inline-flex h-10 w-10 items-center justify-center rounded-lg border border-divider bg-white text-muted-foreground shadow-sm transition hover:border-primary-blue/30 hover:text-foreground;
+    @apply inline-flex h-10 w-10 items-center justify-center rounded-lg border border-divider bg-card text-muted-foreground shadow-sm transition hover:border-primary-blue/30 hover:text-foreground;
   }
 
   .table-header {
@@ -124,7 +124,7 @@ body {
 
   .sidebar-scroll {
     scrollbar-width: thin;
-    scrollbar-color: rgb(102 112 133 / 45%) transparent;
+    scrollbar-color: #2b3139 transparent;
   }
 
   .sidebar-scroll::-webkit-scrollbar {
@@ -136,13 +136,13 @@ body {
   }
 
   .sidebar-scroll::-webkit-scrollbar-thumb {
-    background: rgb(102 112 133 / 32%);
-    border: 0.125rem solid #FFFFFF;
+    background: #2b3139;
+    border: 0.125rem solid #0b0e11;
     border-radius: 999px;
   }
 
   .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-    background: rgb(102 112 133 / 52%);
+    background: #707a8a;
   }
 }
 
@@ -201,96 +201,192 @@ body {
 }
 
 .gtech-swal-popup {
-  width: min(420px, calc(100vw - 2rem));
-  border: 1px solid #DDE3EA;
-  border-radius: 0.5rem;
-  padding: 1.25rem;
-  box-shadow: 0 22px 60px rgb(15 23 42 / 16%);
-  color: #182230;
+  width: min(400px, calc(100vw - 2rem));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+  padding: 1.75rem 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  color: #eaecef;
+  background: rgba(30, 35, 41, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* Glassmorphism backdrop blur on dialog container */
+.swal2-container {
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  background-color: rgba(11, 14, 17, 0.7) !important;
+  transition: backdrop-filter 0.2s ease, background-color 0.2s ease;
 }
 
 .gtech-swal-title {
   padding: 0;
-  color: #182230;
-  font-size: 1.125rem;
-  font-weight: 650;
+  color: #eaecef;
+  font-size: 1.25rem;
+  font-weight: 600;
   letter-spacing: 0;
   line-height: 1.35;
+  margin-top: 0.5rem;
 }
 
 .gtech-swal-html {
-  margin: 0.5rem 0 0;
-  color: #667085;
+  margin: 0.75rem 0 0;
+  color: #707a8a;
   font-size: 0.875rem;
-  line-height: 1.55;
-}
-
-.gtech-swal-icon {
-  margin: 0 auto 1rem;
-  transform: scale(0.88);
+  line-height: 1.6;
 }
 
 .gtech-swal-actions {
   gap: 0.75rem;
-  margin: 1.25rem 0 0;
+  margin: 1.5rem 0 0;
 }
 
 .gtech-swal-confirm,
 .gtech-swal-cancel,
 .gtech-swal-deny {
-  min-width: 96px;
+  min-width: 100px;
   border-radius: 0.5rem;
-  padding: 0.625rem 1rem;
+  padding: 0.625rem 1.25rem;
   font-size: 0.875rem;
-  font-weight: 650;
-  line-height: 1.2;
-  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+  font-weight: 600;
+  line-height: 1.25;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, transform 100ms ease;
+}
+
+.gtech-swal-confirm:active,
+.gtech-swal-cancel:active {
+  transform: scale(0.97);
 }
 
 .gtech-swal-confirm {
-  border: 1px solid #1F5EFF;
-  background: #1F5EFF;
-  color: #FFFFFF;
+  border: 1px solid #fcd535;
+  background: #fcd535;
+  color: #181a20;
 }
 
 .gtech-swal-confirm:hover {
-  background: #174BC7;
-  border-color: #174BC7;
+  background: #f0b90b;
+  border-color: #f0b90b;
 }
 
 .gtech-swal-confirm-danger {
-  border-color: #C2413D;
-  background: #C2413D;
+  border-color: #f6465d;
+  background: #f6465d;
+  color: #fff;
 }
 
 .gtech-swal-confirm-danger:hover {
-  border-color: #9F312F;
-  background: #9F312F;
+  border-color: #e03f53;
+  background: #e03f53;
 }
 
 .gtech-swal-cancel {
-  border: 1px solid #DDE3EA;
-  background: #FFFFFF;
-  color: #182230;
+  border: 1px solid #2b3139;
+  background: #1e2329;
+  color: #eaecef;
 }
 
 .gtech-swal-cancel:hover {
-  border-color: rgb(31 94 255 / 35%);
-  background: #F5F7FA;
+  border-color: #707a8a;
+  background: #2b3139;
+  color: #fff;
 }
 
+/* Global SweetAlert2 Icon overrides to match design system colors */
+.swal2-icon {
+  border-width: 2px !important;
+  margin: 0 auto 1.25rem !important;
+  transform: scale(0.85);
+}
+
+/* Hide default white background overlays on success icon in dark mode */
+.swal2-icon.swal2-success [class^='swal2-success-circular-line'],
+.swal2-icon.swal2-success .swal2-success-fix {
+  background: transparent !important;
+}
+
+.swal2-icon.swal2-success {
+  border-color: #0ecb81 !important;
+  color: #0ecb81 !important;
+}
+
+.swal2-icon.swal2-success [class^='swal2-success-line'] {
+  background-color: #0ecb81 !important;
+}
+
+.swal2-icon.swal2-success .swal2-success-ring {
+  border: 2px solid rgba(14, 203, 129, 0.2) !important;
+}
+
+.swal2-icon.swal2-error {
+  border-color: #f6465d !important;
+}
+
+.swal2-icon.swal2-error [class^='swal2-x-mark-line'] {
+  background-color: #f6465d !important;
+}
+
+.swal2-icon.swal2-warning {
+  border-color: #fcd535 !important;
+  color: #fcd535 !important;
+}
+
+.swal2-icon.swal2-info {
+  border-color: #fcd535 !important;
+  color: #fcd535 !important;
+}
+
+/* Toast custom styling overrides */
 .gtech-swal-toast {
-  border: 1px solid #DDE3EA;
-  border-radius: 0.5rem;
-  box-shadow: 0 14px 38px rgb(15 23 42 / 14%);
-  color: #182230;
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45) !important;
+  color: #eaecef !important;
+  background: rgba(30, 35, 41, 0.95) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  padding: 0.75rem 1rem !important;
 }
 
 .gtech-swal-toast-title {
-  color: #182230;
-  font-size: 0.875rem;
-  font-weight: 650;
-  letter-spacing: 0;
+  color: #eaecef !important;
+  font-size: 0.875rem !important;
+  font-weight: 550 !important;
+}
+
+.gtech-swal-toast-html {
+  color: #707a8a !important;
+  font-size: 0.75rem !important;
+  margin: 0.125rem 0 0 !important;
+  line-height: 1.4 !important;
+}
+
+/* Toast specific icons */
+.swal2-toast .swal2-icon {
+  margin: 0 0.5rem 0 0 !important;
+  transform: scale(0.7) !important;
+  border-width: 2px !important;
+}
+
+/* Timer progress bar styling */
+.swal2-timer-progress-bar {
+  background: #fcd535 !important;
+  height: 2px !important;
+}
+
+/* Toast specific timer progress bar colors matching state */
+.swal2-toast.swal2-icon-success .swal2-timer-progress-bar {
+  background: #0ecb81 !important;
+}
+.swal2-toast.swal2-icon-error .swal2-timer-progress-bar {
+  background: #f6465d !important;
+}
+.swal2-toast.swal2-icon-warning .swal2-timer-progress-bar {
+  background: #fcd535 !important;
+}
+.swal2-toast.swal2-icon-info .swal2-timer-progress-bar {
+  background: #fcd535 !important;
 }

@@ -252,7 +252,7 @@ const HomePage: React.FC = () => {
                   <Link
                     to="/inspections"
                     key={card.id}
-                    className="relative flex min-w-[270px] max-w-[290px] flex-col overflow-hidden rounded-lg border border-divider bg-white p-4 transition hover:border-primary-blue/30 hover:shadow-md"
+                    className="relative flex min-w-[270px] max-w-[290px] flex-col overflow-hidden rounded-lg border border-divider bg-card p-4 transition hover:border-primary-blue/30 hover:shadow-md"
                   >
                     <span className={cn('absolute inset-x-0 top-0 h-1', statusAccent(card.status))} />
                     <div className="mt-1 flex items-center justify-between gap-2">
@@ -313,8 +313,8 @@ const HomePage: React.FC = () => {
                     className={cn(
                       'shrink-0 rounded-lg px-4 py-2 text-xs font-semibold transition',
                       agendaTab === tab
-                        ? 'bg-primary-blue text-white'
-                        : 'border border-divider bg-white text-muted-foreground hover:bg-surface hover:text-foreground',
+                        ? 'bg-primary-blue text-[#181a20]'
+                        : 'border border-divider bg-card text-muted-foreground hover:bg-surface hover:text-foreground',
                     )}
                   >
                     {t(`home.tabs.${tab}`)}

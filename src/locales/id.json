@@ -413,6 +413,11 @@
     "today": "Hari ini",
     "earlier": "Sebelumnya"
   },
+  "rbac": {
+    "deniedTitle": "Akses tidak tersedia",
+    "deniedDescription": "Role Anda belum memiliki permission untuk membuka halaman atau menjalankan aksi ini. Hubungi administrator jika akses ini diperlukan.",
+    "backHome": "Kembali ke beranda"
+  },
   "settings": {
     "language": {
       "title": "Bahasa",

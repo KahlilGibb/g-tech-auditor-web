@@ -21,6 +21,7 @@ import { useInspectionSessionStore } from '../stores/inspectionSessionStore';
 import type { InspectionResponse, InspectionSection } from '../types/inspection';
 import type { TemplateField } from '../types/template';
 import { cn } from '../utils/cn';
+import { Can } from '../components/rbac/Can';
 
 function isFieldAnswered(field: TemplateField, response?: InspectionResponse) {
   if (field.type === 'instruction') return true;
@@ -171,7 +172,7 @@ const InspectionFormPage: React.FC = () => {
 
   return (
     <div className="min-h-full">
-      <div className="sticky top-0 z-10 -mx-4 border-b border-divider bg-white/95 px-4 py-4 backdrop-blur lg:-mx-6 lg:px-6">
+      <div className="sticky top-0 z-10 -mx-4 border-b border-divider bg-card/95 px-4 py-4 backdrop-blur lg:-mx-6 lg:px-6">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex min-w-0 items-start gap-3">
             <button className="icon-button shrink-0" onClick={handleBack}>
@@ -207,18 +208,20 @@ const InspectionFormPage: React.FC = () => {
                 <div className="h-full rounded-full bg-primary-blue" style={{ width: `${overallPercent}%` }} />
               </div>
             </div>
-            <button className="btn-secondary justify-center" onClick={handleSave} disabled={isSaving}>
-              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              Simpan Draft
-            </button>
-            <button
-              className="btn-primary justify-center"
-              onClick={handleSubmit}
-              disabled={session.status === 'submitting'}
-            >
-              {session.status === 'submitting' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-              Submit
-            </button>
+            <Can resource="inspections" action="submit">
+              <button className="btn-secondary justify-center" onClick={handleSave} disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Simpan Draft
+              </button>
+              <button
+                className="btn-primary justify-center"
+                onClick={handleSubmit}
+                disabled={session.status === 'submitting'}
+              >
+                {session.status === 'submitting' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                Submit
+              </button>
+            </Can>
           </div>
         </div>
       </div>
@@ -231,7 +234,7 @@ const InspectionFormPage: React.FC = () => {
 
       <div className="grid gap-5 py-5 xl:grid-cols-[280px_minmax(0,1fr)_300px]">
         <aside className="hidden xl:block">
-          <div className="sticky top-32 rounded-lg border border-divider bg-white shadow-sm">
+          <div className="sticky top-32 rounded-lg border border-divider bg-card shadow-sm">
             <div className="border-b border-divider px-4 py-3">
               <p className="text-sm font-semibold text-foreground">Daftar Section</p>
               <p className="mt-1 text-xs text-muted-foreground">{session.sections.length} section inspeksi</p>
@@ -253,7 +256,7 @@ const InspectionFormPage: React.FC = () => {
                     <span
                       className={cn(
                         'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold',
-                        complete ? 'bg-success-green text-white' : active ? 'bg-primary-blue text-white' : 'bg-surface text-muted-foreground',
+                        complete ? 'bg-success-green text-white' : active ? 'bg-primary-blue text-[#181a20]' : 'bg-surface text-muted-foreground',
                       )}
                     >
                       {complete && !active ? <Check className="h-3.5 w-3.5" /> : index + 1}
@@ -272,7 +275,7 @@ const InspectionFormPage: React.FC = () => {
         </aside>
 
         <main className="min-w-0 space-y-4">
-          <div className="rounded-lg border border-divider bg-white p-4 shadow-sm">
+          <div className="rounded-lg border border-divider bg-card p-4 shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
@@ -305,7 +308,7 @@ const InspectionFormPage: React.FC = () => {
             />
           ))}
 
-          <div className="flex items-center justify-between gap-3 rounded-lg border border-divider bg-white p-3 shadow-sm">
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-divider bg-card p-3 shadow-sm">
             <button className="btn-secondary" onClick={() => goToSection(session.currentSectionIndex - 1)} disabled={isFirst}>
               <ChevronLeft className="h-4 w-4" />
               Previous
@@ -314,10 +317,12 @@ const InspectionFormPage: React.FC = () => {
               {session.currentSectionIndex + 1}/{session.sections.length}
             </span>
             {isLast ? (
-              <button className="btn-primary" onClick={handleSubmit}>
-                <Check className="h-4 w-4" />
-                Selesai
-              </button>
+              <Can resource="inspections" action="submit">
+                <button className="btn-primary" onClick={handleSubmit}>
+                  <Check className="h-4 w-4" />
+                  Selesai
+                </button>
+              </Can>
             ) : (
               <button className="btn-primary" onClick={() => goToSection(session.currentSectionIndex + 1)}>
                 Next
@@ -329,7 +334,7 @@ const InspectionFormPage: React.FC = () => {
 
         <aside className="xl:block">
           <div className="sticky top-32 space-y-4">
-            <div className="rounded-lg border border-divider bg-white p-4 shadow-sm">
+            <div className="rounded-lg border border-divider bg-card p-4 shadow-sm">
               <p className="text-sm font-semibold text-foreground">Ringkasan</p>
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <div className="rounded-lg bg-surface p-3">
@@ -349,7 +354,7 @@ const InspectionFormPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="rounded-lg border border-divider bg-white p-4 shadow-sm">
+            <div className="rounded-lg border border-divider bg-card p-4 shadow-sm">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm font-semibold text-foreground">Wajib Dijawab</p>
                 <span
@@ -382,7 +387,7 @@ const InspectionFormPage: React.FC = () => {
               )}
             </div>
 
-            <div className="rounded-lg border border-divider bg-white p-4 shadow-sm">
+            <div className="rounded-lg border border-divider bg-card p-4 shadow-sm">
               <p className="text-sm font-semibold text-foreground">Dokumen</p>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
                 Catatan dan media yang diunggah pada form ini akan ikut terkirim bersama jawaban inspeksi.

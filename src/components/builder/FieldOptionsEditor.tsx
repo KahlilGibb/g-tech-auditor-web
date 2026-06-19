@@ -87,7 +87,7 @@ export default function FieldOptionsEditor({
           <button
             key={set.id}
             onClick={() => applyPreset(set.id)}
-            className="px-2.5 py-1 text-[11px] font-semibold rounded-full bg-white border border-divider text-muted-foreground hover:border-primary-blue/40 hover:text-primary-blue hover:bg-primary-blue/5 transition-all"
+            className="px-2.5 py-1 text-[11px] font-semibold rounded-full bg-card border border-divider text-muted-foreground hover:border-primary-blue/40 hover:text-primary-blue hover:bg-primary-blue/5 transition-all"
           >
             {set.name}
           </button>
@@ -109,7 +109,7 @@ export default function FieldOptionsEditor({
         }}
       >
         <div style={{ overflow: 'hidden' }}>
-          <div className="px-3 py-2 space-y-1.5 bg-white">
+          <div className="px-3 py-2 space-y-1.5 bg-card">
             {options.length === 0 ? (
               <p className="text-xs text-muted-foreground text-center py-2">
                 Belum ada opsi. Pilih preset atau tambah manual.

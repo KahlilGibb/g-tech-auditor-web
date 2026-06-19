@@ -82,12 +82,12 @@ const CpsPage: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex w-full rounded-lg border border-divider bg-white p-1 shadow-sm sm:w-fit">
+      <div className="flex w-full rounded-lg border border-divider bg-card p-1 shadow-sm sm:w-fit">
         <button
           onClick={() => setActiveTab('templates')}
           className={cn(
             "flex-1 sm:flex-none px-6 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2",
-            activeTab === 'templates' ? "bg-primary-blue text-white shadow-sm" : "text-muted-foreground hover:bg-surface hover:text-foreground"
+            activeTab === 'templates' ? "bg-primary-blue text-[#181a20] shadow-sm" : "text-muted-foreground hover:bg-surface hover:text-foreground"
           )}
         >
           <ListTodo className="w-4 h-4" />
@@ -97,7 +97,7 @@ const CpsPage: React.FC = () => {
           onClick={() => setActiveTab('progress')}
           className={cn(
             "flex-1 sm:flex-none px-6 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2",
-            activeTab === 'progress' ? "bg-primary-blue text-white shadow-sm" : "text-muted-foreground hover:bg-surface hover:text-foreground"
+            activeTab === 'progress' ? "bg-primary-blue text-[#181a20] shadow-sm" : "text-muted-foreground hover:bg-surface hover:text-foreground"
           )}
         >
           <Presentation className="w-4 h-4" />
@@ -151,8 +151,8 @@ const CpsPage: React.FC = () => {
                       className={cn(
                         "whitespace-nowrap px-4 py-2 rounded-lg text-sm font-semibold transition-colors border",
                         activeFilter === f 
-                          ? "bg-primary-blue text-white border-primary-blue" 
-                          : "bg-white text-muted-foreground border-divider hover:bg-surface"
+                          ? "bg-primary-blue text-[#181a20] border-primary-blue" 
+                          : "bg-card text-muted-foreground border-divider hover:bg-surface"
                       )}
                     >
                       {f}

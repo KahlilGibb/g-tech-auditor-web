@@ -116,8 +116,8 @@ const InspectionQuestionCard: React.FC<InspectionQuestionCardProps> = ({
                 className={cn(
                   'min-h-11 rounded-lg border px-3 py-2 text-sm font-semibold transition',
                   active
-                    ? 'border-primary-blue bg-primary-blue text-white shadow-sm'
-                    : 'border-divider bg-white text-foreground hover:border-primary-blue/40 hover:bg-primary-blue/[0.03]',
+                    ? 'border-primary-blue bg-primary-blue text-[#181a20] shadow-sm'
+                    : 'border-divider bg-card text-foreground hover:border-primary-blue/40 hover:bg-primary-blue/[0.03]',
                 )}
               >
                 {option.label}
@@ -130,7 +130,7 @@ const InspectionQuestionCard: React.FC<InspectionQuestionCardProps> = ({
 
     if (field.type === 'checkbox') {
       return (
-        <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-divider bg-white p-3 text-sm font-semibold text-foreground hover:border-primary-blue/30">
+        <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-divider bg-card p-3 text-sm font-semibold text-foreground hover:border-primary-blue/30">
           <input
             type="checkbox"
             className="h-4 w-4 rounded border-divider text-primary-blue"
@@ -234,7 +234,7 @@ const InspectionQuestionCard: React.FC<InspectionQuestionCardProps> = ({
   return (
     <article
       className={cn(
-        'overflow-hidden rounded-lg border bg-white shadow-sm transition',
+        'overflow-hidden rounded-lg border bg-card shadow-sm transition',
         answered ? 'border-success-green/25' : field.required ? 'border-danger-red/20' : 'border-divider',
       )}
     >
@@ -305,7 +305,7 @@ const InspectionQuestionCard: React.FC<InspectionQuestionCardProps> = ({
             type="button"
             onClick={() => setIsNoteOpen(prev => !prev)}
             className={cn(
-              'inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition hover:bg-white',
+              'inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition hover:bg-card',
               note ? 'text-primary-blue' : 'text-muted-foreground',
             )}
           >
@@ -319,7 +319,7 @@ const InspectionQuestionCard: React.FC<InspectionQuestionCardProps> = ({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className={cn(
-                  'inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition hover:bg-white',
+                  'inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition hover:bg-card',
                   mediaUris.length > 0 ? 'text-primary-blue' : 'text-muted-foreground',
                 )}
               >
@@ -330,7 +330,7 @@ const InspectionQuestionCard: React.FC<InspectionQuestionCardProps> = ({
           )}
           <button
             type="button"
-            className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-muted-foreground transition hover:bg-white"
+            className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-muted-foreground transition hover:bg-card"
           >
             <Plus className="h-4 w-4" />
             Tindakan

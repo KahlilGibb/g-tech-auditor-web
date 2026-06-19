@@ -22,11 +22,18 @@ import OrganizationsPage from './pages/OrganizationsPage';
 import SitesPage from './pages/SitesPage';
 import DocumentManagementPage from './pages/DocumentManagementPage';
 import { Loader2 } from 'lucide-react';
+import AccessDenied from './components/rbac/AccessDenied';
+import { NAV_PERMISSIONS, type NavPermissionRequirement } from './constants/rbac';
+import { useRbac } from './hooks/useRbac';
 
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const ProtectedRoute: React.FC<{
+  children: React.ReactNode;
+  permission?: NavPermissionRequirement;
+}> = ({ children, permission }) => {
   const { isAuthenticated, isLoading } = useAuth();
+  const { canRequirement, isLoadingPermissions } = useRbac();
 
-  if (isLoading) {
+  if (isLoading || (permission && isLoadingPermissions)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface">
         <Loader2 className="w-10 h-10 animate-spin text-primary-blue" />
@@ -36,6 +43,10 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (!canRequirement(permission)) {
+    return <AccessDenied />;
   }
 
   return <>{children}</>;
@@ -60,28 +71,126 @@ const AppRoutes: React.FC = () => {
         }
       >
         <Route index element={<HomePage />} />
-        <Route path="inspections" element={<InspectionsPage />} />
-        <Route path="inspections/:id/session" element={<InspectionFormPage />} />
-        <Route path="templates" element={<TemplatesPage />} />
-        <Route path="master-fields" element={<MasterFieldsPage />} />
-        <Route path="documents" element={<DocumentManagementPage />} />
-        <Route path="actions" element={<ActionsPage />} />
-        <Route path="cps" element={<CpsPage />} />
-        <Route path="training" element={<TrainingPage />} />
+        <Route
+          path="inspections"
+          element={
+            <ProtectedRoute permission={NAV_PERMISSIONS.inspections}>
+              <InspectionsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="inspections/:id/session"
+          element={
+            <ProtectedRoute permission={NAV_PERMISSIONS.inspectionSession}>
+              <InspectionFormPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="templates"
+          element={
+            <ProtectedRoute permission={NAV_PERMISSIONS.templates}>
+              <TemplatesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="master-fields"
+          element={
+            <ProtectedRoute permission={NAV_PERMISSIONS.masterFields}>
+              <MasterFieldsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="documents"
+          element={
+            <ProtectedRoute permission={NAV_PERMISSIONS.documents}>
+              <DocumentManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="actions"
+          element={
+            <ProtectedRoute permission={NAV_PERMISSIONS.actions}>
+              <ActionsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="cps"
+          element={
+            <ProtectedRoute permission={NAV_PERMISSIONS.cps}>
+              <CpsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="training"
+          element={
+            <ProtectedRoute permission={NAV_PERMISSIONS.training}>
+              <TrainingPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="profile" element={<ProfilePage />} />
-        <Route path="users" element={<UsersPage />} />
-        <Route path="roles" element={<RolesPage />} />
-        <Route path="permissions" element={<PermissionsPage />} />
-        <Route path="branches" element={<BranchesPage />} />
-        <Route path="organizations" element={<OrganizationsPage />} />
-        <Route path="sites" element={<SitesPage />} />
+        <Route
+          path="users"
+          element={
+            <ProtectedRoute permission={NAV_PERMISSIONS.users}>
+              <UsersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="roles"
+          element={
+            <ProtectedRoute permission={NAV_PERMISSIONS.roles}>
+              <RolesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="permissions"
+          element={
+            <ProtectedRoute permission={NAV_PERMISSIONS.permissions}>
+              <PermissionsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="branches"
+          element={
+            <ProtectedRoute permission={NAV_PERMISSIONS.branches}>
+              <BranchesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="organizations"
+          element={
+            <ProtectedRoute permission={NAV_PERMISSIONS.organizations}>
+              <OrganizationsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="sites"
+          element={
+            <ProtectedRoute permission={NAV_PERMISSIONS.sites}>
+              <SitesPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="settings" element={<ProfilePage />} />
       </Route>
 
       <Route
         path="/templates/:id/builder"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute permission={NAV_PERMISSIONS.templateBuilder}>
             <TemplateBuilderPage />
           </ProtectedRoute>
         }

@@ -14,6 +14,8 @@ import { cn } from '../utils/cn';
 import type { TemplateListItem } from '../services/templateService';
 import { appSwal } from '../lib/appSwal';
 import { getApiErrorMessage } from '../lib/apiResponse';
+import { Can } from '../components/rbac/Can';
+import { useRbac } from '../hooks/useRbac';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -92,7 +94,7 @@ const CreateTemplateSheet: React.FC<CreateSheetProps & { onScratch: () => Promis
 
       {/* Sheet */}
       <div
-        className="relative bg-white rounded-t-3xl shadow-2xl w-full max-w-2xl mx-auto"
+        className="relative bg-card rounded-t-3xl shadow-2xl w-full max-w-2xl mx-auto"
         style={{
           transform: visible ? 'translateY(0)' : 'translateY(100%)',
           transition: 'transform 300ms cubic-bezier(0.32, 0.72, 0, 1)',
@@ -173,6 +175,7 @@ interface DetailSheetProps {
   onClose: () => void;
   template: TemplateListItem | null;
   onEdit: (id: string) => void;
+  canEdit: boolean;
 }
 
 const DETAIL_MENU = [
@@ -185,7 +188,7 @@ const DETAIL_MENU = [
 ] as const;
 
 const TemplateDetailSheet: React.FC<DetailSheetProps> = ({
-  open, visible, onClose, template, onEdit,
+  open, visible, onClose, template, onEdit, canEdit,
 }) => {
   useEffect(() => {
     if (!open) return;
@@ -213,7 +216,7 @@ const TemplateDetailSheet: React.FC<DetailSheetProps> = ({
 
       {/* Sheet */}
       <div
-        className="relative bg-white rounded-t-3xl shadow-2xl w-full max-w-2xl mx-auto"
+        className="relative bg-card rounded-t-3xl shadow-2xl w-full max-w-2xl mx-auto"
         style={{
           transform: visible ? 'translateY(0)' : 'translateY(100%)',
           transition: 'transform 300ms cubic-bezier(0.32, 0.72, 0, 1)',
@@ -260,6 +263,7 @@ const TemplateDetailSheet: React.FC<DetailSheetProps> = ({
         {/* Menu items */}
         <div className="px-4 pb-2 space-y-0.5">
           {DETAIL_MENU.map((item) => {
+            if (item.id === 'edit' && !canEdit) return null;
             const Icon = item.icon;
             return (
               <button
@@ -301,6 +305,7 @@ const TemplateDetailSheet: React.FC<DetailSheetProps> = ({
 
 const TemplatesPage: React.FC = () => {
   const { t } = useTranslation();
+  const { can } = useRbac();
   const { templates, isLoading, error, fetchTemplates } = useTemplates();
   const { createTemplate } = useTemplateStore();
   const navigate = useNavigate();
@@ -364,13 +369,15 @@ const TemplatesPage: React.FC = () => {
           >
             <RefreshCcw className={cn('w-5 h-5', (isLoading || isRefreshing) && 'animate-spin')} />
           </button>
-          <button
-            onClick={createSheet.show}
-            className="btn-primary flex-1 sm:flex-none"
-          >
-            <PlusCircle className="w-5 h-5" />
-            {t('common.create')}
-          </button>
+          <Can resource="templates" action="create">
+            <button
+              onClick={createSheet.show}
+              className="btn-primary flex-1 sm:flex-none"
+            >
+              <PlusCircle className="w-5 h-5" />
+              {t('common.create')}
+            </button>
+          </Can>
         </div>
       </div>
 
@@ -446,6 +453,7 @@ const TemplatesPage: React.FC = () => {
         onClose={detailSheet.hide}
         template={selectedTemplate}
         onEdit={handleEdit}
+        canEdit={can('templates', 'update')}
       />
     </div>
   );

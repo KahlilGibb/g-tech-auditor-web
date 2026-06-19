@@ -9,6 +9,8 @@ import { CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { inspectionService } from '../services/inspectionService';
 import { appSwal } from '../lib/appSwal';
 import { getApiErrorMessage } from '../lib/apiResponse';
+import { Can } from '../components/rbac/Can';
+import { useRbac } from '../hooks/useRbac';
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -24,6 +26,7 @@ function downloadBlob(blob: Blob, filename: string) {
 const InspectionsPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { can } = useRbac();
   const { inspections, isLoading, error, fetchInspections } = useInspections();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [exportingKey, setExportingKey] = useState<string | null>(null);
@@ -73,9 +76,11 @@ const InspectionsPage: React.FC = () => {
           >
             <RefreshCcw className={cn("w-5 h-5", (isLoading || isRefreshing) && "animate-spin")} />
           </button>
-          <button className="btn-primary flex-1 sm:flex-none">
-            {t('common.create')}
-          </button>
+          <Can resource="inspections" action="create">
+            <button className="btn-primary flex-1 sm:flex-none">
+              {t('common.create')}
+            </button>
+          </Can>
         </div>
       </div>
 
@@ -102,7 +107,7 @@ const InspectionsPage: React.FC = () => {
           <p className="text-danger-red font-medium">{error}</p>
           <button 
             onClick={fetchInspections}
-            className="px-4 py-2 bg-white text-danger-red border border-danger-red/20 rounded-lg text-sm font-bold hover:bg-danger-red/5"
+            className="px-4 py-2 bg-card text-danger-red border border-danger-red/20 rounded-lg text-sm font-bold hover:bg-danger-red/5"
           >
             {t('common.retry')}
           </button>
@@ -144,8 +149,13 @@ const InspectionsPage: React.FC = () => {
                 inspections.map((item) => (
                   <tr
                     key={item.id}
-                    className="hover:bg-surface/50 transition-colors cursor-pointer"
-                    onClick={() => navigate(`/inspections/${item.id}/session`)}
+                    className={cn(
+                      'hover:bg-surface/50 transition-colors',
+                      can('inspections', 'submit') && 'cursor-pointer',
+                    )}
+                    onClick={() => {
+                      if (can('inspections', 'submit')) navigate(`/inspections/${item.id}/session`);
+                    }}
                   >
                     <td className="px-6 py-4">
                       <p className="font-semibold text-foreground text-sm">{item.title}</p>
@@ -181,45 +191,49 @@ const InspectionsPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="inline-flex items-center gap-1">
-                        <button
-                          className="rounded-lg p-2 text-muted-foreground transition hover:bg-primary-blue/10 hover:text-primary-blue disabled:opacity-50"
-                          title={t('inspections.export.report')}
-                          disabled={exportingKey === `${item.id}-report`}
-                          onClick={event => {
-                            event.stopPropagation();
-                            void handleExport(item.id, 'report');
-                          }}
-                        >
-                          {exportingKey === `${item.id}-report`
-                            ? <RefreshCcw className="h-4 w-4 animate-spin" />
-                            : <FileSpreadsheet className="h-4 w-4" />}
-                        </button>
-                        <button
-                          className="rounded-lg p-2 text-muted-foreground transition hover:bg-primary-blue/10 hover:text-primary-blue disabled:opacity-50"
-                          title={t('inspections.export.issues')}
-                          disabled={exportingKey === `${item.id}-issues`}
-                          onClick={event => {
-                            event.stopPropagation();
-                            void handleExport(item.id, 'issues');
-                          }}
-                        >
-                          {exportingKey === `${item.id}-issues`
-                            ? <RefreshCcw className="h-4 w-4 animate-spin" />
-                            : <Download className="h-4 w-4" />}
-                        </button>
+                        <Can resource="inspections" action="export">
+                          <button
+                            className="rounded-lg p-2 text-muted-foreground transition hover:bg-primary-blue/10 hover:text-primary-blue disabled:opacity-50"
+                            title={t('inspections.export.report')}
+                            disabled={exportingKey === `${item.id}-report`}
+                            onClick={event => {
+                              event.stopPropagation();
+                              void handleExport(item.id, 'report');
+                            }}
+                          >
+                            {exportingKey === `${item.id}-report`
+                              ? <RefreshCcw className="h-4 w-4 animate-spin" />
+                              : <FileSpreadsheet className="h-4 w-4" />}
+                          </button>
+                          <button
+                            className="rounded-lg p-2 text-muted-foreground transition hover:bg-primary-blue/10 hover:text-primary-blue disabled:opacity-50"
+                            title={t('inspections.export.issues')}
+                            disabled={exportingKey === `${item.id}-issues`}
+                            onClick={event => {
+                              event.stopPropagation();
+                              void handleExport(item.id, 'issues');
+                            }}
+                          >
+                            {exportingKey === `${item.id}-issues`
+                              ? <RefreshCcw className="h-4 w-4 animate-spin" />
+                              : <Download className="h-4 w-4" />}
+                          </button>
+                        </Can>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button
-                        className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-primary-blue transition hover:bg-primary-blue/10"
-                        onClick={event => {
-                          event.stopPropagation();
-                          navigate(`/inspections/${item.id}/session`);
-                        }}
-                      >
-                        <PlayCircle className="h-4 w-4" />
-                        Buka
-                      </button>
+                      <Can resource="inspections" action="submit">
+                        <button
+                          className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-primary-blue transition hover:bg-primary-blue/10"
+                          onClick={event => {
+                            event.stopPropagation();
+                            navigate(`/inspections/${item.id}/session`);
+                          }}
+                        >
+                          <PlayCircle className="h-4 w-4" />
+                          Buka
+                        </button>
+                      </Can>
                     </td>
                   </tr>
                 ))

@@ -413,6 +413,11 @@
     "today": "Today",
     "earlier": "Earlier"
   },
+  "rbac": {
+    "deniedTitle": "Access unavailable",
+    "deniedDescription": "Your role does not have permission to open this page or run this action. Contact an administrator if this access is required.",
+    "backHome": "Back to home"
+  },
   "settings": {
     "language": {
       "title": "Language",
