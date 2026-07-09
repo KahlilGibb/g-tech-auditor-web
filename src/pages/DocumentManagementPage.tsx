@@ -31,6 +31,7 @@ import { appSwal } from '../lib/appSwal';
 import { getApiErrorMessage } from '../lib/apiResponse';
 import { SkeletonRow } from '../components/ui/SkeletonLoader';
 import { useDocuments } from '../hooks/useDocuments';
+import { documentService } from '../services/documentService';
 import type {
   DocumentFolder,
   DocumentFile,
@@ -85,6 +86,7 @@ const DocumentManagementPage: React.FC = () => {
   // Modals state
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState<DocumentFile | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>('');
 
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
@@ -408,10 +410,20 @@ const DocumentManagementPage: React.FC = () => {
     }
   };
 
-  const handlePreview = (file: DocumentFile) => {
+  const handlePreview = async (file: DocumentFile) => {
     setPreviewFile(file);
+    setPreviewUrl('');
     setIsPreviewOpen(true);
     setActiveFileMenuId(null);
+
+    if (['png', 'jpg', 'jpeg'].includes(file.type.toLowerCase())) {
+      try {
+        const { url } = await documentService.getDownloadUrl(file.id);
+        setPreviewUrl(url);
+      } catch (err) {
+        console.error('Failed to fetch preview URL', err);
+      }
+    }
   };
 
   // Download via presigned R2 URL
@@ -1168,18 +1180,21 @@ const DocumentManagementPage: React.FC = () => {
             {/* Left Box: Graphic / File View */}
             <div className="flex-1 bg-surface p-6 flex items-center justify-center border-r border-divider min-h-[300px] max-h-[450px]">
               {['png', 'jpg', 'jpeg'].includes(previewFile.type.toLowerCase()) ? (
-                // Simulated gorgeous image render
-                <div className="flex flex-col items-center justify-center text-center">
-                  <div className="rounded-lg border border-divider overflow-hidden bg-card max-w-full max-h-[320px] shadow-sm">
-                    <img
-                      src="/api/placeholder/400/300"
-                      alt={previewFile.name}
-                      className="object-cover max-h-[320px]"
-                    />
-                  </div>
-                  <span className="text-xs text-muted-foreground mt-2">
-                    [{t('documents.modals.simulatedPhoto')}]
-                  </span>
+                <div className="flex flex-col items-center justify-center text-center w-full">
+                  {previewUrl ? (
+                    <div className="rounded-lg border border-divider overflow-hidden bg-card max-w-full max-h-[320px] shadow-sm">
+                      <img
+                        src={previewUrl}
+                        alt={previewFile.name}
+                        className="object-contain max-h-[320px]"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <RefreshCcw className="w-8 h-8 animate-spin text-primary-blue" />
+                      <span className="text-xs text-muted-foreground">Memuat gambar...</span>
+                    </div>
+                  )}
                 </div>
               ) : (
                 // Non-image generic beautiful representation

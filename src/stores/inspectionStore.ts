@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { InspectionSummary } from '../types/inspection';
+import type { InspectionSummary, DashboardData } from '../types/inspection';
 import { inspectionService } from '../services/inspectionService';
 import { getApiErrorMessage } from '../lib/apiResponse';
 
@@ -18,6 +18,7 @@ interface DashboardStats {
 interface InspectionStoreState {
   inspections: InspectionSummary[];
   stats: DashboardStats | null;
+  dashboardData: DashboardData | null;
   isLoading: boolean;
   isFetched: boolean;
   error: string | null;
@@ -28,24 +29,20 @@ interface InspectionStoreState {
 
 export const useInspectionStore = create<InspectionStoreState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       inspections: [],
       stats: null,
+      dashboardData: null,
       isLoading: false,
       isFetched: false,
       error: null,
 
       fetchDashboardData: async () => {
-        // If already fetched and not empty, don't re-fetch immediately unless needed
-        if (get().isFetched && get().inspections.length > 0) {
-            // Optional: Background re-fetch logic can go here
-        }
-        
         set({ isLoading: true, error: null });
         try {
+          const dashboardData = await inspectionService.getDashboard(30);
           const inspections = await inspectionService.getInspections();
-          const stats = null;
-          set({ inspections, stats, isLoading: false, isFetched: true });
+          set({ dashboardData, inspections, isLoading: false, isFetched: true });
         } catch (e) {
           set({ 
             isLoading: false, 
@@ -61,6 +58,7 @@ export const useInspectionStore = create<InspectionStoreState>()(
       partialize: (state) => ({ 
         inspections: state.inspections, 
         stats: state.stats,
+        dashboardData: state.dashboardData,
         isFetched: state.isFetched 
       }),
     }

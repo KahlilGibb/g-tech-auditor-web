@@ -44,8 +44,8 @@ export const useDocumentStore = create<DocumentStoreState>()((set, get) => ({
   fetchFolders: async (parentId) => {
     set({ isLoading: true, error: null });
     try {
-      const folders = await documentService.getFolders(parentId);
-      set({ folders, isLoading: false });
+      const { folders, documents } = await documentService.getFolders(parentId);
+      set({ folders, files: documents, isLoading: false });
     } catch (error) {
       set({ isLoading: false, error: getApiErrorMessage(error, 'Failed to load folders') });
     }

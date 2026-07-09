@@ -345,6 +345,34 @@ export const userService = {
       throw error;
     }
   },
+
+  async listTrash(): Promise<ManagementUser[]> {
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.USERS.TRASH);
+      return unwrapList<unknown>(response.data).map(normalizeUser);
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockUserApi.listTrash();
+      throw error;
+    }
+  },
+
+  async restore(id: string): Promise<void> {
+    try {
+      await apiClient.post(API_ENDPOINTS.USERS.RESTORE(id));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockUserApi.restore(id);
+      throw error;
+    }
+  },
+
+  async permanentDelete(id: string): Promise<void> {
+    try {
+      await apiClient.delete(API_ENDPOINTS.USERS.PERMANENT_DELETE(id));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockUserApi.permanentDelete(id);
+      throw error;
+    }
+  },
 };
 
 export const roleService = {
@@ -428,6 +456,34 @@ export const roleService = {
       throw error;
     }
   },
+
+  async listTrash(): Promise<Role[]> {
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.ROLES.TRASH);
+      return unwrapList<unknown>(response.data).map(normalizeRole);
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockRoleApi.listTrash();
+      throw error;
+    }
+  },
+
+  async restore(id: string): Promise<void> {
+    try {
+      await apiClient.post(API_ENDPOINTS.ROLES.RESTORE(id));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockRoleApi.restore(id);
+      throw error;
+    }
+  },
+
+  async permanentDelete(id: string): Promise<void> {
+    try {
+      await apiClient.delete(API_ENDPOINTS.ROLES.PERMANENT_DELETE(id));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockRoleApi.permanentDelete(id);
+      throw error;
+    }
+  },
 };
 
 export const permissionService = {
@@ -466,6 +522,34 @@ export const permissionService = {
       await apiClient.delete(API_ENDPOINTS.PERMISSIONS.DELETE(id));
     } catch (error) {
       if (error instanceof MockInterceptError) return mockRoleApi.deletePermission(id);
+      throw error;
+    }
+  },
+
+  async listTrash(): Promise<Permission[]> {
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.PERMISSIONS.TRASH);
+      return unwrapList<unknown>(response.data).map(normalizePermission);
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockRoleApi.listTrashedPermissions();
+      throw error;
+    }
+  },
+
+  async restore(id: string): Promise<void> {
+    try {
+      await apiClient.post(API_ENDPOINTS.PERMISSIONS.RESTORE(id));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockRoleApi.restorePermission(id);
+      throw error;
+    }
+  },
+
+  async permanentDelete(id: string): Promise<void> {
+    try {
+      await apiClient.delete(API_ENDPOINTS.PERMISSIONS.PERMANENT_DELETE(id));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockRoleApi.permanentDeletePermission(id);
       throw error;
     }
   },
@@ -568,6 +652,34 @@ export const branchService = {
       throw error;
     }
   },
+
+  async listTrash(): Promise<Branch[]> {
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.BRANCHES.TRASH);
+      return unwrapList<unknown>(response.data).map(normalizeBranch);
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockBranchApi.listTrash();
+      throw error;
+    }
+  },
+
+  async restore(id: string): Promise<void> {
+    try {
+      await apiClient.post(API_ENDPOINTS.BRANCHES.RESTORE(id));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockBranchApi.restore(id);
+      throw error;
+    }
+  },
+
+  async permanentDelete(id: string): Promise<void> {
+    try {
+      await apiClient.delete(API_ENDPOINTS.BRANCHES.PERMANENT_DELETE(id));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockBranchApi.permanentDelete(id);
+      throw error;
+    }
+  },
 };
 
 export const organizationService = {
@@ -634,6 +746,34 @@ export const organizationService = {
       await apiClient.delete(API_ENDPOINTS.ORGANIZATIONS.DELETE(id));
     } catch (error) {
       if (error instanceof MockInterceptError) return mockOrganizationApi.remove(id);
+      throw error;
+    }
+  },
+
+  async listTrash(): Promise<Organization[]> {
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.ORGANIZATIONS.TRASH);
+      return unwrapList<unknown>(response.data).map(normalizeOrganization);
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockOrganizationApi.listTrash();
+      throw error;
+    }
+  },
+
+  async restore(id: string): Promise<void> {
+    try {
+      await apiClient.post(API_ENDPOINTS.ORGANIZATIONS.RESTORE(id));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockOrganizationApi.restore(id);
+      throw error;
+    }
+  },
+
+  async permanentDelete(id: string): Promise<void> {
+    try {
+      await apiClient.delete(API_ENDPOINTS.ORGANIZATIONS.PERMANENT_DELETE(id));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockOrganizationApi.permanentDelete(id);
       throw error;
     }
   },
@@ -732,6 +872,34 @@ export const siteService = {
       await apiClient.delete(API_ENDPOINTS.SITES.DELETE(id));
     } catch (error) {
       if (error instanceof MockInterceptError) return mockSiteApi.remove(id);
+      throw error;
+    }
+  },
+
+  async listTrash(): Promise<Site[]> {
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.SITES.TRASH);
+      return unwrapList<unknown>(response.data).map(normalizeSite);
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockSiteApi.listTrash();
+      throw error;
+    }
+  },
+
+  async restore(id: string): Promise<void> {
+    try {
+      await apiClient.post(API_ENDPOINTS.SITES.RESTORE(id));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockSiteApi.restore(id);
+      throw error;
+    }
+  },
+
+  async permanentDelete(id: string): Promise<void> {
+    try {
+      await apiClient.delete(API_ENDPOINTS.SITES.PERMANENT_DELETE(id));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return mockSiteApi.permanentDelete(id);
       throw error;
     }
   },

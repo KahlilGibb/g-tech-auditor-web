@@ -21,6 +21,8 @@ import BranchesPage from './pages/BranchesPage';
 import OrganizationsPage from './pages/OrganizationsPage';
 import SitesPage from './pages/SitesPage';
 import DocumentManagementPage from './pages/DocumentManagementPage';
+import ActionStatusesPage from './pages/ActionStatusesPage';
+import TrashBinPage from './pages/TrashBinPage';
 import { Loader2 } from 'lucide-react';
 import AccessDenied from './components/rbac/AccessDenied';
 import { NAV_PERMISSIONS, type NavPermissionRequirement } from './constants/rbac';
@@ -181,6 +183,22 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute permission={NAV_PERMISSIONS.sites}>
               <SitesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="action-statuses"
+          element={
+            <ProtectedRoute permission={NAV_PERMISSIONS.actionStatuses}>
+              <ActionStatusesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="trash-bin"
+          element={
+            <ProtectedRoute permission={NAV_PERMISSIONS.trashBin}>
+              <TrashBinPage />
             </ProtectedRoute>
           }
         />

@@ -3,6 +3,8 @@ import type {
   InspectionSection,
   InspectionSession,
   InspectionSummary,
+  CreateInspectionPayload,
+  DashboardData,
 } from '../types/inspection';
 import type { TemplateField } from '../types/template';
 import { apiClient, MockInterceptError } from '../lib/apiClient';
@@ -11,7 +13,8 @@ import { toRecord, toStringValue, unwrapData, unwrapList } from '../lib/apiRespo
 import { templateService } from './templateService';
 
 // TODO: Remove MOCK_DATA when real API is connected.
-const MOCK_INSPECTIONS: InspectionSummary[] = [
+let MOCK_TRASHED_INSPECTIONS: InspectionSummary[] = [];
+let MOCK_INSPECTIONS: InspectionSummary[] = [
   {
     id: 'INS-001',
     templateId: 'TEMP-W01',
@@ -112,6 +115,45 @@ function normalizeInspection(raw: unknown): InspectionSummary {
   };
 }
 
+function normalizeDashboardData(raw: unknown): DashboardData {
+  const record = toRecord(raw);
+  const countsRecord = toRecord(record.counts);
+  const rawInProgress = record.in_progress ?? record.inProgress;
+  const inProgressList = Array.isArray(rawInProgress)
+    ? (rawInProgress as unknown[]).map(toRecord)
+    : [];
+  const rawTopDealers = record.top_dealers ?? record.topDealers;
+  const topDealersList = Array.isArray(rawTopDealers)
+    ? (rawTopDealers as unknown[]).map(toRecord)
+    : [];
+
+  return {
+    counts: {
+      completed: toNumber(countsRecord.completed, 0),
+      active: toNumber(countsRecord.active, 0),
+      draft: toNumber(countsRecord.draft, 0),
+      overdue: toNumber(countsRecord.overdue, 0),
+    },
+    inProgress: inProgressList.map((item: Record<string, any>) => ({
+      id: toStringValue(item.id ?? item.inspection_id ?? item.uuid),
+      title: toStringValue(item.title ?? item.name, 'Inspection'),
+      groupName: toStringValue(item.group_name ?? item.groupName ?? item.site, '-'),
+      templateTitle: toStringValue(item.template_title ?? item.templateTitle ?? item.templateName, 'Inspection Template'),
+      templateType: toStringValue(item.template_type ?? item.templateType ?? item.type, 'inspection'),
+      updatedAt: toStringValue(item.updated_at ?? item.updatedAt, new Date().toISOString()),
+      status: toStringValue(item.status, 'In Progress'),
+      progress: item.progress ?? { completed: 0, total: 10 },
+    })),
+    topDealers: topDealersList.map((item: Record<string, any>) => ({
+      groupId: toStringValue(item.group_id ?? item.groupId),
+      groupName: toStringValue(item.group_name ?? item.groupName ?? item.name, '-'),
+      total: toNumber(item.total, 0),
+      completed: toNumber(item.completed, 0),
+      percent: toNumber(item.percent ?? item.pct, 0),
+    })),
+  };
+}
+
 function option(fieldId: string, label: string, value: string, score = 0) {
   return { id: `${fieldId}-${value}`, field_id: fieldId, label, value, score_value: score };
 }
@@ -133,7 +175,7 @@ function field(
     type,
     required,
     order,
-    logic_rules: null,
+    rules: null,
     ...extra,
   };
 }
@@ -219,17 +261,35 @@ function normalizeResponses(raw: unknown) {
     list.map(item => {
       const record = toRecord(item);
       const fieldId = toStringValue(record.field_id ?? record.fieldId);
+      const attachmentsList = Array.isArray(record.attachments)
+        ? record.attachments.map(a => {
+            const att = toRecord(a);
+            return {
+              uri: toStringValue(att.file_url),
+              attachment_id: toStringValue(att.id),
+              file_url: toStringValue(att.file_url),
+              file_type: toStringValue(att.file_type),
+              filename: toStringValue(att.filename),
+              type: toStringValue(att.type) as 'issue' | 'general',
+            };
+          })
+        : [];
       return [
         fieldId,
         {
           fieldId,
+          fieldValueId: toStringValue(record.id || record.field_value_id),
           value: record.value ?? record.answer ?? record.response_value,
           note: toStringValue(record.note ?? record.notes) || undefined,
-          mediaUris: Array.isArray(record.mediaUris)
-            ? record.mediaUris.map(value => toStringValue(value)).filter(Boolean)
-            : Array.isArray(record.media_uris)
-              ? record.media_uris.map(value => toStringValue(value)).filter(Boolean)
-              : undefined,
+          noteType: toStringValue(record.note_type ?? record.noteType) || undefined,
+          attachments: attachmentsList,
+          mediaUris: attachmentsList.length
+            ? attachmentsList.map(a => a.uri).filter(Boolean)
+            : Array.isArray(record.mediaUris)
+              ? record.mediaUris.map(value => toStringValue(value)).filter(Boolean)
+              : Array.isArray(record.media_uris)
+                ? record.media_uris.map(value => toStringValue(value)).filter(Boolean)
+                : [],
           answeredAt: toStringValue(record.answered_at ?? record.answeredAt) || undefined,
         },
       ];
@@ -264,6 +324,88 @@ export interface DashboardStatsResponse {
 }
 
 export const inspectionService = {
+  async getDashboard(limit = 5): Promise<DashboardData> {
+    try {
+      const res = await apiClient.get<unknown>('/dashboard', {
+        params: { limit },
+      });
+      return normalizeDashboardData(unwrapData(res.data));
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await new Promise<void>(r => setTimeout(r, 450));
+        return {
+          counts: { completed: 5, active: 15, draft: 17, overdue: 0 },
+          inProgress: MOCK_INSPECTIONS.filter(i => i.status !== 'Complete').map(i => ({
+            id: i.id,
+            title: i.title,
+            groupName: i.site,
+            templateTitle: i.templateName,
+            templateType: 'inspection',
+            updatedAt: i.startedAt || new Date().toISOString(),
+            status: i.status,
+            progress: i.progress,
+          })),
+          topDealers: [
+            { groupId: 'g1', groupName: 'Dealer Audi VW BSD', total: 5, completed: 3, percent: 60 },
+            { groupId: 'g2', groupName: 'Dealer Nissan Pulo Gadung', total: 7, completed: 4, percent: 57 },
+            { groupId: 'g3', groupName: 'Dealer KIA PIK', total: 10, completed: 5, percent: 50 },
+            { groupId: 'g4', groupName: 'Dealer Nissan Sempaja', total: 15, completed: 7, percent: 47 },
+            { groupId: 'g5', groupName: 'Dealer Nissan Aceh', total: 20, completed: 8, percent: 43 },
+          ],
+        };
+      }
+      throw e;
+    }
+  },
+
+  async createInspection(payload: CreateInspectionPayload): Promise<InspectionDetail> {
+    try {
+      const apiPayload = {
+        template_id: payload.templateId,
+        group_id: payload.groupId || payload.site,
+        title: payload.title || `Inspection / ${payload.site}`,
+      };
+      const res = await apiClient.post<unknown>(
+        API_ENDPOINTS.INSPECTIONS.CREATE,
+        apiPayload,
+      );
+      const detail = normalizeInspection(unwrapData(res.data));
+      const record = toRecord(unwrapData(res.data));
+      return {
+        ...detail,
+        responses: Object.values(normalizeResponses(record.responses ?? record.field_values)),
+        createdAt: toStringValue(record.created_at ?? record.createdAt, new Date().toISOString()),
+        submittedAt: toStringValue(record.submitted_at ?? record.submittedAt) || null,
+      };
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await new Promise<void>(r => setTimeout(r, 400));
+        const id = `INS-${Math.random().toString(36).substring(2, 11)}`;
+        const t = new Date().toISOString();
+        const mock: InspectionSummary = {
+          id,
+          templateId: payload.templateId,
+          title: `Inspection / ${payload.site}`,
+          site: payload.site,
+          assignee: payload.assignee,
+          dueDate: payload.dueDate,
+          templateName: 'Inspection Template',
+          status: 'In Progress',
+          progress: { completed: 0, total: 10 },
+          startedAt: t,
+        };
+        MOCK_INSPECTIONS.push(mock);
+        return {
+          ...mock,
+          responses: [],
+          createdAt: t,
+          submittedAt: null,
+        };
+      }
+      throw e;
+    }
+  },
+
   async getInspections(): Promise<InspectionSummary[]> {
     try {
       const res = await apiClient.get<unknown>(API_ENDPOINTS.INSPECTIONS.LIST, {
@@ -345,41 +487,105 @@ export const inspectionService = {
     }
   },
 
-  async saveInspectionDraft(session: InspectionSession): Promise<void> {
+  async saveInspectionDraft(): Promise<void> {
+    // No-op because fields are dynamically upserted as they are answered in the new implementation.
+  },
+
+  async upsertFieldValue(
+    inspectionId: string,
+    payload: {
+      field_id: string;
+      value: unknown;
+      note?: string;
+      note_type?: string;
+    },
+  ): Promise<{ id: string }> {
     try {
-      await apiClient.post(API_ENDPOINTS.INSPECTIONS.FIELD_VALUES(session.inspectionId), {
-        values: Object.values(session.responses).map(response => ({
-          field_id: response.fieldId,
-          value: response.value,
-          note: response.note,
-          media_uris: response.mediaUris,
-          answered_at: response.answeredAt,
-        })),
-      });
+      const res = await apiClient.put<unknown>(
+        API_ENDPOINTS.INSPECTIONS.FIELD_VALUES(inspectionId),
+        payload,
+      );
+      return unwrapData<{ id: string }>(res.data);
     } catch (e) {
       if (e instanceof MockInterceptError) {
-        await new Promise<void>(r => setTimeout(r, 250));
+        return { id: `fv-${payload.field_id}` };
+      }
+      throw e;
+    }
+  },
+
+  async uploadAttachment(
+    inspectionId: string,
+    formData: FormData,
+  ): Promise<{ file_url: string; filename: string; file_type: string }> {
+    try {
+      const res = await apiClient.post<unknown>(
+        API_ENDPOINTS.INSPECTIONS.ATTACHMENT_UPLOAD(inspectionId),
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } },
+      );
+      const data = unwrapData<any>(res.data);
+      if (Array.isArray(data)) return data[0];
+      return data;
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        return {
+          file_url: 'https://example.com/mock-photo.jpg',
+          filename: 'mock-photo.jpg',
+          file_type: 'image/jpeg',
+        };
+      }
+      throw e;
+    }
+  },
+
+  async createAttachment(
+    inspectionId: string,
+    payload: {
+      field_value_id: string;
+      file_url: string;
+      file_type: string;
+      filename: string;
+      type: string;
+    },
+  ): Promise<{ id: string }> {
+    try {
+      const res = await apiClient.post<unknown>(
+        API_ENDPOINTS.INSPECTIONS.ATTACHMENTS(inspectionId),
+        payload,
+      );
+      return unwrapData<{ id: string }>(res.data);
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        return { id: `att-${Date.now()}` };
+      }
+      throw e;
+    }
+  },
+
+  async deleteAttachment(
+    inspectionId: string,
+    attachmentId: string,
+  ): Promise<void> {
+    try {
+      await apiClient.delete(
+        API_ENDPOINTS.INSPECTIONS.ATTACHMENT(inspectionId, attachmentId),
+      );
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
         return;
       }
       throw e;
     }
   },
 
-  async submitInspection(session: InspectionSession): Promise<void> {
+  async submitInspection(inspectionId: string): Promise<void> {
     try {
-      await apiClient.post(API_ENDPOINTS.INSPECTIONS.SUBMIT(session.inspectionId), {
-        responses: Object.values(session.responses).map(response => ({
-          field_id: response.fieldId,
-          value: response.value,
-          note: response.note,
-          media_uris: response.mediaUris,
-          answered_at: response.answeredAt,
-        })),
-      });
+      await apiClient.post(API_ENDPOINTS.INSPECTIONS.SUBMIT(inspectionId));
     } catch (e) {
       if (e instanceof MockInterceptError) {
         await new Promise<void>(r => setTimeout(r, 600));
-        const idx = MOCK_INSPECTIONS.findIndex(item => item.id === session.inspectionId);
+        const idx = MOCK_INSPECTIONS.findIndex(item => item.id === inspectionId);
         if (idx !== -1) {
           MOCK_INSPECTIONS[idx] = {
             ...MOCK_INSPECTIONS[idx],
@@ -447,5 +653,65 @@ export const inspectionService = {
       }
       throw e;
     }
-  }
+  },
+
+  async deleteInspection(id: string): Promise<void> {
+    try {
+      await apiClient.delete(API_ENDPOINTS.INSPECTIONS.DELETE(id));
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await new Promise<void>(r => setTimeout(r, 200));
+        const found = MOCK_INSPECTIONS.find(item => item.id === id);
+        if (found) {
+          MOCK_TRASHED_INSPECTIONS.push(found);
+          MOCK_INSPECTIONS = MOCK_INSPECTIONS.filter(item => item.id !== id);
+        }
+        return;
+      }
+      throw e;
+    }
+  },
+
+  async listTrashedInspections(): Promise<InspectionSummary[]> {
+    try {
+      const res = await apiClient.get<unknown>(API_ENDPOINTS.INSPECTIONS.TRASH);
+      return unwrapList<unknown>(res.data).map(normalizeInspection);
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await new Promise<void>(r => setTimeout(r, 200));
+        return [...MOCK_TRASHED_INSPECTIONS];
+      }
+      throw e;
+    }
+  },
+
+  async restoreInspection(id: string): Promise<void> {
+    try {
+      await apiClient.post(API_ENDPOINTS.INSPECTIONS.RESTORE(id));
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await new Promise<void>(r => setTimeout(r, 200));
+        const found = MOCK_TRASHED_INSPECTIONS.find(item => item.id === id);
+        if (found) {
+          MOCK_INSPECTIONS.push(found);
+          MOCK_TRASHED_INSPECTIONS = MOCK_TRASHED_INSPECTIONS.filter(item => item.id !== id);
+        }
+        return;
+      }
+      throw e;
+    }
+  },
+
+  async permanentDeleteInspection(id: string): Promise<void> {
+    try {
+      await apiClient.delete(API_ENDPOINTS.INSPECTIONS.PERMANENT_DELETE(id));
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await new Promise<void>(r => setTimeout(r, 200));
+        MOCK_TRASHED_INSPECTIONS = MOCK_TRASHED_INSPECTIONS.filter(item => item.id !== id);
+        return;
+      }
+      throw e;
+    }
+  },
 };

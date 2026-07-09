@@ -5,6 +5,7 @@ export function useDashboard() {
   const { 
     inspections, 
     stats, 
+    dashboardData,
     isLoading, 
     error, 
     fetchDashboardData, 
@@ -19,6 +20,7 @@ export function useDashboard() {
   return {
     inspections,
     stats,
+    dashboardData,
     isLoading,
     error,
     refresh: fetchDashboardData,

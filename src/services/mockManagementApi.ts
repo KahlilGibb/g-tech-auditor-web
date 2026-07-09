@@ -19,6 +19,13 @@ const wait = (ms = 250) => new Promise<void>(resolve => setTimeout(resolve, ms))
 const id = (prefix: string) => `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 const now = () => new Date().toISOString();
 
+let trashedUsers: ManagementUser[] = [];
+let trashedRoles: Role[] = [];
+let trashedPermissions: Permission[] = [];
+let trashedBranches: Branch[] = [];
+let trashedOrganizations: Organization[] = [];
+let trashedSites: Site[] = [];
+
 let roles: Role[] = [
   {
     id: 'role-admin',
@@ -43,7 +50,7 @@ let roles: Role[] = [
   },
 ];
 
-const permissions: Permission[] = [
+let permissions: Permission[] = [
   { id: 'perm-users-read', name: 'users:read', resource: 'users', action: 'read' },
   { id: 'perm-users-write', name: 'users:write', resource: 'users', action: 'write' },
   { id: 'perm-roles-read', name: 'roles:read', resource: 'roles', action: 'read' },
@@ -240,10 +247,14 @@ function authUserFromManagementUser(user: ManagementUser): AuthUser {
 }
 
 export const mockAuthApi = {
-  async login(email: string, password: string) {
+  async login(identifier: string, password: string) {
     void password;
     await wait();
-    const user = users.find(item => item.email.toLowerCase() === email.toLowerCase()) ?? users[0];
+    const user = users.find(
+      item =>
+        item.email.toLowerCase() === identifier.toLowerCase() ||
+        (item.username && item.username.toLowerCase() === identifier.toLowerCase())
+    ) ?? users[0];
     return {
       user: authUserFromManagementUser(user),
       tokens: {
@@ -294,7 +305,30 @@ export const mockUserApi = {
 
   async remove(userId: string) {
     await wait();
-    users = users.filter(user => user.id !== userId);
+    const user = users.find(item => item.id === userId);
+    if (user) {
+      trashedUsers.push({ ...user, status: 'deleted' });
+      users = users.filter(item => item.id !== userId);
+    }
+  },
+
+  async listTrash() {
+    await wait();
+    return [...trashedUsers];
+  },
+
+  async restore(userId: string) {
+    await wait();
+    const user = trashedUsers.find(item => item.id === userId);
+    if (user) {
+      users = [{ ...user, status: 'active' }, ...users];
+      trashedUsers = trashedUsers.filter(item => item.id !== userId);
+    }
+  },
+
+  async permanentDelete(userId: string) {
+    await wait();
+    trashedUsers = trashedUsers.filter(item => item.id !== userId);
   },
 };
 
@@ -340,7 +374,31 @@ export const mockRoleApi = {
 
   async remove(roleId: string) {
     await wait();
-    roles = roles.filter(role => role.id !== roleId);
+    const role = roles.find(item => item.id === roleId);
+    if (role) {
+      trashedRoles.push({ ...role, status: 'deleted' });
+      roles = roles.filter(item => item.id !== roleId);
+      // Keep permissions mapped to role in rolePermissions, in case restored later
+    }
+  },
+
+  async listTrash() {
+    await wait();
+    return [...trashedRoles];
+  },
+
+  async restore(roleId: string) {
+    await wait();
+    const role = trashedRoles.find(item => item.id === roleId);
+    if (role) {
+      roles = [{ ...role, status: 'active' }, ...roles];
+      trashedRoles = trashedRoles.filter(item => item.id !== roleId);
+    }
+  },
+
+  async permanentDelete(roleId: string) {
+    await wait();
+    trashedRoles = trashedRoles.filter(item => item.id !== roleId);
     delete rolePermissions[roleId];
   },
 
@@ -389,9 +447,31 @@ export const mockRoleApi = {
 
   async deletePermission(permissionId: string) {
     await wait();
-    const index = permissions.findIndex(permission => permission.id === permissionId);
-    if (index === -1) throw new Error('Mock permission not found');
-    permissions.splice(index, 1);
+    const permission = permissions.find(item => item.id === permissionId);
+    if (permission) {
+      trashedPermissions.push(permission);
+      permissions = permissions.filter(item => item.id !== permissionId);
+      // Keep in rolePermissions in case restored later
+    }
+  },
+
+  async listTrashedPermissions() {
+    await wait();
+    return [...trashedPermissions];
+  },
+
+  async restorePermission(permissionId: string) {
+    await wait();
+    const permission = trashedPermissions.find(item => item.id === permissionId);
+    if (permission) {
+      permissions.push(permission);
+      trashedPermissions = trashedPermissions.filter(item => item.id !== permissionId);
+    }
+  },
+
+  async permanentDeletePermission(permissionId: string) {
+    await wait();
+    trashedPermissions = trashedPermissions.filter(item => item.id !== permissionId);
     for (const roleId of Object.keys(rolePermissions)) {
       rolePermissions[roleId] = rolePermissions[roleId].filter(id => id !== permissionId);
     }
@@ -437,12 +517,35 @@ export const mockBranchApi = {
 
   async remove(branchId: string) {
     await wait();
-    branches = branches.filter(branch => branch.id !== branchId);
-    users = users.map(user =>
-      user.branchId === branchId || user.groupId === branchId
-        ? { ...user, branchId: undefined, groupId: undefined, updatedAt: now() }
-        : user,
-    );
+    const branch = branches.find(item => item.id === branchId);
+    if (branch) {
+      trashedBranches.push({ ...branch, status: 'deleted' });
+      branches = branches.filter(item => item.id !== branchId);
+      users = users.map(user =>
+        user.branchId === branchId || user.groupId === branchId
+          ? { ...user, branchId: undefined, groupId: undefined, updatedAt: now() }
+          : user,
+      );
+    }
+  },
+
+  async listTrash() {
+    await wait();
+    return [...trashedBranches];
+  },
+
+  async restore(branchId: string) {
+    await wait();
+    const branch = trashedBranches.find(item => item.id === branchId);
+    if (branch) {
+      branches = [{ ...branch, status: 'active' }, ...branches];
+      trashedBranches = trashedBranches.filter(item => item.id !== branchId);
+    }
+  },
+
+  async permanentDelete(branchId: string) {
+    await wait();
+    trashedBranches = trashedBranches.filter(item => item.id !== branchId);
   },
 
   async getUsers(branchId: string, query?: ListQuery) {
@@ -512,12 +615,35 @@ export const mockOrganizationApi = {
 
   async remove(organizationId: string) {
     await wait();
-    organizations = organizations.filter(organization => organization.id !== organizationId);
-    sites = sites.map(site =>
-      site.organizationId === organizationId
-        ? { ...site, organizationId: undefined, organizationName: undefined, updatedAt: now() }
-        : site,
-    );
+    const org = organizations.find(item => item.id === organizationId);
+    if (org) {
+      trashedOrganizations.push({ ...org, status: 'deleted' });
+      organizations = organizations.filter(item => item.id !== organizationId);
+      sites = sites.map(site =>
+        site.organizationId === organizationId
+          ? { ...site, organizationId: undefined, organizationName: undefined, updatedAt: now() }
+          : site,
+      );
+    }
+  },
+
+  async listTrash() {
+    await wait();
+    return [...trashedOrganizations];
+  },
+
+  async restore(organizationId: string) {
+    await wait();
+    const org = trashedOrganizations.find(item => item.id === organizationId);
+    if (org) {
+      organizations = [{ ...org, status: 'active' }, ...organizations];
+      trashedOrganizations = trashedOrganizations.filter(item => item.id !== organizationId);
+    }
+  },
+
+  async permanentDelete(organizationId: string) {
+    await wait();
+    trashedOrganizations = trashedOrganizations.filter(item => item.id !== organizationId);
   },
 };
 
@@ -570,6 +696,29 @@ export const mockSiteApi = {
 
   async remove(siteId: string) {
     await wait();
-    sites = sites.filter(site => site.id !== siteId);
+    const site = sites.find(item => item.id === siteId);
+    if (site) {
+      trashedSites.push({ ...site, status: 'deleted' });
+      sites = sites.filter(item => item.id !== siteId);
+    }
+  },
+
+  async listTrash() {
+    await wait();
+    return [...trashedSites];
+  },
+
+  async restore(siteId: string) {
+    await wait();
+    const site = trashedSites.find(item => item.id === siteId);
+    if (site) {
+      sites = [{ ...site, status: 'active' }, ...sites];
+      trashedSites = trashedSites.filter(item => item.id !== siteId);
+    }
+  },
+
+  async permanentDelete(siteId: string) {
+    await wait();
+    trashedSites = trashedSites.filter(item => item.id !== siteId);
   },
 };

@@ -1,11 +1,27 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, ListTodo, Presentation, CheckCircle2, AlertCircle } from 'lucide-react';
+import {
+  Search,
+  ListTodo,
+  Presentation,
+  CheckCircle2,
+  AlertCircle,
+  Trophy,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Calendar,
+  AlertTriangle
+} from 'lucide-react';
 import { cn } from '../utils/cn';
 import { useTemplates } from '../hooks/useTemplates';
 import SkeletonCard from '../components/ui/SkeletonLoader';
+import { useAuth } from '../hooks/useAuth';
+import { isAdminRole } from '../constants/rbac';
+import { cpsService } from '../services/cpsService';
+import type { WeeklyCpsScores } from '../types/cps';
 
-type Tab = 'templates' | 'progress';
+type Tab = 'templates' | 'progress' | 'rankings';
 type CpsStatus = 'Dinilai' | 'Belum Dinilai';
 
 // Minimal mock since backend isn't real yet
@@ -56,10 +72,51 @@ const PROGRESS_FILTERS: Array<CpsStatus | 'Semua'> = ['Semua', 'Dinilai', 'Belum
 
 const CpsPage: React.FC = () => {
   const { t } = useTranslation();
-  const { templates, isLoading } = useTemplates();
+  const { user } = useAuth();
+  const { templates, isLoading: templatesLoading } = useTemplates();
+  
   const [activeTab, setActiveTab] = useState<Tab>('templates');
   const [activeFilter, setActiveFilter] = useState<CpsStatus | 'Semua'>('Semua');
   const [query, setQuery] = useState('');
+
+  // Weekly Rankings States
+  const [weeklyScores, setWeeklyScores] = useState<WeeklyCpsScores | null>(null);
+  const [rankingsLoading, setRankingsLoading] = useState(false);
+  const [currentWeekStart, setCurrentWeekStart] = useState('2026-06-29');
+
+  const isAdmin = isAdminRole(user?.role);
+
+  // Fetch rankings
+  useEffect(() => {
+    if (activeTab === 'rankings') {
+      const fetchRankings = async () => {
+        setRankingsLoading(true);
+        try {
+          const res = await cpsService.getWeeklyScores(currentWeekStart);
+          setWeeklyScores(res);
+        } catch (err) {
+          console.error('Failed to fetch weekly scores:', err);
+        } finally {
+          setRankingsLoading(false);
+        }
+      };
+      fetchRankings();
+    }
+  }, [activeTab, currentWeekStart]);
+
+  const handlePrevWeek = () => {
+    // Basic week navigation (subtract 7 days)
+    const date = new Date(currentWeekStart);
+    date.setDate(date.getDate() - 7);
+    setCurrentWeekStart(date.toISOString().split('T')[0]);
+  };
+
+  const handleNextWeek = () => {
+    // Basic week navigation (add 7 days)
+    const date = new Date(currentWeekStart);
+    date.setDate(date.getDate() + 7);
+    setCurrentWeekStart(date.toISOString().split('T')[0]);
+  };
 
   const filteredInspections = useMemo(() => {
     const kw = query.toLowerCase();
@@ -72,6 +129,12 @@ const CpsPage: React.FC = () => {
       return matchSearch && matchFilter;
     });
   }, [query, activeFilter]);
+
+  // Sort rankings by percentage desc
+  const sortedDealers = useMemo(() => {
+    if (!weeklyScores?.dealers) return [];
+    return [...weeklyScores.dealers].sort((a, b) => b.percentage - a.percentage);
+  }, [weeklyScores]);
 
   return (
     <div className="page-shell">
@@ -103,13 +166,25 @@ const CpsPage: React.FC = () => {
           <Presentation className="w-4 h-4" />
           Progress
         </button>
+        {isAdmin && (
+          <button
+            onClick={() => setActiveTab('rankings')}
+            className={cn(
+              "flex-1 sm:flex-none px-6 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2",
+              activeTab === 'rankings' ? "bg-primary-blue text-[#181a20] shadow-sm" : "text-muted-foreground hover:bg-surface hover:text-foreground"
+            )}
+          >
+            <Trophy className="w-4 h-4" />
+            Rekap Mingguan
+          </button>
+        )}
       </div>
 
       {/* Main Area */}
       <div className="panel min-h-[400px] overflow-hidden">
         {activeTab === 'templates' && (
           <div className="p-6 space-y-4">
-            {isLoading ? (
+            {templatesLoading ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"><SkeletonCard /></div>
             ) : templates.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">{t('cps.empty')}</div>
@@ -210,6 +285,116 @@ const CpsPage: React.FC = () => {
                         </td>
                       </tr>
                     ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'rankings' && (
+          <div>
+            <div className="p-6 border-b border-divider flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-surface/30">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-muted-foreground" />
+                <span className="text-sm font-semibold text-foreground">Minggu Penilaian</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <button className="icon-button" onClick={handlePrevWeek} disabled={rankingsLoading}>
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="text-sm font-mono bg-card border border-divider px-3 py-1.5 rounded-lg text-foreground shadow-sm">
+                  {currentWeekStart} s/d {weeklyScores?.weekEnd || '-'}
+                </span>
+                <button className="icon-button" onClick={handleNextWeek} disabled={rankingsLoading}>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="table-header">
+                  <tr>
+                    <th className="px-6 py-4 w-16 text-center">Rank</th>
+                    <th className="px-6 py-4">Dealer</th>
+                    <th className="px-6 py-4">Skor Total</th>
+                    <th className="px-6 py-4">Kepatuhan</th>
+                    <th className="px-6 py-4">Sesi Selesai</th>
+                    <th className="px-6 py-4 text-right">Keterangan</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-divider">
+                  {rankingsLoading ? (
+                    <tr>
+                      <td colSpan={6} className="text-center py-12">
+                        <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary-blue" />
+                        <p className="text-xs text-muted-foreground mt-2">Memuat peringkat dealer...</p>
+                      </td>
+                    </tr>
+                  ) : sortedDealers.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="text-center py-12 text-muted-foreground">
+                        Tidak ada data peringkat pada minggu ini.
+                      </td>
+                    </tr>
+                  ) : (
+                    sortedDealers.map((dealer, idx) => {
+                      const rank = idx + 1;
+                      const isTop3 = rank <= 3;
+                      
+                      return (
+                        <tr key={dealer.groupId} className="hover:bg-surface/50 transition-colors">
+                          <td className="px-6 py-4 text-center font-bold">
+                            {isTop3 ? (
+                              <span className={cn(
+                                "inline-flex items-center justify-center w-6 h-6 rounded-full text-xs text-[#181a20]",
+                                rank === 1 ? "bg-amber-400" :
+                                rank === 2 ? "bg-slate-300" : "bg-amber-600"
+                              )}>
+                                {rank}
+                              </span>
+                            ) : rank}
+                          </td>
+                          <td className="px-6 py-4 font-semibold text-foreground text-sm">
+                            {dealer.dealerName}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-foreground">
+                            {dealer.totalScore} / {dealer.maxPossibleScore}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2 max-w-[120px]">
+                              <div className="flex-1 bg-divider rounded-full h-2 overflow-hidden">
+                                <div 
+                                  className={cn(
+                                    "h-full rounded-full",
+                                    dealer.percentage >= 85 ? "bg-success-green" :
+                                    dealer.percentage >= 70 ? "bg-warning-amber" : "bg-danger-red"
+                                  )}
+                                  style={{ width: `${dealer.percentage}%` }}
+                                />
+                              </div>
+                              <span className="text-xs font-bold text-foreground">{dealer.percentage}%</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-foreground">
+                            {dealer.sessionsSubmitted} / {dealer.sessionsExpected}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            {dealer.sessionsLate > 0 ? (
+                              <span className="inline-flex items-center gap-1 text-xs text-warning-amber bg-warning-amber/10 px-2 py-0.5 rounded-full font-medium">
+                                <AlertTriangle className="w-3.5 h-3.5" />
+                                {dealer.sessionsLate} Terlambat
+                              </span>
+                            ) : (
+                              <span className="text-xs text-success-green bg-success-green/10 px-2 py-0.5 rounded-full font-medium">
+                                Tepat Waktu
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>

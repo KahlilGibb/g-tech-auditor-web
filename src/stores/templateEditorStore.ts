@@ -276,7 +276,7 @@ export const useTemplateEditorStore = create<TemplateEditorState>()((set, get) =
       type,
       required: false,
       order: existing.length + 1,
-      logic_rules: null,
+      rules: null,
     }
     set(state => ({
       fields: {
@@ -300,7 +300,7 @@ export const useTemplateEditorStore = create<TemplateEditorState>()((set, get) =
       type: master.field_type,
       required: false,
       order: existing.length + 1,
-      logic_rules: null,
+      rules: null,
       options: master.options?.map(option => ({
         id: option.id,
         field_id: fieldId,

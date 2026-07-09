@@ -16,6 +16,9 @@ import { appSwal } from '../lib/appSwal';
 import { getApiErrorMessage } from '../lib/apiResponse';
 import { Can } from '../components/rbac/Can';
 import { useRbac } from '../hooks/useRbac';
+import { branchService } from '../services/managementService';
+import { inspectionService } from '../services/inspectionService';
+import Swal from 'sweetalert2';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -175,6 +178,9 @@ interface DetailSheetProps {
   onClose: () => void;
   template: TemplateListItem | null;
   onEdit: (id: string) => void;
+  onDuplicate: (id: string) => void;
+  onShare: (id: string) => void;
+  onStartInspection: (id: string) => void;
   canEdit: boolean;
 }
 
@@ -188,7 +194,7 @@ const DETAIL_MENU = [
 ] as const;
 
 const TemplateDetailSheet: React.FC<DetailSheetProps> = ({
-  open, visible, onClose, template, onEdit, canEdit,
+  open, visible, onClose, template, onEdit, onDuplicate, onShare, onStartInspection, canEdit,
 }) => {
   useEffect(() => {
     if (!open) return;
@@ -201,6 +207,8 @@ const TemplateDetailSheet: React.FC<DetailSheetProps> = ({
 
   const handleMenu = (id: string) => {
     if (id === 'edit') { onEdit(template.id); return; }
+    if (id === 'duplicate') { onDuplicate(template.id); return; }
+    if (id === 'share') { onShare(template.id); return; }
     // other menu items: show toast or no-op for now
     onClose();
   };
@@ -252,7 +260,7 @@ const TemplateDetailSheet: React.FC<DetailSheetProps> = ({
         {/* CTA */}
         <div className="px-6 py-4">
           <button
-            onClick={onClose}
+            onClick={() => onStartInspection(template.id)}
             className="w-full py-3 rounded-2xl font-semibold text-white text-sm transition-all active:scale-[0.98]"
             style={{ background: 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 50%, #3B82F6 100%)' }}
           >
@@ -307,7 +315,7 @@ const TemplatesPage: React.FC = () => {
   const { t } = useTranslation();
   const { can } = useRbac();
   const { templates, isLoading, error, fetchTemplates } = useTemplates();
-  const { createTemplate } = useTemplateStore();
+  const { createTemplate, duplicateTemplate } = useTemplateStore();
   const navigate = useNavigate();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -352,6 +360,144 @@ const TemplatesPage: React.FC = () => {
   const handleEdit = (id: string) => {
     detailSheet.hide();
     setTimeout(() => navigate(`/templates/${id}/builder`), 150);
+  };
+
+  const handleDuplicate = async (id: string) => {
+    detailSheet.hide();
+    const target = templates.find(t => t.id === id);
+    const name = target?.name || '';
+    const confirmed = await appSwal.confirm({
+      title: 'Duplikat Template',
+      text: `Apakah Anda yakin ingin menduplikat template "${name}"?`,
+      confirmText: 'Ya, Duplikat',
+      cancelText: 'Batal',
+    });
+    if (!confirmed) return;
+
+    setIsCreating(true);
+    try {
+      const result = await duplicateTemplate(id);
+      await fetchTemplates();
+      await appSwal.successCreated('template', result.template.title || 'Template Copy');
+    } catch (err) {
+      await appSwal.errorCreateFailed('template', getApiErrorMessage(err));
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleStartInspection = async (templateId: string) => {
+    detailSheet.hide();
+    const target = templates.find(t => t.id === templateId);
+    if (!target) return;
+
+    void Swal.fire({
+      title: 'Memuat data cabang...',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    try {
+      const branches = await branchService.list();
+      Swal.close();
+
+      if (!branches.length) {
+        await appSwal.error({
+          title: 'Tidak Ada Cabang',
+          text: 'Silakan daftarkan cabang terlebih dahulu.',
+        });
+        return;
+      }
+
+      const options: Record<string, string> = {};
+      branches.forEach(b => {
+        options[b.id] = b.name;
+      });
+
+      const { value: branchId } = await Swal.fire({
+        title: 'Mulai Inspeksi Baru',
+        text: `Template: ${target.name}`,
+        input: 'select',
+        inputOptions: options,
+        inputPlaceholder: 'Pilih Cabang / Target Group',
+        showCancelButton: true,
+        confirmButtonText: 'Mulai',
+        cancelButtonText: 'Batal',
+        customClass: {
+          popup: 'gtech-swal-popup',
+          confirmButton: 'gtech-swal-confirm',
+          cancelButton: 'gtech-swal-cancel',
+          input: 'form-input'
+        },
+        buttonsStyling: false,
+        inputValidator: (value) => {
+          if (!value) {
+            return 'Anda harus memilih cabang!';
+          }
+          return null;
+        }
+      });
+
+      if (!branchId) return;
+
+      const title = `Inspeksi / ${options[branchId]}`;
+
+      const result = await inspectionService.createInspection({
+        templateId,
+        groupId: branchId,
+        title,
+        site: options[branchId],
+        assignee: 'Current User',
+        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      });
+
+      void Swal.fire({
+        toast: true,
+        position: 'top-end',
+        timer: 2000,
+        timerProgressBar: true,
+        icon: 'success',
+        title: 'Inspeksi Dimulai',
+        showConfirmButton: false,
+      });
+
+      setTimeout(() => {
+        navigate(`/inspections/${result.id}/session`);
+      }, 1000);
+    } catch (err) {
+      Swal.close();
+      await appSwal.error({
+        title: 'Gagal Memulai Inspeksi',
+        text: getApiErrorMessage(err),
+      });
+    }
+  };
+
+  const handleShare = async (id: string) => {
+    detailSheet.hide();
+    const target = templates.find(t => t.id === id);
+    const name = target?.name || '';
+    const shareUrl = `${window.location.origin}/templates/${id}/builder`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      void Swal.fire({
+        toast: true,
+        position: 'top-end',
+        timer: 3000,
+        timerProgressBar: true,
+        icon: 'success',
+        title: 'Tautan Berhasil Disalin!',
+        text: `Tautan untuk template "${name}" telah disalin ke clipboard.`,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      await appSwal.error({
+        title: 'Gagal Menyalin Tautan',
+        text: 'Silakan coba lagi.',
+      });
+    }
   };
 
   return (
@@ -453,6 +599,9 @@ const TemplatesPage: React.FC = () => {
         onClose={detailSheet.hide}
         template={selectedTemplate}
         onEdit={handleEdit}
+        onDuplicate={handleDuplicate}
+        onShare={handleShare}
+        onStartInspection={handleStartInspection}
         canEdit={can('templates', 'update')}
       />
     </div>

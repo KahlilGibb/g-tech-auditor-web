@@ -10,3 +10,20 @@ export interface CpsProgressItem {
   templateName: string;
   status: CpsStatus;
 }
+
+export interface WeeklyCpsDealer {
+  groupId: string;
+  dealerName: string;
+  totalScore: number;
+  sessionsExpected: number;
+  maxPossibleScore: number;
+  percentage: number;
+  sessionsSubmitted: number;
+  sessionsLate: number;
+}
+
+export interface WeeklyCpsScores {
+  weekStart: string;
+  weekEnd: string;
+  dealers: WeeklyCpsDealer[];
+}

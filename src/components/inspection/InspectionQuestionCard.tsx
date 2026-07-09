@@ -20,7 +20,7 @@ interface InspectionQuestionCardProps {
   index?: number;
   onValueChange: (fieldId: string, value: unknown) => void;
   onNoteChange: (fieldId: string, note: string) => void;
-  onAddMedia: (fieldId: string, uri: string) => void;
+  onAddMedia: (fieldId: string, file: File) => void;
   onRemoveMedia: (fieldId: string, uri: string) => void;
 }
 
@@ -80,11 +80,7 @@ const InspectionQuestionCard: React.FC<InspectionQuestionCardProps> = ({
   const handleFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
     files.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === 'string') onAddMedia(field.id, reader.result);
-      };
-      reader.readAsDataURL(file);
+      onAddMedia(field.id, file);
     });
     event.target.value = '';
   };

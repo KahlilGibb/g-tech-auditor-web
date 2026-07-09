@@ -28,6 +28,7 @@ import {
   ShieldCheck,
   UserCog,
   Users,
+  Trash2,
   X,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
@@ -265,6 +266,18 @@ const DashboardLayout: React.FC = () => {
     },
     { to: '/branches', icon: Building2, labelKey: 'branches', permission: NAV_PERMISSIONS.branches },
     { to: '/sites', icon: MapPinned, labelKey: 'sites', permission: NAV_PERMISSIONS.sites },
+    {
+      to: '/action-statuses',
+      icon: CheckSquare,
+      labelKey: 'actionStatuses',
+      permission: NAV_PERMISSIONS.actionStatuses,
+    },
+    {
+      to: '/trash-bin',
+      icon: Trash2,
+      labelKey: 'trashBin',
+      permission: NAV_PERMISSIONS.trashBin,
+    },
     { to: '/settings', icon: Settings, labelKey: 'settings' },
   ];
 
@@ -291,9 +304,11 @@ const DashboardLayout: React.FC = () => {
     navigate('/login');
   };
 
+  const isInspectionSession = location.pathname.includes('/session');
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      {isSidebarOpen && (
+      {!isInspectionSession && isSidebarOpen && (
         <button
           aria-label="Tutup menu"
           className="fixed inset-0 z-30 bg-slate-950/30 backdrop-blur-[1px] lg:hidden"
@@ -301,151 +316,75 @@ const DashboardLayout: React.FC = () => {
         />
       )}
 
-      <aside
-        className={cn(
-          'fixed inset-y-0 left-0 z-40 flex h-dvh w-64 shrink-0 flex-col overflow-hidden border-r border-divider bg-card shadow-xl shadow-slate-900/10 lg:sticky lg:top-0 lg:h-screen lg:shadow-none',
-          'transform transition-transform duration-300 ease-in-out lg:translate-x-0',
-          !isSidebarOpen && '-translate-x-full',
-        )}
-      >
-        <div className="flex h-16 shrink-0 items-center gap-3 border-b border-divider px-5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-blue text-[#181a20] shadow-sm">
-            <ShieldCheck className="h-5 w-5" />
+      {!isInspectionSession && (
+        <aside
+          className={cn(
+            'fixed inset-y-0 left-0 z-40 flex h-dvh w-64 shrink-0 flex-col overflow-hidden border-r border-divider bg-card shadow-xl shadow-slate-900/10 lg:sticky lg:top-0 lg:h-screen lg:shadow-none',
+            'transform transition-transform duration-300 ease-in-out lg:translate-x-0',
+            !isSidebarOpen && '-translate-x-full',
+          )}
+        >
+          <div className="flex h-16 shrink-0 items-center gap-3 border-b border-divider px-5">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-blue text-[#181a20] shadow-sm">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <span className="block text-base font-semibold leading-none tracking-tight text-foreground">
+                G-Tech
+              </span>
+              <span className="mt-1 block text-[11px] font-medium text-muted-foreground">
+                Auditor System
+              </span>
+            </div>
           </div>
-          <div className="min-w-0">
-            <span className="block text-base font-semibold leading-none tracking-tight text-foreground">
-              G-Tech
-            </span>
-            <span className="mt-1 block text-[11px] font-medium text-muted-foreground">
-              Auditor System
-            </span>
-          </div>
-        </div>
 
-        <div className="sidebar-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4">
-          <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-            {t('nav.menuUtama')}
-          </p>
-          <nav className="space-y-1">
-            {visibleMainNavItems.map(item => (
-              <SidebarItem
-                key={item.to}
-                to={item.to}
-                icon={item.icon}
-                label={t(`nav.${item.labelKey}`)}
-                active={isNavActive(item.to)}
-                onClick={() => {
-                  if (window.innerWidth < 1024) closeSidebar();
-                }}
-              />
-            ))}
-          </nav>
-
-          <p className="mt-6 px-3 pb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-            {t('nav.administrasi')}
-          </p>
-          <nav className="space-y-1">
-            {visibleAdminNavItems.map(item => (
-              <SidebarItem
-                key={item.to}
-                to={item.to}
-                icon={item.icon}
-                label={t(`nav.${item.labelKey}`)}
-                active={isNavActive(item.to)}
-                onClick={() => {
-                  if (window.innerWidth < 1024) closeSidebar();
-                }}
-              />
-            ))}
-          </nav>
-        </div>
-
-        <div className="shrink-0 border-t border-divider p-3">
-          <Link
-            to="/profile"
-            onClick={() => {
-              if (window.innerWidth < 1024) closeSidebar();
-            }}
-            className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition hover:bg-surface"
-          >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-primary-blue/20 bg-primary-blue/10">
-              {profile.avatarBase64 ? (
-                <img
-                  src={`data:image/jpeg;base64,${profile.avatarBase64}`}
-                  alt={displayName}
-                  className="h-full w-full rounded-full object-cover"
+          <div className="sidebar-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4">
+            <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+              {t('nav.menuUtama')}
+            </p>
+            <nav className="space-y-1">
+              {visibleMainNavItems.map(item => (
+                <SidebarItem
+                  key={item.to}
+                  to={item.to}
+                  icon={item.icon}
+                  label={t(`nav.${item.labelKey}`)}
+                  active={isNavActive(item.to)}
+                  onClick={() => {
+                    if (window.innerWidth < 1024) closeSidebar();
+                  }}
                 />
-              ) : (
-                <span className="text-xs font-semibold text-primary-blue">{initials}</span>
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold leading-none text-foreground">
-                {displayName}
-              </p>
-              <p className="mt-1 truncate text-[11px] capitalize text-muted-foreground">{role}</p>
-            </div>
-          </Link>
+              ))}
+            </nav>
 
-          <button
-            onClick={handleLogout}
-            className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-danger-red transition hover:bg-danger-red/5"
-          >
-            <LogOut className="h-[18px] w-[18px] shrink-0" />
-            <span>{t('nav.logout')}</span>
-          </button>
-        </div>
-      </aside>
-
-      <div className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="z-20 flex h-16 shrink-0 items-center justify-between border-b border-divider bg-card/95 px-4 backdrop-blur lg:px-6">
-          <div className="flex min-w-0 items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setIsSidebarOpen(prev => !prev)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-surface hover:text-foreground lg:hidden"
-              aria-label="Buka menu"
-            >
-              {isSidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
-
-            <div className="relative hidden md:block">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder={t('nav.searchPlaceholder')}
-                className="h-10 w-72 rounded-lg border border-divider bg-surface pl-9 pr-4 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary-blue focus:bg-card focus:ring-4 focus:ring-primary-blue/10"
-              />
-            </div>
+            <p className="mt-6 px-3 pb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+              {t('nav.administrasi')}
+            </p>
+            <nav className="space-y-1">
+              {visibleAdminNavItems.map(item => (
+                <SidebarItem
+                  key={item.to}
+                  to={item.to}
+                  icon={item.icon}
+                  label={t(`nav.${item.labelKey}`)}
+                  active={isNavActive(item.to)}
+                  onClick={() => {
+                    if (window.innerWidth < 1024) closeSidebar();
+                  }}
+                />
+              ))}
+            </nav>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <button
-                onClick={() => setIsNotifOpen(prev => !prev)}
-                className={cn(
-                  'relative inline-flex h-10 w-10 items-center justify-center rounded-lg transition',
-                  isNotifOpen
-                    ? 'bg-primary-blue/10 text-primary-blue'
-                    : 'text-muted-foreground hover:bg-surface hover:text-foreground',
-                )}
-                aria-label={t('nav.notifications')}
-              >
-                <Bell className="h-5 w-5" />
-                {unreadCount > 0 && (
-                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-danger-red ring-2 ring-white" />
-                )}
-              </button>
-              {isNotifOpen && <NotificationPanel onClose={() => setIsNotifOpen(false)} />}
-            </div>
-
-            <div className="mx-1 h-6 w-px bg-divider" />
-
+          <div className="shrink-0 border-t border-divider p-3">
             <Link
               to="/profile"
-              className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition hover:bg-surface"
+              onClick={() => {
+                if (window.innerWidth < 1024) closeSidebar();
+              }}
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition hover:bg-surface"
             >
-              <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-primary-blue/20 bg-primary-blue/10">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-primary-blue/20 bg-primary-blue/10">
                 {profile.avatarBase64 ? (
                   <img
                     src={`data:image/jpeg;base64,${profile.avatarBase64}`}
@@ -456,13 +395,93 @@ const DashboardLayout: React.FC = () => {
                   <span className="text-xs font-semibold text-primary-blue">{initials}</span>
                 )}
               </div>
-              <div className="hidden text-right sm:block">
-                <p className="text-sm font-semibold leading-none text-foreground">{displayName}</p>
-                <p className="mt-1 text-[11px] capitalize text-muted-foreground">{role}</p>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold leading-none text-foreground">
+                  {displayName}
+                </p>
+                <p className="mt-1 truncate text-[11px] capitalize text-muted-foreground">{role}</p>
               </div>
             </Link>
+
+            <button
+              onClick={handleLogout}
+              className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-danger-red transition hover:bg-danger-red/5"
+            >
+              <LogOut className="h-[18px] w-[18px] shrink-0" />
+              <span>{t('nav.logout')}</span>
+            </button>
           </div>
-        </header>
+        </aside>
+      )}
+
+      <div className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden">
+        {!isInspectionSession && (
+          <header className="z-20 flex h-16 shrink-0 items-center justify-between border-b border-divider bg-card/95 px-4 backdrop-blur lg:px-6">
+            <div className="flex min-w-0 items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsSidebarOpen(prev => !prev)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-surface hover:text-foreground lg:hidden"
+                aria-label="Buka menu"
+              >
+                {isSidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
+
+              <div className="relative hidden md:block">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder={t('nav.searchPlaceholder')}
+                  className="h-10 w-72 rounded-lg border border-divider bg-surface pl-9 pr-4 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary-blue focus:bg-card focus:ring-4 focus:ring-primary-blue/10"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <button
+                  onClick={() => setIsNotifOpen(prev => !prev)}
+                  className={cn(
+                    'relative inline-flex h-10 w-10 items-center justify-center rounded-lg transition',
+                    isNotifOpen
+                      ? 'bg-primary-blue/10 text-primary-blue'
+                      : 'text-muted-foreground hover:bg-surface hover:text-foreground',
+                  )}
+                  aria-label={t('nav.notifications')}
+                >
+                  <Bell className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-danger-red ring-2 ring-white" />
+                  )}
+                </button>
+                {isNotifOpen && <NotificationPanel onClose={() => setIsNotifOpen(false)} />}
+              </div>
+
+              <div className="mx-1 h-6 w-px bg-divider" />
+
+              <Link
+                to="/profile"
+                className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition hover:bg-surface"
+              >
+                <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-primary-blue/20 bg-primary-blue/10">
+                  {profile.avatarBase64 ? (
+                    <img
+                      src={`data:image/jpeg;base64,${profile.avatarBase64}`}
+                      alt={displayName}
+                      className="h-full w-full rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-xs font-semibold text-primary-blue">{initials}</span>
+                  )}
+                </div>
+                <div className="hidden text-right sm:block">
+                  <p className="text-sm font-semibold leading-none text-foreground">{displayName}</p>
+                  <p className="mt-1 text-[11px] capitalize text-muted-foreground">{role}</p>
+                </div>
+              </Link>
+            </div>
+          </header>
+        )}
 
         <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-background p-4 lg:p-6">
           <Outlet />

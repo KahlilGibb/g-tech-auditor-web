@@ -11,6 +11,9 @@ import type {
   MasterFieldOption,
   FormType,
   FieldType,
+  Trigger,
+  LogicRule,
+  LogicAction,
 } from '../types/template'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -76,6 +79,51 @@ function apiFieldType(type: FieldType) {
   return map[type] ?? type
 }
 
+function ruleActionToTrigger(action: LogicAction): Trigger {
+  const id = `trigger-${Math.random().toString(36).substring(2, 11)}`
+  return { id, ...action } as Trigger
+}
+
+function rulesToOptionTriggers(
+  rules: LogicRule[] | undefined,
+  options: FieldOption[] | undefined,
+): FieldOption[] | undefined {
+  if (!options) return options
+  return options.map(opt => {
+    const rule = rules?.find(r => r.when_value === opt.value)
+    return rule
+      ? { ...opt, triggers: rule.actions.map(ruleActionToTrigger) }
+      : opt
+  })
+}
+
+const triggerToAction = (trigger: Trigger): LogicAction => {
+  if (trigger.type === 'notify') {
+    return {
+      type: 'notify',
+      notify_user_ids: trigger.notify_user_ids,
+      notify_group_ids: trigger.notify_group_ids,
+      message: trigger.message,
+      priority: trigger.priority ?? 0,
+    }
+  }
+  return {
+    type: 'create_action',
+    action_title: trigger.action_title,
+    action_priority: trigger.action_priority,
+    assignee_ids: trigger.assignee_ids,
+  }
+}
+
+export const optionsToRules = (options: FieldOption[] = []): LogicRule[] => {
+  return options
+    .filter(o => (o.triggers?.length ?? 0) > 0)
+    .map(o => ({
+      when_value: o.value,
+      actions: o.triggers!.map(triggerToAction),
+    }))
+}
+
 function normalizeFieldOption(raw: unknown, fieldId: string): FieldOption {
   const record = toRecord(raw)
   return {
@@ -135,6 +183,13 @@ function normalizeSection(raw: unknown, version: TemplateVersion): TemplateSecti
 function normalizeField(raw: unknown, section: TemplateSection): TemplateField {
   const record = toRecord(raw)
   const fieldId = toStringValue(record.id || record.field_id) || uid()
+  const masterField = toRecord(record.master_field || record.masterField)
+  const rawRules = record.rules || record.logic_rules
+  const rules = Array.isArray(rawRules) ? (rawRules as LogicRule[]) : null
+  const rawOptions = toArray(record.options || masterField.options)
+  const options = rawOptions.map(option => normalizeFieldOption(option, fieldId))
+  const config = toRecord(record.config || record.configuration || masterField.config || masterField.configuration)
+
   return {
     id: fieldId,
     section_id:
@@ -142,12 +197,13 @@ function normalizeField(raw: unknown, section: TemplateSection): TemplateField {
       section.id,
     master_field_id:
       toStringValue(record.master_field_id || record.masterFieldId) || null,
-    label: toStringValue(record.label || record.name) || 'Question',
-    type: normalizeFieldType(record.type || record.field_type || record.fieldType),
+    label: toStringValue(record.label || record.name || masterField.label || masterField.name) || 'Question',
+    type: normalizeFieldType(record.type || record.field_type || record.fieldType || masterField.type || masterField.field_type || masterField.fieldType),
     required: toBooleanValue(record.required),
-    order: toNumberValue(record.order || record.field_order || record.fieldOrder, 1),
-    logic_rules: Array.isArray(record.logic_rules) ? record.logic_rules as TemplateField['logic_rules'] : null,
-    options: toArray(record.options).map(option => normalizeFieldOption(option, fieldId)),
+    order: toNumberValue(record.order || record.field_order || record.fieldOrder || record.ord, 1),
+    rules,
+    options: rulesToOptionTriggers(rules || undefined, options),
+    config: Object.keys(config).length > 0 ? config : undefined,
   }
 }
 
@@ -261,23 +317,34 @@ function defaultPassFailOptions(fieldId: string): FieldOption[] {
 }
 
 function fieldPayload(field: TemplateField) {
+  if (field.master_field_id) {
+    return {
+      master_field_id: field.master_field_id,
+      required: field.required,
+      order: field.order,
+    }
+  }
+
   const options = field.options?.length
     ? field.options
     : field.type === 'pass_fail'
       ? defaultPassFailOptions(field.id)
       : []
 
+  const rules = optionsToRules(options)
+
   return {
     label: field.label,
     type: apiFieldType(field.type),
     required: field.required,
     order: field.order,
-    master_field_id: field.master_field_id,
     options: options.map(option => ({
       label: option.label,
       value: option.value,
       score_value: option.score_value,
     })),
+    rules: rules.length > 0 ? rules : undefined,
+    config: field.config,
   }
 }
 
@@ -339,6 +406,8 @@ interface MockDB {
   sections: TemplateSection[]
   fields: TemplateField[]
   masterFields: MasterField[]
+  trashedTemplates: Template[]
+  trashedMasterFields: MasterField[]
 }
 
 // ─── Seed data for existing mock templates ────────────────────────────────────
@@ -373,41 +442,41 @@ const SEED_SECTIONS: TemplateSection[] = [
 
 const SEED_FIELDS: TemplateField[] = [
   // sec-001-1 (Title Page tpl-001)
-  { id: 'f-001-1-1', section_id: 'sec-001-1', master_field_id: null, label: 'Nama Auditor', type: 'person', required: true, order: 1, logic_rules: null },
-  { id: 'f-001-1-2', section_id: 'sec-001-1', master_field_id: null, label: 'Tanggal Inspeksi', type: 'inspection_date', required: true, order: 2, logic_rules: null },
-  { id: 'f-001-1-3', section_id: 'sec-001-1', master_field_id: null, label: 'Nama Dealer', type: 'text_answer', required: true, order: 3, logic_rules: null },
+  { id: 'f-001-1-1', section_id: 'sec-001-1', master_field_id: null, label: 'Nama Auditor', type: 'person', required: true, order: 1, rules: null },
+  { id: 'f-001-1-2', section_id: 'sec-001-1', master_field_id: null, label: 'Tanggal Inspeksi', type: 'inspection_date', required: true, order: 2, rules: null },
+  { id: 'f-001-1-3', section_id: 'sec-001-1', master_field_id: null, label: 'Nama Dealer', type: 'text_answer', required: true, order: 3, rules: null },
   // sec-001-2 (Area Parkir)
-  { id: 'f-001-2-1', section_id: 'sec-001-2', master_field_id: null, label: 'Kebersihan area parkir', type: 'pass_fail', required: true, order: 1, logic_rules: null },
-  { id: 'f-001-2-2', section_id: 'sec-001-2', master_field_id: null, label: 'Marka parkir terlihat jelas', type: 'pass_fail', required: true, order: 2, logic_rules: null },
-  { id: 'f-001-2-3', section_id: 'sec-001-2', master_field_id: null, label: 'Pencahayaan memadai', type: 'pass_fail', required: false, order: 3, logic_rules: null },
-  { id: 'f-001-2-4', section_id: 'sec-001-2', master_field_id: null, label: 'Catatan tambahan', type: 'text_answer', required: false, order: 4, logic_rules: null },
+  { id: 'f-001-2-1', section_id: 'sec-001-2', master_field_id: null, label: 'Kebersihan area parkir', type: 'pass_fail', required: true, order: 1, rules: null },
+  { id: 'f-001-2-2', section_id: 'sec-001-2', master_field_id: null, label: 'Marka parkir terlihat jelas', type: 'pass_fail', required: true, order: 2, rules: null },
+  { id: 'f-001-2-3', section_id: 'sec-001-2', master_field_id: null, label: 'Pencahayaan memadai', type: 'pass_fail', required: false, order: 3, rules: null },
+  { id: 'f-001-2-4', section_id: 'sec-001-2', master_field_id: null, label: 'Catatan tambahan', type: 'text_answer', required: false, order: 4, rules: null },
   // sec-001-3 (Eksterior)
-  { id: 'f-001-3-1', section_id: 'sec-001-3', master_field_id: null, label: 'Kondisi fasad bangunan', type: 'pass_fail', required: true, order: 1, logic_rules: null },
-  { id: 'f-001-3-2', section_id: 'sec-001-3', master_field_id: null, label: 'Signage dealer terlihat jelas', type: 'pass_fail', required: true, order: 2, logic_rules: null },
-  { id: 'f-001-3-3', section_id: 'sec-001-3', master_field_id: null, label: 'Foto eksterior', type: 'photo', required: false, order: 3, logic_rules: null },
+  { id: 'f-001-3-1', section_id: 'sec-001-3', master_field_id: null, label: 'Kondisi fasad bangunan', type: 'pass_fail', required: true, order: 1, rules: null },
+  { id: 'f-001-3-2', section_id: 'sec-001-3', master_field_id: null, label: 'Signage dealer terlihat jelas', type: 'pass_fail', required: true, order: 2, rules: null },
+  { id: 'f-001-3-3', section_id: 'sec-001-3', master_field_id: null, label: 'Foto eksterior', type: 'photo', required: false, order: 3, rules: null },
   // sec-001-4 (Resepsi)
-  { id: 'f-001-4-1', section_id: 'sec-001-4', master_field_id: null, label: 'Kebersihan meja resepsi', type: 'pass_fail', required: true, order: 1, logic_rules: null },
-  { id: 'f-001-4-2', section_id: 'sec-001-4', master_field_id: null, label: 'Seragam staff lengkap & rapi', type: 'pass_fail', required: true, order: 2, logic_rules: null },
-  { id: 'f-001-4-3', section_id: 'sec-001-4', master_field_id: null, label: 'Ketersediaan brosur/katalog', type: 'pass_fail', required: false, order: 3, logic_rules: null },
+  { id: 'f-001-4-1', section_id: 'sec-001-4', master_field_id: null, label: 'Kebersihan meja resepsi', type: 'pass_fail', required: true, order: 1, rules: null },
+  { id: 'f-001-4-2', section_id: 'sec-001-4', master_field_id: null, label: 'Seragam staff lengkap & rapi', type: 'pass_fail', required: true, order: 2, rules: null },
+  { id: 'f-001-4-3', section_id: 'sec-001-4', master_field_id: null, label: 'Ketersediaan brosur/katalog', type: 'pass_fail', required: false, order: 3, rules: null },
   // sec-002-1 (Title Page tpl-002)
-  { id: 'f-002-1-1', section_id: 'sec-002-1', master_field_id: null, label: 'Auditor', type: 'person', required: true, order: 1, logic_rules: null },
-  { id: 'f-002-1-2', section_id: 'sec-002-1', master_field_id: null, label: 'Tanggal Audit', type: 'inspection_date', required: true, order: 2, logic_rules: null },
+  { id: 'f-002-1-1', section_id: 'sec-002-1', master_field_id: null, label: 'Auditor', type: 'person', required: true, order: 1, rules: null },
+  { id: 'f-002-1-2', section_id: 'sec-002-1', master_field_id: null, label: 'Tanggal Audit', type: 'inspection_date', required: true, order: 2, rules: null },
   // sec-002-2 (Fasilitas Umum)
-  { id: 'f-002-2-1', section_id: 'sec-002-2', master_field_id: null, label: 'AC berfungsi baik', type: 'pass_fail', required: true, order: 1, logic_rules: null },
-  { id: 'f-002-2-2', section_id: 'sec-002-2', master_field_id: null, label: 'Pencahayaan ruangan memadai', type: 'pass_fail', required: true, order: 2, logic_rules: null },
-  { id: 'f-002-2-3', section_id: 'sec-002-2', master_field_id: null, label: 'CCTV aktif & terawat', type: 'pass_fail', required: false, order: 3, logic_rules: null },
+  { id: 'f-002-2-1', section_id: 'sec-002-2', master_field_id: null, label: 'AC berfungsi baik', type: 'pass_fail', required: true, order: 1, rules: null },
+  { id: 'f-002-2-2', section_id: 'sec-002-2', master_field_id: null, label: 'Pencahayaan ruangan memadai', type: 'pass_fail', required: true, order: 2, rules: null },
+  { id: 'f-002-2-3', section_id: 'sec-002-2', master_field_id: null, label: 'CCTV aktif & terawat', type: 'pass_fail', required: false, order: 3, rules: null },
   // sec-002-3 (Toilet)
-  { id: 'f-002-3-1', section_id: 'sec-002-3', master_field_id: null, label: 'Toilet bersih', type: 'pass_fail', required: true, order: 1, logic_rules: null },
-  { id: 'f-002-3-2', section_id: 'sec-002-3', master_field_id: null, label: 'Sabun & tissue tersedia', type: 'pass_fail', required: true, order: 2, logic_rules: null },
+  { id: 'f-002-3-1', section_id: 'sec-002-3', master_field_id: null, label: 'Toilet bersih', type: 'pass_fail', required: true, order: 1, rules: null },
+  { id: 'f-002-3-2', section_id: 'sec-002-3', master_field_id: null, label: 'Sabun & tissue tersedia', type: 'pass_fail', required: true, order: 2, rules: null },
   // sec-003-1 (Title Page tpl-003)
-  { id: 'f-003-1-1', section_id: 'sec-003-1', master_field_id: null, label: 'Auditor 5R', type: 'person', required: true, order: 1, logic_rules: null },
-  { id: 'f-003-1-2', section_id: 'sec-003-1', master_field_id: null, label: 'Tanggal Audit', type: 'inspection_date', required: true, order: 2, logic_rules: null },
+  { id: 'f-003-1-1', section_id: 'sec-003-1', master_field_id: null, label: 'Auditor 5R', type: 'person', required: true, order: 1, rules: null },
+  { id: 'f-003-1-2', section_id: 'sec-003-1', master_field_id: null, label: 'Tanggal Audit', type: 'inspection_date', required: true, order: 2, rules: null },
   // sec-003-2 (Ringkas)
-  { id: 'f-003-2-1', section_id: 'sec-003-2', master_field_id: null, label: 'Barang tidak perlu sudah disingkirkan', type: 'pass_fail', required: true, order: 1, logic_rules: null },
-  { id: 'f-003-2-2', section_id: 'sec-003-2', master_field_id: null, label: 'Label merah pada barang tidak diperlukan', type: 'pass_fail', required: false, order: 2, logic_rules: null },
+  { id: 'f-003-2-1', section_id: 'sec-003-2', master_field_id: null, label: 'Barang tidak perlu sudah disingkirkan', type: 'pass_fail', required: true, order: 1, rules: null },
+  { id: 'f-003-2-2', section_id: 'sec-003-2', master_field_id: null, label: 'Label merah pada barang tidak diperlukan', type: 'pass_fail', required: false, order: 2, rules: null },
   // sec-003-3 (Rapi)
-  { id: 'f-003-3-1', section_id: 'sec-003-3', master_field_id: null, label: 'Setiap barang punya tempat tetap', type: 'pass_fail', required: true, order: 1, logic_rules: null },
-  { id: 'f-003-3-2', section_id: 'sec-003-3', master_field_id: null, label: 'Label/tanda posisi barang terpasang', type: 'pass_fail', required: true, order: 2, logic_rules: null },
+  { id: 'f-003-3-1', section_id: 'sec-003-3', master_field_id: null, label: 'Setiap barang punya tempat tetap', type: 'pass_fail', required: true, order: 1, rules: null },
+  { id: 'f-003-3-2', section_id: 'sec-003-3', master_field_id: null, label: 'Label/tanda posisi barang terpasang', type: 'pass_fail', required: true, order: 2, rules: null },
 ]
 
 const _db: MockDB = {
@@ -464,6 +533,8 @@ const _db: MockDB = {
       ],
     },
   ],
+  trashedTemplates: [],
+  trashedMasterFields: [],
 }
 
 // ─── Return types ─────────────────────────────────────────────────────────────
@@ -535,6 +606,77 @@ export const templateService = {
       if (e instanceof MockInterceptError) {
         await rnd()
         return [...MOCK_TEMPLATE_LIST]
+      }
+      throw e
+    }
+  },
+
+  async duplicateTemplate(templateId: string): Promise<CreateTemplateResult> {
+    try {
+      const { template, sections, fields } = await templateService.getTemplateWithVersion(templateId)
+      const res = await apiClient.post(
+        API_ENDPOINTS.TEMPLATES.BUILD,
+        templateBuildPayload(
+          {
+            ...template,
+            title: `${template.title.trim() || 'Untitled'} (Copy)`,
+          },
+          sections,
+          fields,
+        ),
+      )
+      const { template: newT, version: newV, sections: newS } = normalizeTemplateTree(res.data)
+      return { template: newT, version: newV, sections: newS }
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await rnd()
+        const { template, sections, fields } = await templateService.getTemplateWithVersion(templateId)
+        const t = now()
+        const newTemplateId = uid()
+        const newVersionId = uid()
+        const newTemplate: Template = {
+          ...template,
+          id: newTemplateId,
+          title: `${template.title.trim() || 'Untitled'} (Copy)`,
+          created_at: t,
+          updated_at: t,
+        }
+        const newVersion: TemplateVersion = {
+          id: newVersionId,
+          template_id: newTemplateId,
+          version_number: 1,
+          title: newTemplate.title,
+          description: newTemplate.description,
+          scoring_enabled: newTemplate.scoring_enabled,
+          status: 'draft',
+          published_at: null,
+          created_by_id: 'user-mock',
+          created_at: t,
+        }
+        const newSections = sections.map((sec, idx) => ({
+          ...sec,
+          id: `dup-sec-${uid()}`,
+          version_id: newVersionId,
+          order: idx + 1,
+          created_at: t,
+        }))
+
+        _db.templates.push(newTemplate)
+        _db.versions.push(newVersion)
+        _db.sections.push(...newSections)
+        newSections.forEach((newSec, idx) => {
+          const originalSec = sections[idx]
+          const originalFields = fields[originalSec.id] ?? []
+          const newFields = originalFields.map((field, fieldIdx) => ({
+            ...field,
+            id: `dup-field-${uid()}`,
+            section_id: newSec.id,
+            order: fieldIdx + 1,
+          }))
+          _db.fields.push(...newFields)
+        })
+
+        return { template: newTemplate, version: newVersion, sections: newSections }
       }
       throw e
     }
@@ -696,6 +838,66 @@ export const templateService = {
             : version,
         )
         return _db.templates[idx]
+      }
+      throw e
+    }
+  },
+
+  async deleteTemplate(id: string): Promise<void> {
+    try {
+      await apiClient.delete(API_ENDPOINTS.TEMPLATES.DELETE(id))
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await rnd()
+        const t = _db.templates.find(item => item.id === id)
+        if (t) {
+          _db.trashedTemplates.push(t)
+          _db.templates = _db.templates.filter(item => item.id !== id)
+        }
+        return
+      }
+      throw e
+    }
+  },
+
+  async listTrashedTemplates(): Promise<Template[]> {
+    try {
+      const res = await apiClient.get(API_ENDPOINTS.TEMPLATES.TRASH)
+      return unwrapList<unknown>(res.data).map(normalizeTemplate)
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        return [..._db.trashedTemplates]
+      }
+      throw e
+    }
+  },
+
+  async restoreTemplate(id: string): Promise<void> {
+    try {
+      await apiClient.post(API_ENDPOINTS.TEMPLATES.RESTORE(id))
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await rnd()
+        const t = _db.trashedTemplates.find(item => item.id === id)
+        if (t) {
+          _db.templates.push(t)
+          _db.trashedTemplates = _db.trashedTemplates.filter(item => item.id !== id)
+        }
+        return
+      }
+      throw e
+    }
+  },
+
+  async permanentDeleteTemplate(id: string): Promise<void> {
+    try {
+      await apiClient.delete(API_ENDPOINTS.TEMPLATES.PERMANENT_DELETE(id))
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await rnd()
+        _db.trashedTemplates = _db.trashedTemplates.filter(item => item.id !== id)
+        _db.versions = _db.versions.filter(v => v.template_id !== id)
+        return
       }
       throw e
     }
@@ -900,7 +1102,7 @@ export const templateService = {
           type,
           required: false,
           order: existing.length + 1,
-          logic_rules: null,
+          rules: null,
         }
         _db.fields.push(field)
         return field
@@ -1043,10 +1245,53 @@ export const templateService = {
     } catch (e) {
       if (e instanceof MockInterceptError) {
         await rnd()
-        _db.masterFields = _db.masterFields.filter(item => item.id !== id)
-        _db.fields = _db.fields.map(field =>
-          field.master_field_id === id ? { ...field, master_field_id: null } : field,
-        )
+        const mf = _db.masterFields.find(item => item.id === id)
+        if (mf) {
+          _db.trashedMasterFields.push(mf)
+          _db.masterFields = _db.masterFields.filter(item => item.id !== id)
+        }
+        return
+      }
+      throw e
+    }
+  },
+
+  async listTrashedMasterFields(): Promise<MasterField[]> {
+    try {
+      const res = await apiClient.get(API_ENDPOINTS.MASTER_FIELDS.TRASH)
+      return unwrapList<unknown>(res.data).map(normalizeMasterField)
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        return [..._db.trashedMasterFields]
+      }
+      throw e
+    }
+  },
+
+  async restoreMasterField(id: string): Promise<void> {
+    try {
+      await apiClient.post(API_ENDPOINTS.MASTER_FIELDS.RESTORE(id))
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await rnd()
+        const mf = _db.trashedMasterFields.find(item => item.id === id)
+        if (mf) {
+          _db.masterFields.push(mf)
+          _db.trashedMasterFields = _db.trashedMasterFields.filter(item => item.id !== id)
+        }
+        return
+      }
+      throw e
+    }
+  },
+
+  async permanentDeleteMasterField(id: string): Promise<void> {
+    try {
+      await apiClient.delete(API_ENDPOINTS.MASTER_FIELDS.PERMANENT_DELETE(id))
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await rnd()
+        _db.trashedMasterFields = _db.trashedMasterFields.filter(item => item.id !== id)
         return
       }
       throw e
@@ -1150,7 +1395,7 @@ export const templateService = {
           type: master.field_type,
           required: false,
           order: existing.length + 1,
-          logic_rules: null,
+          rules: null,
         }
         _db.fields.push(field)
         return field

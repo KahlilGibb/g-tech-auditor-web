@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Loader2, Lock, LogIn, Mail, ShieldCheck } from 'lucide-react';
+import { Loader2, Lock, LogIn, User, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { cn } from '../utils/cn';
 import { appSwal } from '../lib/appSwal';
@@ -9,7 +9,7 @@ import { getApiErrorMessage } from '../lib/apiResponse';
 const LoginPage: React.FC = () => {
   const { t } = useTranslation();
   const { login, isLoading } = useAuth();
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
@@ -17,7 +17,7 @@ const LoginPage: React.FC = () => {
     event.preventDefault();
     setError('');
 
-    if (!email || !password) {
+    if (!identifier || !password) {
       const message = t('swal.validation.loginRequired');
       setError(message);
       await appSwal.errorLoginIncomplete();
@@ -25,7 +25,7 @@ const LoginPage: React.FC = () => {
     }
 
     try {
-      await login(email, password);
+      await login({ identifier, password });
       await appSwal.successLogin();
     } catch (err) {
       const message = getApiErrorMessage(err, t('swal.error.loginFailed.text'));
@@ -59,14 +59,14 @@ const LoginPage: React.FC = () => {
             )}
 
             <div className="space-y-1.5">
-              <label className="ml-1 text-sm font-medium text-foreground">Email</label>
+              <label className="ml-1 text-sm font-medium text-foreground">Username / Email</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                <User className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                 <input
-                  type="email"
-                  value={email}
-                  onChange={event => setEmail(event.target.value)}
-                  placeholder="admin@example.com"
+                  type="text"
+                  value={identifier}
+                  onChange={event => setIdentifier(event.target.value)}
+                  placeholder="Username or email"
                   className="form-input pl-11"
                 />
               </div>

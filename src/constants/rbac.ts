@@ -45,11 +45,27 @@ export const NAV_PERMISSIONS = {
   organizations: { resource: 'organizations', action: 'read' },
   branches: { resource: 'branches', action: 'read' },
   sites: { resource: 'sites', action: 'read' },
+  actionStatuses: {
+    resource: 'action-statuses',
+    action: 'read',
+    fallback: [{ resource: 'actions', action: 'read' }],
+  },
+  trashBin: {
+    resource: 'users',
+    action: 'read',
+  },
 } satisfies Record<string, NavPermissionRequirement>;
 
 export const isAdminRole = (role?: string | null) => {
   if (!role) return false;
-  return ['admin', 'administrator', 'super admin', 'superadmin'].includes(role.toLowerCase());
+  return [
+    'admin',
+    'administrator',
+    'super admin',
+    'superadmin',
+    'platform_admin',
+    'org_admin',
+  ].includes(role.toLowerCase());
 };
 
 export const getPermissionKey = (permission: AuthPermission | Permission) => {

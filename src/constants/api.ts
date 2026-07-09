@@ -17,6 +17,9 @@ export const API_ENDPOINTS = {
     UPDATE: (id: string) => `/users/${id}`,
     DELETE: (id: string) => `/users/${id}`,
     PROVISION_GOTIFY: (id: string) => `/users/${id}/provision-gotify`,
+    TRASH: '/users/trash',
+    RESTORE: (id: string) => `/users/trash/${id}/restore`,
+    PERMANENT_DELETE: (id: string) => `/users/trash/${id}`,
   },
   ROLES: {
     LIST: '/roles',
@@ -25,12 +28,18 @@ export const API_ENDPOINTS = {
     UPDATE: (id: string) => `/roles/${id}`,
     DELETE: (id: string) => `/roles/${id}`,
     PERMISSIONS: (id: string) => `/roles/${id}/permissions`,
+    TRASH: '/roles/trash',
+    RESTORE: (id: string) => `/roles/trash/${id}/restore`,
+    PERMANENT_DELETE: (id: string) => `/roles/trash/${id}`,
   },
   PERMISSIONS: {
     LIST: '/permissions',
     CREATE: '/permissions',
     DETAIL: (id: string) => `/permissions/${id}`,
     DELETE: (id: string) => `/permissions/${id}`,
+    TRASH: '/permissions/trash',
+    RESTORE: (id: string) => `/permissions/trash/${id}/restore`,
+    PERMANENT_DELETE: (id: string) => `/permissions/trash/${id}`,
   },
   ORGANIZATIONS: {
     LIST: '/organizations',
@@ -38,6 +47,9 @@ export const API_ENDPOINTS = {
     DETAIL: (id: string) => `/organizations/${id}`,
     UPDATE: (id: string) => `/organizations/${id}`,
     DELETE: (id: string) => `/organizations/${id}`,
+    TRASH: '/organizations/trash',
+    RESTORE: (id: string) => `/organizations/trash/${id}/restore`,
+    PERMANENT_DELETE: (id: string) => `/organizations/trash/${id}`,
   },
   GROUPS: {
     LIST: '/groups',
@@ -47,6 +59,9 @@ export const API_ENDPOINTS = {
     DELETE: (id: string) => `/groups/${id}`,
     USERS: (id: string) => `/groups/${id}/users`,
     USER: (groupId: string, userId: string) => `/groups/${groupId}/users/${userId}`,
+    TRASH: '/groups/trash',
+    RESTORE: (id: string) => `/groups/trash/${id}/restore`,
+    PERMANENT_DELETE: (id: string) => `/groups/trash/${id}`,
   },
   BRANCHES: {
     LIST: '/groups',
@@ -56,6 +71,9 @@ export const API_ENDPOINTS = {
     DELETE: (id: string) => `/groups/${id}`,
     USERS: (id: string) => `/groups/${id}/users`,
     USER: (branchId: string, userId: string) => `/groups/${branchId}/users/${userId}`,
+    TRASH: '/groups/trash',
+    RESTORE: (id: string) => `/groups/trash/${id}/restore`,
+    PERMANENT_DELETE: (id: string) => `/groups/trash/${id}`,
   },
   SITES: {
     LIST: '/sites',
@@ -63,6 +81,9 @@ export const API_ENDPOINTS = {
     DETAIL: (id: string) => `/sites/${id}`,
     UPDATE: (id: string) => `/sites/${id}`,
     DELETE: (id: string) => `/sites/${id}`,
+    TRASH: '/sites/trash',
+    RESTORE: (id: string) => `/sites/trash/${id}/restore`,
+    PERMANENT_DELETE: (id: string) => `/sites/trash/${id}`,
   },
   ACTION_STATUSES: {
     LIST: '/action-statuses',
@@ -70,6 +91,9 @@ export const API_ENDPOINTS = {
     DETAIL: (id: string) => `/action-statuses/${id}`,
     UPDATE: (id: string) => `/action-statuses/${id}`,
     DELETE: (id: string) => `/action-statuses/${id}`,
+    TRASH: '/action-statuses/trash',
+    RESTORE: (id: string) => `/action-statuses/trash/${id}/restore`,
+    PERMANENT_DELETE: (id: string) => `/action-statuses/trash/${id}`,
   },
   ACTIONS: {
     LIST: '/actions',
@@ -79,6 +103,9 @@ export const API_ENDPOINTS = {
     DELETE: (id: string) => `/actions/${id}`,
     ASSIGNEES: (id: string) => `/actions/${id}/assignees`,
     ASSIGNEE: (actionId: string, userId: string) => `/actions/${actionId}/assignees/${userId}`,
+    TRASH: '/actions/trash',
+    RESTORE: (id: string) => `/actions/trash/${id}/restore`,
+    PERMANENT_DELETE: (id: string) => `/actions/trash/${id}`,
   },
   INSPECTIONS: {
     LIST: '/inspections',
@@ -104,6 +131,9 @@ export const API_ENDPOINTS = {
       `/inspections/${inspectionId}/tables/${tableId}/rows`,
     TABLE_ROW_CELLS: (inspectionId: string, tableId: string, rowId: string) =>
       `/inspections/${inspectionId}/tables/${tableId}/rows/${rowId}/cells`,
+    TRASH: '/inspections/trash',
+    RESTORE: (id: string) => `/inspections/trash/${id}/restore`,
+    PERMANENT_DELETE: (id: string) => `/inspections/trash/${id}`,
   },
   TEMPLATES: {
     LIST: '/templates',
@@ -125,6 +155,9 @@ export const API_ENDPOINTS = {
       `/templates/${templateId}/versions/${versionId}/pages`,
     PAGE_FIELDS: (templateId: string, versionId: string, pageId: string) =>
       `/templates/${templateId}/versions/${versionId}/pages/${pageId}/fields`,
+    TRASH: '/templates/trash',
+    RESTORE: (id: string) => `/templates/trash/${id}/restore`,
+    PERMANENT_DELETE: (id: string) => `/templates/trash/${id}`,
   },
   TEMPLATE_VERSIONS: {
     UPDATE: (id: string) => `/template-versions/${id}`,
@@ -151,9 +184,13 @@ export const API_ENDPOINTS = {
     OPTIONS: (id: string) => `/master-fields/${id}/options`,
     OPTION: (id: string, optionId: string) => `/master-fields/${id}/options/${optionId}`,
     CREATE_FROM_MASTER: (sectionId: string) => `/fields/from-master?sectionId=${sectionId}`,
+    TRASH: '/master-fields/trash',
+    RESTORE: (id: string) => `/master-fields/trash/${id}/restore`,
+    PERMANENT_DELETE: (id: string) => `/master-fields/trash/${id}`,
   },
   CPS: {
     LIST: '/cps',
+    WEEKLY_SCORES: '/cps/weekly-scores',
   },
   TRAINING: {
     LIST: '/training',

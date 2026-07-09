@@ -26,14 +26,6 @@ type AgendaTab = 'all' | 'inspections' | 'actions' | 'training';
 
 const AGENDA_TABS: AgendaTab[] = ['all', 'inspections', 'actions', 'training'];
 
-const TOP_DEALERS = [
-  { name: 'Dealer Audi VW BSD', pct: 60 },
-  { name: 'Dealer Nissan Pulo Gadung', pct: 57 },
-  { name: 'Dealer KIA PIK', pct: 50 },
-  { name: 'Dealer Nissan Sempaja', pct: 47 },
-  { name: 'Dealer Nissan Aceh', pct: 43 },
-];
-
 function statusColor(status: InspectionStatus) {
   if (status === 'Overdue') return 'text-danger-red bg-danger-red/10';
   if (status === 'Draft') return 'text-muted-foreground bg-secondary';
@@ -88,7 +80,7 @@ const MetricCard: React.FC<{
 
 const HomePage: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const { inspections, isLoading, error, refresh } = useDashboard();
+  const { inspections, dashboardData, isLoading, error, refresh } = useDashboard();
   const { user } = useAuth();
   const { profile } = useProfileStore();
   const [agendaTab, setAgendaTab] = useState<AgendaTab>('all');
@@ -101,28 +93,63 @@ const HomePage: React.FC = () => {
   );
 
   const summary = useMemo(() => {
+    if (dashboardData?.counts) {
+      return {
+        completed: dashboardData.counts.completed,
+        active: dashboardData.counts.active,
+        draft: dashboardData.counts.draft,
+        overdue: dashboardData.counts.overdue,
+      };
+    }
     const completed = inspections.filter(item => item.status === 'Complete').length;
     const active = inspections.filter(item => item.status === 'In Progress').length;
     const draft = inspections.filter(item => item.status === 'Draft').length;
     const overdue = inspections.filter(item => item.status === 'Overdue').length;
     return { completed, active, draft, overdue };
-  }, [inspections]);
+  }, [inspections, dashboardData]);
 
-  const inProgressCards = useMemo(
-    () =>
-      inspections
-        .filter(item => item.status !== 'Complete')
-        .map(item => ({
-          id: item.id,
-          label: t('home.inProgress.label') || 'INSPEKSI',
-          title: item.title,
-          subtitle: `${item.site} - ${item.templateName || 'Template'}`,
-          time: item.startedAt ?? item.dueDate,
-          status: item.status,
-          progress: item.progress,
-        })),
-    [inspections, t],
-  );
+  const inProgressCards = useMemo(() => {
+    if (dashboardData?.inProgress) {
+      return dashboardData.inProgress.map(item => ({
+        id: item.id,
+        label: t('home.inProgress.label') || 'INSPEKSI',
+        title: item.title,
+        subtitle: `${item.groupName} - ${item.templateTitle}`,
+        time: item.updatedAt,
+        status: (item.status as any) || 'In Progress',
+        progress: typeof item.progress === 'object' && item.progress !== null
+          ? item.progress
+          : { completed: 0, total: 10 },
+      }));
+    }
+    return inspections
+      .filter(item => item.status !== 'Complete')
+      .map(item => ({
+        id: item.id,
+        label: t('home.inProgress.label') || 'INSPEKSI',
+        title: item.title,
+        subtitle: `${item.site} - ${item.templateName || 'Template'}`,
+        time: item.startedAt ?? item.dueDate,
+        status: item.status,
+        progress: item.progress,
+      }));
+  }, [inspections, dashboardData, t]);
+
+  const topDealers = useMemo(() => {
+    if (dashboardData?.topDealers) {
+      return dashboardData.topDealers.map(d => ({
+        name: d.groupName,
+        pct: d.percent,
+      }));
+    }
+    return [
+      { name: 'Dealer Audi VW BSD', pct: 60 },
+      { name: 'Dealer Nissan Pulo Gadung', pct: 57 },
+      { name: 'Dealer KIA PIK', pct: 50 },
+      { name: 'Dealer Nissan Sempaja', pct: 47 },
+      { name: 'Dealer Nissan Aceh', pct: 43 },
+    ];
+  }, [dashboardData]);
 
   return (
     <div className="page-shell">
@@ -350,7 +377,7 @@ const HomePage: React.FC = () => {
             </div>
 
             <div className="px-5 py-3">
-              {TOP_DEALERS.map((dealer, index) => (
+              {topDealers.map((dealer, index) => (
                 <div
                   key={dealer.name}
                   className="flex items-center gap-3 border-b border-divider py-3 last:border-0"

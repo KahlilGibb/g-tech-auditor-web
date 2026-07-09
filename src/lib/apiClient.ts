@@ -35,7 +35,7 @@ type RetryableRequestConfig = AxiosRequestConfig & {
 const envBaseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
 const envMockApi = import.meta.env.VITE_USE_MOCK_API as string | undefined;
 
-export const API_BASE_URL = envBaseUrl?.trim() || 'http://localhost:8181';
+export const API_BASE_URL = envBaseUrl?.trim() || 'https://api.gynetratechsolutions.com';
 export const MOCK_API = ['true', '1', 'yes'].includes((envMockApi ?? '').toLowerCase());
 
 const refreshClient = axios.create({

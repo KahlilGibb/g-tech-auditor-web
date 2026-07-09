@@ -2,7 +2,7 @@ import { apiClient, MockInterceptError } from '../lib/apiClient';
 import { toRecord, toStringValue, unwrapData } from '../lib/apiResponse';
 import { authStorage, extractAuthTokens, type AuthTokens } from '../lib/authStorage';
 import { API_ENDPOINTS } from '../constants/api';
-import type { AuthPermission, AuthUser } from '../types/auth';
+import type { AuthPermission, AuthUser, LoginRequest } from '../types/auth';
 import { mockAuthApi } from './mockManagementApi';
 
 export interface LoginResult {
@@ -81,6 +81,16 @@ function normalizePermissions(payload: unknown): AuthPermission[] | undefined {
 
   return payload
     .map((item): AuthPermission | null => {
+      if (typeof item === 'string') {
+        const parts = item.split(':');
+        const resource = parts[0] || undefined;
+        const action = parts[1] || undefined;
+        return {
+          name: item,
+          resource,
+          action,
+        };
+      }
       const record = toRecord(item);
       const resource = toStringValue(record.resource) || undefined;
       const action = toStringValue(record.action) || undefined;
@@ -102,25 +112,26 @@ function normalizePermissions(payload: unknown): AuthPermission[] | undefined {
 }
 
 export const authService = {
-  async login(email: string, password: string): Promise<LoginResult> {
+  async login(request: LoginRequest): Promise<LoginResult> {
+    const { identifier, password } = request;
     try {
-      const response = await apiClient.post(API_ENDPOINTS.AUTH.LOGIN, { email, password });
+      const response = await apiClient.post(API_ENDPOINTS.AUTH.LOGIN, { identifier, password });
       const tokens = extractAuthTokens(response.data);
-
+ 
       if (!tokens.accessToken) {
         throw new Error('Login response did not include an access token.');
       }
-
+ 
       authStorage.setTokens({
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
       });
-
+ 
       let user = normalizeUser(response.data);
       if (!user.id || !user.email) {
         user = await this.getMe();
       }
-
+ 
       authStorage.setUser(user);
       return {
         user,
@@ -131,7 +142,7 @@ export const authService = {
       };
     } catch (error) {
       if (error instanceof MockInterceptError) {
-        const result = await mockAuthApi.login(email, password);
+        const result = await mockAuthApi.login(identifier, password);
         authStorage.setTokens(result.tokens);
         authStorage.setUser(result.user);
         return result;

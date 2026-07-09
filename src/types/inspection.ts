@@ -14,10 +14,24 @@ export interface InspectionSummary {
   startedAt?: string;
 }
 
+export interface Attachment {
+  uri: string;
+  attachment_id?: string;
+  file_url?: string;
+  file_type?: string;
+  filename?: string;
+  type?: 'issue' | 'general';
+  uploading?: boolean;
+}
+
 export interface InspectionResponse {
   fieldId: string;
+  fieldValueId?: string;
   value: unknown;
   note?: string;
+  noteType?: string;
+  flagged?: boolean;
+  attachments?: Attachment[];
   mediaUris?: string[];
   actionIds?: string[];
   answeredAt?: string;
@@ -56,4 +70,38 @@ export interface CreateInspectionPayload {
   site: string;
   assignee: string;
   dueDate: string;
+  groupId?: string;
+  title?: string;
+}
+
+export interface DashboardCounts {
+  completed: number;
+  active: number;
+  draft: number;
+  overdue: number;
+}
+
+export interface DashboardInProgressItem {
+  id: string;
+  title: string;
+  groupName: string;
+  templateTitle: string;
+  templateType: string;
+  updatedAt: string;
+  status?: string;
+  progress?: { completed: number; total: number } | string;
+}
+
+export interface DashboardTopDealer {
+  groupId: string;
+  groupName: string;
+  total: number;
+  completed: number;
+  percent: number;
+}
+
+export interface DashboardData {
+  counts: DashboardCounts;
+  inProgress: DashboardInProgressItem[];
+  topDealers: DashboardTopDealer[];
 }

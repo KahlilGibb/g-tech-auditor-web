@@ -12,6 +12,7 @@ interface TemplateStoreState {
   
   fetchTemplates: () => Promise<void>;
   createTemplate: (formType: FormType) => Promise<CreateTemplateResult>;
+  duplicateTemplate: (templateId: string) => Promise<CreateTemplateResult>;
   clearError: () => void;
 }
 
@@ -43,6 +44,19 @@ export const useTemplateStore = create<TemplateStoreState>()(
           return result;
         } catch (e) {
           set({ isLoading: false, error: getApiErrorMessage(e, 'Failed to create template') });
+          throw e;
+        }
+      },
+
+      duplicateTemplate: async (templateId) => {
+        set({ isLoading: true, error: null });
+        try {
+          const result = await templateService.duplicateTemplate(templateId);
+          // Invalidate fetch cache so that the duplicated template appears in the list
+          set({ isFetched: false, isLoading: false });
+          return result;
+        } catch (e) {
+          set({ isLoading: false, error: getApiErrorMessage(e, 'Failed to duplicate template') });
           throw e;
         }
       },

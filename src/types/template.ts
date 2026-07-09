@@ -29,11 +29,54 @@ export type FieldType =
 
 // ─── Domain interfaces (mirror DB schema) ─────────────────────────────────────
 
+export type TriggerType = 'notify' | 'create_action'
+
+interface BaseTrigger {
+  id: string
+}
+
+export type NotifyTrigger = BaseTrigger & {
+  type: 'notify'
+  notify_user_ids?: string[]
+  notify_group_ids?: string[]
+  message?: string
+  priority?: number
+}
+
+export type CreateActionTrigger = BaseTrigger & {
+  type: 'create_action'
+  action_title?: string
+  action_priority?: 'low' | 'medium' | 'high'
+  assignee_ids?: string[]
+}
+
+export type Trigger = NotifyTrigger | CreateActionTrigger
+
+export type LogicActionType = 'notify' | 'create_action'
+
+export interface LogicActionNotify {
+  type: 'notify'
+  notify_user_ids?: string[]
+  notify_group_ids?: string[]
+  message?: string
+  priority?: number
+}
+
+export interface LogicActionCreateAction {
+  type: 'create_action'
+  action_title?: string
+  action_priority?: 'low' | 'medium' | 'high'
+  assignee_ids?: string[]
+}
+
+export type LogicAction = LogicActionNotify | LogicActionCreateAction
+
+export type LogicOperator = 'eq'
+
 export interface LogicRule {
-  condition: 'equals' | 'not_equals'
-  value: string
-  action: 'show' | 'hide' | 'trigger_action'
-  target_field_id?: string
+  when_value: string
+  operator?: LogicOperator
+  actions: LogicAction[]
 }
 
 export interface Template {
@@ -79,9 +122,10 @@ export interface TemplateField {
   type: FieldType
   required: boolean
   order: number
-  logic_rules: LogicRule[] | null
+  rules: LogicRule[] | null
   options?: FieldOption[]
   table?: FieldTable
+  config?: Record<string, any>
   /** Local-only: media attachment URI for instruction fields */
   mediaUri?: string
 }
@@ -92,6 +136,7 @@ export interface FieldOption {
   label: string
   value: string
   score_value: number
+  triggers?: Trigger[]
 }
 
 export interface FieldTable {

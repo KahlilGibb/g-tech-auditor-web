@@ -10,7 +10,7 @@ import { useProfileStore } from '../stores/profileStore';
 const ProfilePage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { profile, updateProfile, uploadAvatar } = useProfileStore();
-  const { logout, user } = useAuth();
+  const { logout, logoutAll, user } = useAuth();
   
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(profile);
@@ -57,6 +57,25 @@ const ProfilePage: React.FC = () => {
     try {
       await logout();
       await appSwal.successLogout();
+    } catch {
+      // handled
+    }
+  };
+
+  const handleLogoutAllDevices = async () => {
+    const confirmed = await appSwal.confirm({
+      title: 'Logout Semua Perangkat?',
+      text: 'Anda akan dikeluarkan dari akun ini di semua browser dan perangkat yang sedang aktif.',
+      confirmText: 'Ya, Logout Semua',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
+    try {
+      await logoutAll();
+      await appSwal.success({
+        title: 'Berhasil',
+        text: 'Anda telah dikeluarkan dari semua perangkat.',
+      });
     } catch {
       // handled
     }
@@ -133,6 +152,23 @@ const ProfilePage: React.FC = () => {
                 Indonesia
               </button>
             </div>
+          </div>
+
+          <div className="panel p-6">
+            <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-primary-blue" />
+              Sesi & Keamanan
+            </h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              Keluarkan akun Anda dari semua peramban dan perangkat yang sedang masuk.
+            </p>
+            <button 
+              onClick={handleLogoutAllDevices}
+              className="w-full btn-secondary text-danger-red border-danger-red/20 hover:bg-danger-red/5 flex items-center justify-center gap-2 py-2"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout Semua Perangkat
+            </button>
           </div>
         </div>
 

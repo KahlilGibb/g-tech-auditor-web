@@ -3,6 +3,8 @@ import { apiClient, MockInterceptError } from '../lib/apiClient';
 import { API_ENDPOINTS } from '../constants/api';
 import { toRecord, toStringValue, unwrapData, unwrapList } from '../lib/apiResponse';
 
+export let MOCK_TRASHED_ACTIONS: ActionItem[] = [];
+export let MOCK_TRASHED_WORKFLOW_STATUSES: ActionWorkflowStatus[] = [];
 export let MOCK_WORKFLOW_STATUSES: ActionWorkflowStatus[] = [
   { id: 'todo', label: 'To Do', color: '#6B7280', order: 1, isDefault: true },
   { id: 'in_progress', label: 'In Progress', color: '#2563EB', order: 2 },
@@ -286,7 +288,11 @@ export const actionService = {
     } catch (e) {
       if (e instanceof MockInterceptError) {
         await new Promise<void>(r => setTimeout(r, 250));
-        MOCK_ACTIONS = MOCK_ACTIONS.filter(action => action.id !== id);
+        const found = MOCK_ACTIONS.find(action => action.id === id);
+        if (found) {
+          MOCK_TRASHED_ACTIONS.push(found);
+          MOCK_ACTIONS = MOCK_ACTIONS.filter(action => action.id !== id);
+        }
         return;
       }
       throw e;
@@ -353,7 +359,11 @@ export const actionService = {
       await apiClient.delete(API_ENDPOINTS.ACTION_STATUSES.DELETE(id));
     } catch (e) {
       if (e instanceof MockInterceptError) {
-        MOCK_WORKFLOW_STATUSES = MOCK_WORKFLOW_STATUSES.filter(status => status.id !== id);
+        const found = MOCK_WORKFLOW_STATUSES.find(status => status.id === id);
+        if (found) {
+          MOCK_TRASHED_WORKFLOW_STATUSES.push(found);
+          MOCK_WORKFLOW_STATUSES = MOCK_WORKFLOW_STATUSES.filter(status => status.id !== id);
+        }
         return;
       }
       throw e;
@@ -392,6 +402,86 @@ export const actionService = {
       await apiClient.delete(API_ENDPOINTS.ACTIONS.ASSIGNEE(actionId, userId));
     } catch (e) {
       if (e instanceof MockInterceptError) return;
+      throw e;
+    }
+  },
+
+  async listTrashedActions(): Promise<ActionItem[]> {
+    try {
+      const res = await apiClient.get<unknown>(API_ENDPOINTS.ACTIONS.TRASH);
+      return unwrapList(res.data).map(normalizeAction);
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        return [...MOCK_TRASHED_ACTIONS];
+      }
+      throw e;
+    }
+  },
+
+  async restoreAction(id: string): Promise<void> {
+    try {
+      await apiClient.post(API_ENDPOINTS.ACTIONS.RESTORE(id));
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        const found = MOCK_TRASHED_ACTIONS.find(item => item.id === id);
+        if (found) {
+          MOCK_ACTIONS.push(found);
+          MOCK_TRASHED_ACTIONS = MOCK_TRASHED_ACTIONS.filter(item => item.id !== id);
+        }
+        return;
+      }
+      throw e;
+    }
+  },
+
+  async permanentDeleteAction(id: string): Promise<void> {
+    try {
+      await apiClient.delete(API_ENDPOINTS.ACTIONS.PERMANENT_DELETE(id));
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        MOCK_TRASHED_ACTIONS = MOCK_TRASHED_ACTIONS.filter(item => item.id !== id);
+        return;
+      }
+      throw e;
+    }
+  },
+
+  async listTrashedWorkflowStatuses(): Promise<ActionWorkflowStatus[]> {
+    try {
+      const res = await apiClient.get<unknown>(API_ENDPOINTS.ACTION_STATUSES.TRASH);
+      return unwrapList(res.data).map(normalizeStatus);
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        return [...MOCK_TRASHED_WORKFLOW_STATUSES];
+      }
+      throw e;
+    }
+  },
+
+  async restoreWorkflowStatus(id: string): Promise<void> {
+    try {
+      await apiClient.post(API_ENDPOINTS.ACTION_STATUSES.RESTORE(id));
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        const found = MOCK_TRASHED_WORKFLOW_STATUSES.find(item => item.id === id);
+        if (found) {
+          MOCK_WORKFLOW_STATUSES.push(found);
+          MOCK_TRASHED_WORKFLOW_STATUSES = MOCK_TRASHED_WORKFLOW_STATUSES.filter(item => item.id !== id);
+        }
+        return;
+      }
+      throw e;
+    }
+  },
+
+  async permanentDeleteWorkflowStatus(id: string): Promise<void> {
+    try {
+      await apiClient.delete(API_ENDPOINTS.ACTION_STATUSES.PERMANENT_DELETE(id));
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        MOCK_TRASHED_WORKFLOW_STATUSES = MOCK_TRASHED_WORKFLOW_STATUSES.filter(item => item.id !== id);
+        return;
+      }
       throw e;
     }
   },

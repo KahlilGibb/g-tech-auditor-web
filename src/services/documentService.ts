@@ -1,6 +1,6 @@
 import { API_ENDPOINTS } from '../constants/api';
 import { apiClient } from '../lib/apiClient';
-import { unwrapData, unwrapList } from '../lib/apiResponse';
+import { unwrapData, unwrapList, toStringValue } from '../lib/apiResponse';
 import type {
   CreateFolderRequest,
   DocumentFile,
@@ -15,25 +15,50 @@ import type {
 
 // ─── Folder operations ──────────────────────────────────────────────────────
 
-async function getFolders(parentId?: string | null): Promise<DocumentFolder[]> {
+export interface FolderContentsResponse {
+  folders: DocumentFolder[];
+  documents: DocumentFile[];
+}
+
+async function getFolders(parentId?: string | null): Promise<FolderContentsResponse> {
   const params = parentId ? { parent_id: parentId } : undefined;
   const res = await apiClient.get<unknown>(API_ENDPOINTS.DOCUMENTS.FOLDERS, { params });
-  return unwrapList<DocumentFolder>(res.data);
+  const data = unwrapData<{ folders?: DocumentFolder[]; documents?: DocumentFile[] } | null>(res.data);
+  const folders = Array.isArray(data?.folders)
+    ? data.folders.map(f => ({
+        ...f,
+        parent_id: f.parent_id !== undefined && f.parent_id !== null ? f.parent_id : null,
+      }))
+    : [];
+  const documents = Array.isArray(data?.documents) ? data.documents : [];
+  return { folders, documents };
 }
 
 async function createFolder(req: CreateFolderRequest): Promise<DocumentFolder> {
   const res = await apiClient.post<unknown>(API_ENDPOINTS.DOCUMENTS.FOLDERS, req);
-  return unwrapData<DocumentFolder>(res.data);
+  const folder = unwrapData<DocumentFolder>(res.data);
+  return {
+    ...folder,
+    parent_id: folder.parent_id !== undefined && folder.parent_id !== null ? folder.parent_id : null,
+  };
 }
 
 async function getFolder(id: string): Promise<DocumentFolder> {
   const res = await apiClient.get<unknown>(API_ENDPOINTS.DOCUMENTS.FOLDER(id));
-  return unwrapData<DocumentFolder>(res.data);
+  const folder = unwrapData<DocumentFolder>(res.data);
+  return {
+    ...folder,
+    parent_id: folder.parent_id !== undefined && folder.parent_id !== null ? folder.parent_id : null,
+  };
 }
 
 async function updateFolder(id: string, req: UpdateFolderRequest): Promise<DocumentFolder> {
   const res = await apiClient.put<unknown>(API_ENDPOINTS.DOCUMENTS.FOLDER(id), req);
-  return unwrapData<DocumentFolder>(res.data);
+  const folder = unwrapData<DocumentFolder>(res.data);
+  return {
+    ...folder,
+    parent_id: folder.parent_id !== undefined && folder.parent_id !== null ? folder.parent_id : null,
+  };
 }
 
 async function deleteFolder(id: string): Promise<void> {
@@ -69,7 +94,10 @@ async function getDocument(id: string): Promise<DocumentFile> {
 
 async function getDownloadUrl(id: string): Promise<DownloadUrlResponse> {
   const res = await apiClient.get<unknown>(API_ENDPOINTS.DOCUMENTS.DOWNLOAD(id));
-  return unwrapData<DownloadUrlResponse>(res.data);
+  const data = unwrapData<any>(res.data);
+  return {
+    url: toStringValue(data?.download_url) || toStringValue(data?.url) || '',
+  };
 }
 
 async function updateDocument(id: string, req: UpdateDocumentRequest): Promise<DocumentFile> {
