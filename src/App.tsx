@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { AuthProvider } from './providers/AuthProvider';
@@ -11,6 +11,7 @@ import TemplatesPage from './pages/TemplatesPage';
 import MasterFieldsPage from './pages/MasterFieldsPage';
 import ActionsPage from './pages/ActionsPage';
 import CpsPage from './pages/CpsPage';
+import CpsSessionPage from './pages/CpsSessionPage';
 import TrainingPage from './pages/TrainingPage';
 import ProfilePage from './pages/ProfilePage';
 import TemplateBuilderPage from './pages/TemplateBuilderPage';
@@ -27,6 +28,7 @@ import { Loader2 } from 'lucide-react';
 import AccessDenied from './components/rbac/AccessDenied';
 import { NAV_PERMISSIONS, type NavPermissionRequirement } from './constants/rbac';
 import { useRbac } from './hooks/useRbac';
+import { useNotificationStore } from './stores/notificationStore';
 
 const ProtectedRoute: React.FC<{
   children: React.ReactNode;
@@ -56,6 +58,15 @@ const ProtectedRoute: React.FC<{
 
 const AppRoutes: React.FC = () => {
   const { isAuthenticated } = useAuth();
+  const { fetchNotifications, disconnect } = useNotificationStore();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchNotifications();
+    } else {
+      disconnect();
+    }
+  }, [isAuthenticated, fetchNotifications, disconnect]);
 
   return (
     <Routes>
@@ -126,6 +137,14 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute permission={NAV_PERMISSIONS.cps}>
               <CpsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="cps/session/:id"
+          element={
+            <ProtectedRoute permission={NAV_PERMISSIONS.cps}>
+              <CpsSessionPage />
             </ProtectedRoute>
           }
         />

@@ -215,3 +215,147 @@ export interface ResponseSet {
   options: ResponseOption[]
   isBuiltIn?: boolean
 }
+
+export interface TemplateRequest {
+  id?: string;
+  type: FormType;
+  title: string;
+  description: string;
+  scoring_enabled: boolean;
+  pages?: TemplatePageRequest[];
+}
+
+export interface TemplatePageRequest {
+  id?: string;
+  title: string;
+  description: string;
+  order: number;
+  fields?: TemplateFieldRequest[];
+}
+
+export interface TemplateFieldRequest {
+  id?: string;
+  label: string;
+  type: FieldType;
+  required: boolean;
+  order: number;
+  options?: TemplateFieldOptionRequest[];
+  config?: TemplateFieldConfigRequest;
+  rules?: LogicRule[];
+}
+
+export interface TemplateFieldOptionRequest {
+  id?: string;
+  label: string;
+  value: string;
+  score_value: number;
+  icon?: string;
+  triggers?: Trigger[];
+}
+
+export interface TemplateFieldConfigRequest {
+  text?: string;
+  image_urls?: string[];
+  max_files?: number;
+  allowed_types?: string[];
+  max_length?: number;
+  multiline?: boolean;
+  min?: number;
+  max?: number;
+  date_only?: boolean;
+  time_only?: boolean;
+  step?: number;
+}
+
+function ruleActionToTrigger(action: LogicAction): Trigger {
+  const id = 'trigger-' + Math.random().toString(36).substring(2, 11);
+  return { id, ...action } as Trigger;
+}
+
+export function rulesToOptionTriggers(
+  rules: LogicRule[] | undefined | null,
+  options: TemplateFieldOptionRequest[] | undefined
+): TemplateFieldOptionRequest[] | undefined {
+  if (!options) return options;
+  return options.map((opt) => {
+    const rule = rules?.find((r) => r.when_value === opt.value);
+    return rule
+      ? { ...opt, triggers: rule.actions.map(ruleActionToTrigger) }
+      : opt;
+  });
+}
+
+export const templateToRequestMapper = (
+  version: TemplateVersion,
+  sections: TemplateSection[],
+  fields: TemplateField[]
+): TemplateRequest => {
+  return {
+    id: version.template_id,
+    type: 'inspection',
+    title: version.title,
+    description: version.description,
+    scoring_enabled: version.scoring_enabled,
+    pages: sections.map((section) => ({
+      id: section.id,
+      title: section.title,
+      description: section.description,
+      order: section.order,
+      fields: fields.filter(f => f.section_id === section.id).map((field) => {
+        return {
+          id: field.id,
+          label: field.label ?? '',
+          type: field.type ?? 'text_answer',
+          required: field.required,
+          order: field.order,
+          options: rulesToOptionTriggers(field.rules, field.options as any),
+          config: field.config,
+        };
+      }),
+    })),
+  };
+};
+
+const triggerToAction = (trigger: Trigger): LogicAction => {
+  if (trigger.type === 'notify') {
+    return {
+      type: 'notify',
+      notify_user_ids: trigger.notify_user_ids,
+      notify_group_ids: trigger.notify_group_ids,
+      message: trigger.message,
+      priority: 0,
+    };
+  }
+  return {
+    type: 'create_action',
+    action_title: trigger.action_title,
+    action_priority: trigger.action_priority,
+    assignee_ids: trigger.assignee_ids,
+  };
+};
+
+export const optionsToRules = (
+  options: TemplateFieldOptionRequest[] = []
+): LogicRule[] => {
+  return options
+    .filter((o) => (o.triggers?.length ?? 0) > 0)
+    .map((o) => ({
+      when_value: o.value,
+      actions: o.triggers!.map(triggerToAction),
+    }));
+};
+
+const fieldToRequest = (field: TemplateFieldRequest): TemplateFieldRequest => ({
+  ...field,
+  rules: optionsToRules(field.options),
+});
+
+const pageToRequest = (page: TemplatePageRequest): TemplatePageRequest => ({
+  ...page,
+  fields: page.fields?.map(fieldToRequest),
+});
+
+export const buildPayload = (template: TemplateRequest): TemplateRequest => ({
+  ...template,
+  pages: template.pages?.map(pageToRequest),
+});

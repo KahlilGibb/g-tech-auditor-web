@@ -6,22 +6,32 @@ import { appSwal } from '../lib/appSwal';
 
 import { useAuth } from '../hooks/useAuth';
 import { useProfileStore } from '../stores/profileStore';
+import {
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  CardHeader,
+  Field,
+  Input,
+  PageHeader,
+  RowAction,
+} from '../components/ui';
 
 const ProfilePage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { profile, updateProfile, uploadAvatar } = useProfileStore();
   const { logout, logoutAll, user } = useAuth();
-  
+
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(profile);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  
+
   const displayName = profile.fullName || user?.name || 'Inspector';
   const role = profile.role || user?.role || 'Inspector';
   const email = user?.email || 'N/A';
   const location = user?.groupAddress || user?.groupName || profile.workLocation || 'N/A';
   const department = user?.organizationName || profile.department || 'N/A';
-  const initials = displayName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
   const handleLanguageChange = (code: string) => {
     i18n.changeLanguage(code);
@@ -82,227 +92,241 @@ const ProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-5">
-      <div>
-        <h1 className="page-title">{t('profile.title') || 'Profile & Settings'}</h1>
-        <p className="page-subtitle">{t('profile.subtitle') || 'Manage your account and preferences.'}</p>
-      </div>
+    <div className="page-shell">
+      <div className="mx-auto w-full max-w-4xl space-y-6">
+        <PageHeader
+          eyebrow="Akun"
+          title={t('profile.title') || 'Profile & Settings'}
+          subtitle={t('profile.subtitle') || 'Manage your account and preferences.'}
+        />
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-        {/* Left Column - Profile Card */}
-        <div className="md:col-span-1 space-y-6">
-          <div className="panel p-6 text-center">
-            <div className="relative inline-block">
-              <div className="w-24 h-24 rounded-2xl bg-primary-blue text-[#181a20] flex items-center justify-center text-3xl font-bold mx-auto overflow-hidden border-4 border-surface shadow-sm">
-                {profile.avatarBase64 ? (
-                  <img src={`data:image/jpeg;base64,${profile.avatarBase64}`} alt="Profile" className="w-full h-full object-cover" />
-                ) : (
-                  initials
-                )}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          {/* Left Column - Profile Card */}
+          <div className="md:col-span-1 space-y-6">
+            <Card padded className="text-center">
+              <div className="relative inline-block">
+                <Avatar
+                  name={displayName}
+                  src={profile.avatarBase64 ? `data:image/jpeg;base64,${profile.avatarBase64}` : null}
+                  size={96}
+                  className="mx-auto rounded-2xl border-4 border-card shadow-soft-sm"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute -bottom-2 -right-2 flex h-9 w-9 items-center justify-center rounded-full border border-hairline-soft bg-card text-slate shadow-soft-sm transition-colors hover:text-primary-blue"
+                >
+                  <Camera className="h-4 w-4" />
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                  accept="image/*"
+                />
               </div>
-              <button 
-                onClick={() => fileInputRef.current?.click()}
-                className="absolute -bottom-2 -right-2 p-2 bg-card rounded-full shadow-md border border-divider text-muted-foreground hover:text-primary-blue transition-colors"
-              >
-                <Camera className="w-4 h-4" />
-              </button>
-              <input 
-                type="file" 
-                ref={fileInputRef}
-                onChange={handleAvatarChange}
-                className="hidden" 
-                accept="image/*"
+
+              <h2 className="mt-4 text-lg font-semibold tracking-tight text-ink-deep">{displayName}</h2>
+              <p className="text-sm text-stone">{role}</p>
+
+              <div className="mt-4 flex justify-center">
+                <Badge tone="success" dot>
+                  {t('profile.status') || 'Active'}
+                </Badge>
+              </div>
+            </Card>
+
+            <Card padded>
+              <CardHeader
+                title={t('settings.language.title') || 'Language / Bahasa'}
+                icon={<Globe className="h-4 w-4" />}
+                className="!border-0 !px-0 !pt-0"
               />
-            </div>
-            
-            <h2 className="mt-4 text-lg font-bold text-foreground">{displayName}</h2>
-            <p className="text-sm text-muted-foreground">{role}</p>
-            
-            <div className="mt-4 inline-flex items-center px-3 py-1 rounded-full bg-success-green/10 text-success-green text-xs font-bold uppercase tracking-wider">
-              {t('profile.status') || 'Active'}
-            </div>
-          </div>
-
-          <div className="panel p-6">
-            <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
-              <Globe className="w-5 h-5 text-primary-blue" />
-              {t('settings.language.title') || 'Language / Bahasa'}
-            </h3>
-            <div className="flex gap-2">
-              <button 
-                onClick={() => handleLanguageChange('en')}
-                className={cn(
-                  "flex-1 py-2 rounded-xl text-sm font-semibold transition-all border",
-                  i18n.language === 'en' 
-                    ? "bg-primary-blue text-[#181a20] border-primary-blue shadow-sm" 
-                    : "bg-surface text-muted-foreground border-divider hover:bg-surface/80"
-                )}
-              >
-                English
-              </button>
-              <button 
-                onClick={() => handleLanguageChange('id')}
-                className={cn(
-                  "flex-1 py-2 rounded-xl text-sm font-semibold transition-all border",
-                  i18n.language === 'id' 
-                    ? "bg-primary-blue text-[#181a20] border-primary-blue shadow-sm" 
-                    : "bg-surface text-muted-foreground border-divider hover:bg-surface/80"
-                )}
-              >
-                Indonesia
-              </button>
-            </div>
-          </div>
-
-          <div className="panel p-6">
-            <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-primary-blue" />
-              Sesi & Keamanan
-            </h3>
-            <p className="text-xs text-muted-foreground mb-4">
-              Keluarkan akun Anda dari semua peramban dan perangkat yang sedang masuk.
-            </p>
-            <button 
-              onClick={handleLogoutAllDevices}
-              className="w-full btn-secondary text-danger-red border-danger-red/20 hover:bg-danger-red/5 flex items-center justify-center gap-2 py-2"
-            >
-              <LogOut className="w-4 h-4" />
-              Logout Semua Perangkat
-            </button>
-          </div>
-        </div>
-
-        {/* Right Column - Details */}
-        <div className="md:col-span-2">
-          <div className="panel overflow-hidden">
-            <div className="p-6 border-b border-divider flex justify-between items-center bg-surface/30">
-              <h3 className="font-bold text-foreground">Personal Information</h3>
-              {!isEditing ? (
-                <button 
-                  onClick={() => {
-                    setFormData(profile);
-                    setIsEditing(true);
-                  }}
-                  className="text-sm font-semibold text-primary-blue hover:text-primary-blue-dark transition-colors"
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleLanguageChange('en')}
+                  className={cn(
+                    'flex-1 rounded-full py-2 text-sm font-semibold transition-all',
+                    i18n.language === 'en'
+                      ? 'bg-ink-deep text-white shadow-soft-sm'
+                      : 'border border-hairline-soft bg-card text-slate hover:bg-surface hover:text-ink-deep',
+                  )}
                 >
-                  Edit Profile
+                  English
                 </button>
-              ) : (
-                <button 
-                  onClick={() => {
-                    setFormData(profile);
-                    setIsEditing(false);
-                  }}
-                  className="p-1 text-muted-foreground hover:text-foreground transition-colors bg-card rounded-full shadow-sm"
+                <button
+                  onClick={() => handleLanguageChange('id')}
+                  className={cn(
+                    'flex-1 rounded-full py-2 text-sm font-semibold transition-all',
+                    i18n.language === 'id'
+                      ? 'bg-ink-deep text-white shadow-soft-sm'
+                      : 'border border-hairline-soft bg-card text-slate hover:bg-surface hover:text-ink-deep',
+                  )}
                 >
-                  <X className="w-4 h-4" />
+                  Indonesia
                 </button>
-              )}
-            </div>
-            
-            <div className="p-6 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                    <User className="w-3.5 h-3.5" /> Full Name
-                  </label>
-                  {isEditing ? (
-                    <input 
-                      type="text" 
-                      value={formData.fullName} 
-                      onChange={e => setFormData({...formData, fullName: e.target.value})}
-                      className="form-input"
-                    />
+              </div>
+            </Card>
+
+            <Card padded>
+              <CardHeader
+                title="Sesi & Keamanan"
+                icon={<ShieldCheck className="h-4 w-4" />}
+                className="!border-0 !px-0 !pt-0"
+              />
+              <p className="mb-4 text-xs text-stone">
+                Keluarkan akun Anda dari semua peramban dan perangkat yang sedang masuk.
+              </p>
+              <Button
+                variant="danger"
+                block
+                onClick={handleLogoutAllDevices}
+                icon={<LogOut className="h-4 w-4" />}
+              >
+                Logout Semua Perangkat
+              </Button>
+            </Card>
+          </div>
+
+          {/* Right Column - Details */}
+          <div className="md:col-span-2">
+            <Card className="overflow-hidden">
+              <CardHeader
+                title="Personal Information"
+                action={
+                  !isEditing ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setFormData(profile);
+                        setIsEditing(true);
+                      }}
+                    >
+                      Edit Profile
+                    </Button>
                   ) : (
-                    <p className="font-medium text-foreground py-2">{displayName}</p>
-                  )}
+                    <RowAction
+                      onClick={() => {
+                        setFormData(profile);
+                        setIsEditing(false);
+                      }}
+                      aria-label="Cancel"
+                    >
+                      <X className="h-4 w-4" />
+                    </RowAction>
+                  )
+                }
+              />
+
+              <div className="space-y-4 p-6">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field
+                    label={
+                      <>
+                        <User className="h-3.5 w-3.5" /> Full Name
+                      </>
+                    }
+                  >
+                    {isEditing ? (
+                      <Input
+                        type="text"
+                        value={formData.fullName}
+                        onChange={e => setFormData({ ...formData, fullName: e.target.value })}
+                      />
+                    ) : (
+                      <p className="py-2 font-medium text-ink-deep">{displayName}</p>
+                    )}
+                  </Field>
+
+                  <Field
+                    label={
+                      <>
+                        <Mail className="h-3.5 w-3.5" /> Email
+                      </>
+                    }
+                  >
+                    <p className="py-2 font-medium text-stone">{email} (Read Only)</p>
+                  </Field>
+
+                  <Field
+                    label={
+                      <>
+                        <Phone className="h-3.5 w-3.5" /> Phone Number
+                      </>
+                    }
+                  >
+                    {isEditing ? (
+                      <Input
+                        type="tel"
+                        value={formData.phone}
+                        onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                      />
+                    ) : (
+                      <p className="py-2 font-medium text-ink-deep">{profile.phone}</p>
+                    )}
+                  </Field>
+
+                  <Field
+                    label={
+                      <>
+                        <MapPin className="h-3.5 w-3.5" /> Location
+                      </>
+                    }
+                  >
+                    {isEditing ? (
+                      <Input
+                        type="text"
+                        value={formData.workLocation}
+                        onChange={e => setFormData({ ...formData, workLocation: e.target.value })}
+                      />
+                    ) : (
+                      <p className="py-2 font-medium text-ink-deep">{location}</p>
+                    )}
+                  </Field>
+
+                  <Field
+                    label={
+                      <>
+                        <Building2 className="h-3.5 w-3.5" /> Department
+                      </>
+                    }
+                  >
+                    {isEditing ? (
+                      <Input
+                        type="text"
+                        value={formData.department}
+                        onChange={e => setFormData({ ...formData, department: e.target.value })}
+                      />
+                    ) : (
+                      <p className="py-2 font-medium text-ink-deep">{department}</p>
+                    )}
+                  </Field>
+
+                  <Field
+                    label={
+                      <>
+                        <ShieldCheck className="h-3.5 w-3.5" /> Role
+                      </>
+                    }
+                  >
+                    <p className="py-2 font-medium text-stone">{role} (Read Only)</p>
+                  </Field>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                    <Mail className="w-3.5 h-3.5" /> Email
-                  </label>
-                  <p className="font-medium text-foreground py-2 text-muted-foreground cursor-not-allowed">
-                    {email} (Read Only)
-                  </p>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                    <Phone className="w-3.5 h-3.5" /> Phone Number
-                  </label>
-                  {isEditing ? (
-                    <input 
-                      type="tel" 
-                      value={formData.phone} 
-                      onChange={e => setFormData({...formData, phone: e.target.value})}
-                      className="form-input"
-                    />
-                  ) : (
-                    <p className="font-medium text-foreground py-2">{profile.phone}</p>
-                  )}
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                    <MapPin className="w-3.5 h-3.5" /> Location
-                  </label>
-                  {isEditing ? (
-                    <input 
-                      type="text" 
-                      value={formData.workLocation} 
-                      onChange={e => setFormData({...formData, workLocation: e.target.value})}
-                      className="form-input"
-                    />
-                  ) : (
-                    <p className="font-medium text-foreground py-2">{location}</p>
-                  )}
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                    <Building2 className="w-3.5 h-3.5" /> Department
-                  </label>
-                  {isEditing ? (
-                    <input 
-                      type="text" 
-                      value={formData.department} 
-                      onChange={e => setFormData({...formData, department: e.target.value})}
-                      className="form-input"
-                    />
-                  ) : (
-                    <p className="font-medium text-foreground py-2">{department}</p>
-                  )}
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                    <ShieldCheck className="w-3.5 h-3.5" /> Role
-                  </label>
-                  <p className="font-medium text-foreground py-2 text-muted-foreground cursor-not-allowed">
-                    {role} (Read Only)
-                  </p>
-                </div>
+                {isEditing && (
+                  <div className="flex justify-end pt-4">
+                    <Button onClick={handleSave}>Save Changes</Button>
+                  </div>
+                )}
               </div>
 
-              {isEditing && (
-                <div className="pt-4 flex justify-end">
-                  <button 
-                    onClick={handleSave}
-                    className="btn-primary"
-                  >
-                    Save Changes
-                  </button>
-                </div>
-              )}
-            </div>
-            
-            <div className="p-4 bg-danger-red/5 border-t border-danger-red/10 flex justify-between items-center sm:hidden">
-                <button onClick={handleLogout} className="flex items-center gap-2 text-danger-red font-semibold text-sm">
-                  <LogOut className="w-4 h-4" /> Sign Out
+              <div className="flex items-center justify-between border-t border-danger-red/10 bg-danger-red/5 p-4 sm:hidden">
+                <button onClick={handleLogout} className="flex items-center gap-2 text-sm font-semibold text-danger-red">
+                  <LogOut className="h-4 w-4" /> Sign Out
                 </button>
-            </div>
-
+              </div>
+            </Card>
           </div>
         </div>
       </div>

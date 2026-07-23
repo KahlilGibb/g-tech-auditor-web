@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
   RefreshCcw, PlusCircle, FileText, X,
   Upload, ClipboardList, Plus, ChevronRight,
   Share2, Bookmark, Pencil, ShieldCheck, Copy, Archive,
-  Loader2,
+  Loader2, Search,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTemplates } from '../hooks/useTemplates';
@@ -19,6 +20,7 @@ import { useRbac } from '../hooks/useRbac';
 import { branchService } from '../services/managementService';
 import { inspectionService } from '../services/inspectionService';
 import Swal from 'sweetalert2';
+import { Badge, Button, EmptyState, IconButton, PageHeader, Tabs, TableWrap, Td, Th } from '../components/ui';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -86,7 +88,7 @@ const CreateTemplateSheet: React.FC<CreateSheetProps & { onScratch: () => Promis
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex flex-col justify-end">
       {/* Backdrop */}
       <div
@@ -166,7 +168,8 @@ const CreateTemplateSheet: React.FC<CreateSheetProps & { onScratch: () => Promis
           })}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
@@ -213,7 +216,7 @@ const TemplateDetailSheet: React.FC<DetailSheetProps> = ({
     onClose();
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex flex-col justify-end">
       {/* Backdrop */}
       <div
@@ -305,7 +308,8 @@ const TemplateDetailSheet: React.FC<DetailSheetProps> = ({
           ))}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
@@ -320,9 +324,24 @@ const TemplatesPage: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateListItem | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'inspection' | 'cps'>('all');
 
   const createSheet = useSheet();
   const detailSheet = useSheet();
+
+  const filteredTemplates = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return templates.filter((t) => {
+      const matchType = activeFilter === 'all' || t.form_type === activeFilter;
+      if (!q) return matchType;
+      return matchType && (
+        t.name.toLowerCase().includes(q) ||
+        (t.description ?? '').toLowerCase().includes(q) ||
+        (t.author ?? '').toLowerCase().includes(q)
+      );
+    });
+  }, [templates, searchQuery, activeFilter]);
 
   useEffect(() => {
     fetchTemplates();
@@ -502,87 +521,134 @@ const TemplatesPage: React.FC = () => {
 
   return (
     <div className="page-shell">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">{t('templates.title')}</h1>
-          <p className="page-subtitle">{t('templates.subtitle')}</p>
-        </div>
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <button
-            onClick={handleRefresh}
-            disabled={isLoading || isRefreshing}
-            className="icon-button"
-          >
-            <RefreshCcw className={cn('w-5 h-5', (isLoading || isRefreshing) && 'animate-spin')} />
-          </button>
-          <Can resource="templates" action="create">
+      <PageHeader
+        eyebrow="Checklists"
+        title={t('templates.title')}
+        subtitle={t('templates.subtitle')}
+        actions={
+          <>
+            <IconButton onClick={handleRefresh} disabled={isLoading || isRefreshing} aria-label="Refresh">
+              <RefreshCcw className={cn('h-5 w-5', (isLoading || isRefreshing) && 'animate-spin')} />
+            </IconButton>
+            <Can resource="templates" action="create">
+              <Button className="flex-1 sm:flex-none" onClick={createSheet.show} icon={<PlusCircle className="h-[18px] w-[18px]" />}>
+                {t('common.create')}
+              </Button>
+            </Can>
+          </>
+        }
+      />
+
+      {/* Search & filter */}
+      <div className="toolbar">
+        <div className="relative w-full sm:max-w-md">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Cari nama template, deskripsi, atau author..."
+            className="form-input pl-11 pr-10"
+          />
+          {searchQuery && (
             <button
-              onClick={createSheet.show}
-              className="btn-primary flex-1 sm:flex-none"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-stone transition-colors hover:bg-surface hover:text-ink-deep"
             >
-              <PlusCircle className="w-5 h-5" />
-              {t('common.create')}
+              <X className="h-3.5 w-3.5" />
             </button>
-          </Can>
+          )}
         </div>
+
+        <Tabs
+          value={activeFilter}
+          onChange={setActiveFilter}
+          tabs={[
+            { value: 'all', label: 'Semua' },
+            { value: 'inspection', label: 'Inspection' },
+            { value: 'cps', label: 'CPS' },
+          ]}
+        />
       </div>
 
-      <div className="panel overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="table-header">
-              <tr>
-                <th className="px-6 py-4">Template Name</th>
-                <th className="px-6 py-4">Author</th>
-                <th className="px-6 py-4">Questions</th>
-                <th className="px-6 py-4 text-right">Last Modified</th>
+      <TableWrap>
+        {(searchQuery || activeFilter !== 'all') && (
+          <div className="border-b border-hairline-soft bg-surface/50 px-6 py-3 text-xs font-semibold text-stone">
+            {filteredTemplates.length === 0
+              ? 'Tidak ada template yang sesuai'
+              : `${filteredTemplates.length} template ditemukan`}
+            {searchQuery && <span className="ml-1 text-ink-deep">untuk "{searchQuery}"</span>}
+          </div>
+        )}
+        <thead className="table-header">
+          <tr>
+            <Th>Template Name</Th>
+            <Th>Author</Th>
+            <Th>Questions</Th>
+            <Th className="text-right">Last Modified</Th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-hairline-soft">
+          {isLoading && templates.length === 0 ? (
+            <>
+              <SkeletonRow />
+              <SkeletonRow />
+              <SkeletonRow />
+            </>
+          ) : filteredTemplates.length === 0 && !error ? (
+            <tr>
+              <td colSpan={4}>
+                {searchQuery || activeFilter !== 'all' ? (
+                  <EmptyState
+                    icon={<Search className="h-6 w-6" />}
+                    title="Tidak ada template yang cocok"
+                    description="Coba kata kunci lain atau hapus filter."
+                    action={
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSearchQuery('');
+                          setActiveFilter('all');
+                        }}
+                      >
+                        Reset pencarian
+                      </Button>
+                    }
+                  />
+                ) : (
+                  <EmptyState icon={<FileText className="h-6 w-6" />} title={t('templates.empty')} />
+                )}
+              </td>
+            </tr>
+          ) : (
+            filteredTemplates.map((item) => (
+              <tr
+                key={item.id}
+                onClick={() => handleRowClick(item)}
+                className="cursor-pointer text-sm transition-colors hover:bg-surface/60"
+              >
+                <Td>
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-blue/10 text-primary-blue">
+                      <FileText className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-ink-deep">{item.name}</p>
+                      <p className="mt-0.5 max-w-sm truncate text-xs text-stone">{item.description}</p>
+                    </div>
+                  </div>
+                </Td>
+                <Td className="text-charcoal">{item.author}</Td>
+                <Td>
+                  <Badge tone="neutral">{item.questionCount} Qs</Badge>
+                </Td>
+                <Td className="text-right text-stone">{item.lastModified}</Td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-divider">
-              {isLoading && templates.length === 0 ? (
-                <>
-                  <SkeletonRow />
-                  <SkeletonRow />
-                  <SkeletonRow />
-                </>
-              ) : templates.length === 0 && !error ? (
-                <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center">
-                    <p className="text-muted-foreground">{t('templates.empty')}</p>
-                  </td>
-                </tr>
-              ) : (
-                templates.map((item) => (
-                  <tr
-                    key={item.id}
-                    onClick={() => handleRowClick(item)}
-                    className="hover:bg-surface/50 transition-colors cursor-pointer text-sm"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 bg-primary-blue/10 rounded-lg text-primary-blue mt-0.5">
-                          <FileText className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-foreground">{item.name}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5 max-w-sm truncate">{item.description}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-foreground">{item.author}</td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full bg-surface text-muted-foreground font-medium text-xs">
-                        {item.questionCount} Qs
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right text-muted-foreground">{item.lastModified}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            ))
+          )}
+        </tbody>
+      </TableWrap>
 
       {/* Modals */}
       <CreateTemplateSheet

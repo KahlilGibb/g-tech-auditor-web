@@ -142,6 +142,7 @@ httpClient.interceptors.response.use(
       const refreshedTokens = await refreshPromise;
 
       if (!refreshedTokens?.accessToken) {
+        console.error('[apiClient] Refresh token failed. Dispatching auth expired.', originalRequest?.url);
         dispatchAuthExpired();
         return Promise.reject(toApiRequestError(error));
       }
@@ -153,6 +154,7 @@ httpClient.interceptors.response.use(
 
       return httpClient(originalRequest);
     } catch (refreshError) {
+      console.error('[apiClient] Refresh token error. Dispatching auth expired.', originalRequest?.url, refreshError);
       dispatchAuthExpired();
       return Promise.reject(normalizeApiError(refreshError, error));
     }

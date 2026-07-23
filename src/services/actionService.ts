@@ -485,4 +485,20 @@ export const actionService = {
       throw e;
     }
   },
+
+  async resolveAction(id: string): Promise<void> {
+    try {
+      await apiClient.post(API_ENDPOINTS.ACTIONS.RESOLVE(id));
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        await new Promise<void>(r => setTimeout(r, 200));
+        const found = MOCK_ACTIONS.find(item => item.id === id);
+        if (found) {
+          found.workflowStatusId = 'completed';
+        }
+        return;
+      }
+      throw e;
+    }
+  },
 };

@@ -101,7 +101,7 @@ export const useTemplateEditorStore = create<TemplateEditorState>()((set, get) =
     if (get().template?.id === templateId) return
     set({ isLoading: true, error: null })
     try {
-      const { template, version, sections, fields } = await templateService.getTemplateWithVersion(templateId)
+      const { template, version, sections, fields } = await templateService.getTemplateEdit(templateId)
       set({
         template,
         version,

@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Plus, X } from 'lucide-react'
 import { BUILT_IN_RESPONSE_SETS } from '../../stores/responseSetStore'
 import type { FieldOption, ResponseColor } from '../../types/template'
@@ -23,8 +22,6 @@ interface FieldOptionsEditorProps {
   options: FieldOption[]
   fieldId: string
   onChange: (options: FieldOption[]) => void
-  /** Whether the editor is shown inline (always open) vs collapsible */
-  alwaysOpen?: boolean
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -34,7 +31,6 @@ export default function FieldOptionsEditor({
   fieldId,
   onChange,
 }: FieldOptionsEditorProps) {
-  const [isOpen, setIsOpen] = useState(false)
 
   const applyPreset = (presetId: string) => {
     const preset = BUILT_IN_RESPONSE_SETS.find((s) => s.id === presetId)
@@ -47,7 +43,6 @@ export default function FieldOptionsEditor({
       score_value: 0,
     }))
     onChange(newOptions)
-    setIsOpen(true)
   }
 
   const addOption = () => {
@@ -59,7 +54,6 @@ export default function FieldOptionsEditor({
       score_value: 0,
     }
     onChange([...options, newOpt])
-    setIsOpen(true)
   }
 
   const updateOption = (id: string, label: string) => {
@@ -77,95 +71,86 @@ export default function FieldOptionsEditor({
   }
 
   return (
-    <div className="mt-2.5 border border-divider rounded-xl overflow-hidden transition-all duration-200">
+    <div className="mt-2.5 border border-divider rounded-xl overflow-hidden bg-card">
       {/* Preset strip */}
-      <div className="px-3 py-2.5 bg-surface border-b border-divider flex flex-wrap items-center gap-1.5">
+      <div className="px-3 py-2 bg-surface border-b border-divider flex flex-wrap items-center gap-1.5">
         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mr-1">
-          Preset:
+          Preset Pilihan:
         </span>
         {BUILT_IN_RESPONSE_SETS.map((set) => (
           <button
             key={set.id}
+            type="button"
             onClick={() => applyPreset(set.id)}
             className="px-2.5 py-1 text-[11px] font-semibold rounded-full bg-card border border-divider text-muted-foreground hover:border-primary-blue/40 hover:text-primary-blue hover:bg-primary-blue/5 transition-all"
           >
             {set.name}
           </button>
         ))}
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="ml-auto text-[11px] font-semibold text-primary-blue hover:text-primary-blue-dark"
-        >
-          {isOpen ? 'Tutup' : `${options.length} opsi`}
-        </button>
       </div>
 
-      {/* Expandable options list */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateRows: isOpen ? '1fr' : '0fr',
-          transition: 'grid-template-rows 220ms ease',
-        }}
-      >
-        <div style={{ overflow: 'hidden' }}>
-          <div className="px-3 py-2 space-y-1.5 bg-card">
-            {options.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-2">
-                Belum ada opsi. Pilih preset atau tambah manual.
-              </p>
-            ) : (
-              options.map((opt, idx) => {
-                // try to infer a color based on index / common labels
-                const labelLower = opt.label.toLowerCase()
-                const inferredColor: ResponseColor =
-                  labelLower.includes('good') || labelLower.includes('safe') || labelLower.includes('pass') || labelLower.includes('yes') || labelLower.includes('compliant')
-                    ? 'green'
-                    : labelLower.includes('poor') || labelLower.includes('fail') || labelLower.includes('no') || labelLower.includes('non') || labelLower.includes('risk')
-                    ? 'red'
-                    : labelLower.includes('fair') || labelLower.includes('partial')
-                    ? 'amber'
-                    : labelLower.includes('n/a')
-                    ? 'neutral'
-                    : COLOR_OPTIONS[idx % COLOR_OPTIONS.length]
-
-                const styles = COLOR_STYLES[inferredColor]
-                return (
-                  <div
-                    key={opt.id}
-                    className="flex items-center gap-2 group"
-                    style={{
-                      animation: 'slideInDown 180ms ease forwards',
-                    }}
-                  >
-                    <div className={cn('w-2 h-2 rounded-full shrink-0', styles.dot)} />
-                    <input
-                      type="text"
-                      value={opt.label}
-                      onChange={(e) => updateOption(opt.id, e.target.value)}
-                      placeholder={`Opsi ${idx + 1}`}
-                      className="flex-1 text-xs font-medium text-foreground bg-surface border border-transparent rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-primary-blue/40 focus:ring-1 focus:ring-primary-blue/20 placeholder:text-muted-foreground/50 transition-all"
-                    />
-                    <button
-                      onClick={() => removeOption(opt.id)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-danger-red/10 hover:text-danger-red text-muted-foreground"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                )
-              })
-            )}
-
-            <button
-              onClick={addOption}
-              className="flex items-center gap-1.5 mt-1 text-xs font-semibold text-primary-blue hover:text-primary-blue-dark transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Tambah opsi
-            </button>
+      {/* Options list */}
+      <div className="px-3 py-3 space-y-2">
+        {options.length === 0 ? (
+          <div className="text-center py-4 bg-surface/50 rounded-lg border border-dashed border-divider">
+            <p className="text-xs text-muted-foreground">
+              Belum ada opsi jawaban. Pilih preset di atas atau tambah manual.
+            </p>
           </div>
-        </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {options.map((opt, idx) => {
+              // try to infer a color based on index / common labels
+              const labelLower = opt.label.toLowerCase()
+              const inferredColor: ResponseColor =
+                labelLower.includes('good') || labelLower.includes('safe') || labelLower.includes('pass') || labelLower.includes('yes') || labelLower.includes('compliant')
+                  ? 'green'
+                  : labelLower.includes('poor') || labelLower.includes('fail') || labelLower.includes('no') || labelLower.includes('non') || labelLower.includes('risk')
+                  ? 'red'
+                  : labelLower.includes('fair') || labelLower.includes('partial')
+                  ? 'amber'
+                  : labelLower.includes('n/a')
+                  ? 'neutral'
+                  : COLOR_OPTIONS[idx % COLOR_OPTIONS.length]
+
+              const styles = COLOR_STYLES[inferredColor]
+              return (
+                <div
+                  key={opt.id}
+                  className="flex items-center gap-2 bg-surface p-1.5 rounded-lg border border-divider group hover:border-muted-foreground/30 transition-all"
+                  style={{
+                    animation: 'slideInDown 180ms ease forwards',
+                  }}
+                >
+                  <div className={cn('w-2.5 h-2.5 rounded-full shrink-0 ml-1', styles.dot)} />
+                  <input
+                    type="text"
+                    value={opt.label}
+                    onChange={(e) => updateOption(opt.id, e.target.value)}
+                    placeholder={`Opsi ${idx + 1}`}
+                    className="flex-1 text-xs font-semibold text-foreground bg-transparent border-none focus:outline-none placeholder:text-muted-foreground/45"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeOption(opt.id)}
+                    className="p-1 rounded hover:bg-danger-red/10 text-muted-foreground hover:text-danger-red transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={addOption}
+          className="flex items-center gap-1.5 text-xs font-bold text-primary-blue hover:text-primary-blue-dark transition-colors px-2 py-1 rounded hover:bg-primary-blue/5"
+        >
+          <Plus className="w-4 h-4" />
+          Tambah Opsi Jawaban
+        </button>
       </div>
     </div>
   )

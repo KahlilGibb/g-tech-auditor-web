@@ -57,7 +57,16 @@ export const useProfileStore = create<ProfileStoreState>()(
         set({ isLoading: true, error: null })
         try {
           const serverProfile = await profileService.getProfile()
-          set({ profile: serverProfile, isLoading: false })
+          set(state => ({
+            profile: {
+              ...state.profile,
+              ...serverProfile,
+              fullName: serverProfile.fullName || state.profile.fullName,
+              role: serverProfile.role || state.profile.role,
+              avatarBase64: serverProfile.avatarBase64 || state.profile.avatarBase64,
+            },
+            isLoading: false
+          }))
         } catch (e) {
           if (e instanceof ProfileNotFoundError) {
             // No server profile yet — keep local defaults, not an error

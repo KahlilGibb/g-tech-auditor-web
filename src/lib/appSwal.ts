@@ -61,19 +61,6 @@ const modal = Swal.mixin({
   customClass,
 });
 
-const toast = Swal.mixin({
-  toast: true,
-  position: 'top-end',
-  timer: 2600,
-  timerProgressBar: true,
-  showConfirmButton: false,
-  customClass: {
-    popup: 'gtech-swal-toast',
-    title: 'gtech-swal-toast-title',
-    htmlContainer: 'gtech-swal-toast-html',
-  },
-});
-
 async function confirm({
   title,
   text,
@@ -101,10 +88,12 @@ async function confirm({
 }
 
 async function success({ title, text }: AlertOptions) {
-  void toast.fire({
+  await modal.fire({
     title,
     text,
     icon: 'success',
+    showConfirmButton: false,
+    timer: 2000,
   });
 }
 

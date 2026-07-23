@@ -558,7 +558,7 @@ export const permissionService = {
 export const branchService = {
   async getBranches(query?: GetGroupsRequest): Promise<GetGroupsResponse> {
     try {
-      const response = await apiClient.get(API_ENDPOINTS.BRANCHES.LIST, {
+      const response = await apiClient.get(API_ENDPOINTS.GROUPS.LIST, {
         params: queryParams(query),
       });
       const branches = unwrapList<unknown>(response.data).map(normalizeBranch);
@@ -574,7 +574,7 @@ export const branchService = {
 
   async list(query?: ListQuery): Promise<Branch[]> {
     try {
-      const response = await apiClient.get(API_ENDPOINTS.BRANCHES.LIST, {
+      const response = await apiClient.get(API_ENDPOINTS.GROUPS.LIST, {
         params: queryParams(query),
       });
       return unwrapList<unknown>(response.data).map(normalizeBranch);
@@ -586,7 +586,7 @@ export const branchService = {
 
   async getById(id: string): Promise<Branch> {
     try {
-      const response = await apiClient.get(API_ENDPOINTS.BRANCHES.DETAIL(id));
+      const response = await apiClient.get(API_ENDPOINTS.GROUPS.DETAIL(id));
       return normalizeBranch(unwrapData(response.data));
     } catch (error) {
       if (error instanceof MockInterceptError) return mockBranchApi.getById(id);
@@ -596,7 +596,7 @@ export const branchService = {
 
   async create(input: BranchFormInput): Promise<Branch> {
     try {
-      const response = await apiClient.post(API_ENDPOINTS.BRANCHES.CREATE, branchPayload(input));
+      const response = await apiClient.post(API_ENDPOINTS.GROUPS.CREATE, branchPayload(input));
       return normalizeBranch(unwrapData(response.data));
     } catch (error) {
       if (error instanceof MockInterceptError) return mockBranchApi.create(input);
@@ -606,7 +606,7 @@ export const branchService = {
 
   async update(id: string, input: BranchFormInput): Promise<Branch> {
     try {
-      const response = await apiClient.put(API_ENDPOINTS.BRANCHES.UPDATE(id), branchPayload(input));
+      const response = await apiClient.put(API_ENDPOINTS.GROUPS.UPDATE(id), branchPayload(input));
       return normalizeBranch(unwrapData(response.data));
     } catch (error) {
       if (error instanceof MockInterceptError) return mockBranchApi.update(id, input);
@@ -616,7 +616,7 @@ export const branchService = {
 
   async remove(id: string): Promise<void> {
     try {
-      await apiClient.delete(API_ENDPOINTS.BRANCHES.DELETE(id));
+      await apiClient.delete(API_ENDPOINTS.GROUPS.DELETE(id));
     } catch (error) {
       if (error instanceof MockInterceptError) return mockBranchApi.remove(id);
       throw error;
@@ -625,7 +625,7 @@ export const branchService = {
 
   async getUsers(id: string, query?: ListQuery): Promise<ManagementUser[]> {
     try {
-      const response = await apiClient.get(API_ENDPOINTS.BRANCHES.USERS(id), {
+      const response = await apiClient.get(API_ENDPOINTS.GROUPS.USERS(id), {
         params: queryParams(query),
       });
       return unwrapList<unknown>(response.data).map(normalizeUser);
@@ -637,7 +637,7 @@ export const branchService = {
 
   async assignUser(branchId: string, userId: string): Promise<void> {
     try {
-      await apiClient.post(API_ENDPOINTS.BRANCHES.USERS(branchId), { user_id: userId });
+      await apiClient.post(API_ENDPOINTS.GROUPS.USERS(branchId), { user_id: userId });
     } catch (error) {
       if (error instanceof MockInterceptError) return mockBranchApi.assignUser(branchId, userId);
       throw error;
@@ -646,7 +646,7 @@ export const branchService = {
 
   async removeUser(branchId: string, userId: string): Promise<void> {
     try {
-      await apiClient.delete(API_ENDPOINTS.BRANCHES.USER(branchId, userId));
+      await apiClient.delete(API_ENDPOINTS.GROUPS.USER(branchId, userId));
     } catch (error) {
       if (error instanceof MockInterceptError) return mockBranchApi.removeUser(branchId, userId);
       throw error;
@@ -655,7 +655,7 @@ export const branchService = {
 
   async listTrash(): Promise<Branch[]> {
     try {
-      const response = await apiClient.get(API_ENDPOINTS.BRANCHES.TRASH);
+      const response = await apiClient.get(API_ENDPOINTS.GROUPS.TRASH);
       return unwrapList<unknown>(response.data).map(normalizeBranch);
     } catch (error) {
       if (error instanceof MockInterceptError) return mockBranchApi.listTrash();
@@ -665,7 +665,7 @@ export const branchService = {
 
   async restore(id: string): Promise<void> {
     try {
-      await apiClient.post(API_ENDPOINTS.BRANCHES.RESTORE(id));
+      await apiClient.post(API_ENDPOINTS.GROUPS.RESTORE(id));
     } catch (error) {
       if (error instanceof MockInterceptError) return mockBranchApi.restore(id);
       throw error;
@@ -674,7 +674,7 @@ export const branchService = {
 
   async permanentDelete(id: string): Promise<void> {
     try {
-      await apiClient.delete(API_ENDPOINTS.BRANCHES.PERMANENT_DELETE(id));
+      await apiClient.delete(API_ENDPOINTS.GROUPS.PERMANENT_DELETE(id));
     } catch (error) {
       if (error instanceof MockInterceptError) return mockBranchApi.permanentDelete(id);
       throw error;

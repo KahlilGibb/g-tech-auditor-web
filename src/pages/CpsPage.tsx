@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 import {
-  Search,
   ListTodo,
   Presentation,
   CheckCircle2,
@@ -9,7 +10,6 @@ import {
   Trophy,
   ChevronLeft,
   ChevronRight,
-  Loader2,
   Calendar,
   AlertTriangle
 } from 'lucide-react';
@@ -19,7 +19,23 @@ import SkeletonCard from '../components/ui/SkeletonLoader';
 import { useAuth } from '../hooks/useAuth';
 import { isAdminRole } from '../constants/rbac';
 import { cpsService } from '../services/cpsService';
+import { branchService } from '../services/managementService';
+import { inspectionService } from '../services/inspectionService';
+import { getApiErrorMessage } from '../lib/apiResponse';
 import type { WeeklyCpsScores } from '../types/cps';
+import {
+  Badge,
+  Card,
+  EmptyState,
+  IconButton,
+  PageHeader,
+  ProgressBar,
+  SearchInput,
+  Spinner,
+  Tabs,
+  Td,
+  Th,
+} from '../components/ui';
 
 type Tab = 'templates' | 'progress' | 'rankings';
 type CpsStatus = 'Dinilai' | 'Belum Dinilai';
@@ -73,11 +89,94 @@ const PROGRESS_FILTERS: Array<CpsStatus | 'Semua'> = ['Semua', 'Dinilai', 'Belum
 const CpsPage: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { templates, isLoading: templatesLoading } = useTemplates();
   
   const [activeTab, setActiveTab] = useState<Tab>('templates');
   const [activeFilter, setActiveFilter] = useState<CpsStatus | 'Semua'>('Semua');
   const [query, setQuery] = useState('');
+
+  const cpsTemplates = useMemo(() => {
+    return templates.filter(t => t.form_type === 'cps');
+  }, [templates]);
+
+  const handleStartCps = async (templateId: string) => {
+    const target = templates.find(t => t.id === templateId);
+    if (!target) return;
+
+    void Swal.fire({
+      title: 'Memuat data cabang...',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    try {
+      const branches = await branchService.list();
+      Swal.close();
+
+      if (!branches.length) {
+        await Swal.fire({
+          title: 'Tidak Ada Cabang',
+          text: 'Silakan daftarkan cabang terlebih dahulu.',
+          icon: 'error',
+        });
+        return;
+      }
+
+      const options: Record<string, string> = {};
+      branches.forEach((b: any) => {
+        options[b.id] = b.name;
+      });
+
+      const { value: branchId } = await Swal.fire({
+        title: 'Mulai Pengisian CPS Baru',
+        text: `Template: ${target.name}`,
+        input: 'select',
+        inputOptions: options,
+        inputPlaceholder: 'Pilih Cabang / Target Group',
+        showCancelButton: true,
+        confirmButtonText: 'Mulai',
+        cancelButtonText: 'Batal',
+        customClass: {
+          popup: 'gtech-swal-popup',
+          confirmButton: 'gtech-swal-confirm',
+          cancelButton: 'gtech-swal-cancel',
+          input: 'form-input'
+        },
+        buttonsStyling: false,
+        inputValidator: (value) => {
+          if (!value) {
+            return 'Anda harus memilih cabang!';
+          }
+          return null;
+        }
+      });
+
+      if (!branchId) return;
+
+      const title = `CPS / ${options[branchId]}`;
+
+      const result = await inspectionService.createInspection({
+        templateId,
+        site: options[branchId],
+        assignee: user?.name || 'Inspector',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        groupId: branchId,
+        title,
+      });
+
+      navigate(`/cps/session/${result.id}`);
+    } catch (err) {
+      console.error(err);
+      Swal.fire({
+        title: 'Gagal Memulai CPS',
+        text: getApiErrorMessage(err),
+        icon: 'error',
+      });
+    }
+  };
 
   // Weekly Rankings States
   const [weeklyScores, setWeeklyScores] = useState<WeeklyCpsScores | null>(null);
@@ -136,272 +235,237 @@ const CpsPage: React.FC = () => {
     return [...weeklyScores.dealers].sort((a, b) => b.percentage - a.percentage);
   }, [weeklyScores]);
 
+  const scoreTone = (score: number | null) =>
+    score === null ? 'text-stone' : score > 0.6 ? 'text-success-green' : score > 0 ? 'text-warning-amber' : 'text-danger-red';
+
   return (
     <div className="page-shell">
-      {/* Header */}
-      <div>
-        <h1 className="page-title">{t('cps.title')}</h1>
-        <p className="page-subtitle">{t('cps.subtitle')}</p>
-      </div>
+      <PageHeader eyebrow="Compliance scoring" title={t('cps.title')} subtitle={t('cps.subtitle')} />
 
       {/* Tabs */}
-      <div className="flex w-full rounded-lg border border-divider bg-card p-1 shadow-sm sm:w-fit">
-        <button
-          onClick={() => setActiveTab('templates')}
-          className={cn(
-            "flex-1 sm:flex-none px-6 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2",
-            activeTab === 'templates' ? "bg-primary-blue text-[#181a20] shadow-sm" : "text-muted-foreground hover:bg-surface hover:text-foreground"
-          )}
-        >
-          <ListTodo className="w-4 h-4" />
-          Templates
-        </button>
-        <button
-          onClick={() => setActiveTab('progress')}
-          className={cn(
-            "flex-1 sm:flex-none px-6 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2",
-            activeTab === 'progress' ? "bg-primary-blue text-[#181a20] shadow-sm" : "text-muted-foreground hover:bg-surface hover:text-foreground"
-          )}
-        >
-          <Presentation className="w-4 h-4" />
-          Progress
-        </button>
-        {isAdmin && (
-          <button
-            onClick={() => setActiveTab('rankings')}
-            className={cn(
-              "flex-1 sm:flex-none px-6 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2",
-              activeTab === 'rankings' ? "bg-primary-blue text-[#181a20] shadow-sm" : "text-muted-foreground hover:bg-surface hover:text-foreground"
-            )}
-          >
-            <Trophy className="w-4 h-4" />
-            Rekap Mingguan
-          </button>
-        )}
-      </div>
+      <Tabs
+        value={activeTab}
+        onChange={setActiveTab}
+        tabs={[
+          { value: 'templates', label: (<span className="flex items-center gap-2"><ListTodo className="h-4 w-4" />Templates</span>) as unknown as string },
+          { value: 'progress', label: (<span className="flex items-center gap-2"><Presentation className="h-4 w-4" />Progress</span>) as unknown as string },
+          ...(isAdmin
+            ? [{ value: 'rankings' as Tab, label: (<span className="flex items-center gap-2"><Trophy className="h-4 w-4" />Rekap Mingguan</span>) as unknown as string }]
+            : []),
+        ]}
+      />
 
-      {/* Main Area */}
-      <div className="panel min-h-[400px] overflow-hidden">
-        {activeTab === 'templates' && (
-          <div className="p-6 space-y-4">
-            {templatesLoading ? (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"><SkeletonCard /></div>
-            ) : templates.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">{t('cps.empty')}</div>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {templates.map(t => (
-                  <div key={t.id} className="p-5 rounded-2xl border border-divider hover:border-primary-blue/30 transition-colors cursor-pointer bg-surface/30">
-                    <h3 className="font-bold text-foreground">{t.name}</h3>
-                    <p className="text-xs text-muted-foreground mt-1">{t.description}</p>
-                    <div className="mt-4 pt-4 border-t border-divider flex justify-between items-center text-xs text-muted-foreground">
-                      <span>{t.author}</span>
-                      <span>{t.questionCount} Questions</span>
-                    </div>
+      {/* Main area */}
+      {activeTab === 'templates' && (
+        <div>
+          {templatesLoading ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <SkeletonCard />
+            </div>
+          ) : cpsTemplates.length === 0 ? (
+            <Card>
+              <EmptyState icon={<ListTodo className="h-6 w-6" />} title={t('cps.empty')} />
+            </Card>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {cpsTemplates.map(tpl => (
+                <Card key={tpl.id} interactive padded onClick={() => handleStartCps(tpl.id)} className="rounded-2xl">
+                  <h3 className="font-semibold text-ink-deep">{tpl.name}</h3>
+                  <p className="mt-1 text-xs leading-relaxed text-stone">{tpl.description}</p>
+                  <div className="mt-4 flex items-center justify-between border-t border-hairline-soft pt-4 text-xs text-stone">
+                    <span>{tpl.author}</span>
+                    <Badge tone="neutral">{tpl.questionCount} Questions</Badge>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'progress' && (
-          <div>
-            <div className="p-6 border-b border-divider flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-surface/30">
-               <div className="relative w-full sm:max-w-xs">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input
-                    type="text" 
-                    placeholder="Search progress..." 
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    className="form-input pl-9"
-                  />
-                </div>
-                <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0 hide-scrollbar">
-                  {PROGRESS_FILTERS.map(f => (
-                    <button
-                      key={f}
-                      onClick={() => setActiveFilter(f)}
-                      className={cn(
-                        "whitespace-nowrap px-4 py-2 rounded-lg text-sm font-semibold transition-colors border",
-                        activeFilter === f 
-                          ? "bg-primary-blue text-[#181a20] border-primary-blue" 
-                          : "bg-card text-muted-foreground border-divider hover:bg-surface"
-                      )}
-                    >
-                      {f}
-                    </button>
-                  ))}
-                </div>
+                </Card>
+              ))}
             </div>
+          )}
+        </div>
+      )}
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="table-header">
+      {activeTab === 'progress' && (
+        <Card className="overflow-hidden">
+          <div className="flex flex-col items-start justify-between gap-4 border-b border-hairline-soft bg-surface/40 p-5 sm:flex-row sm:items-center">
+            <SearchInput
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Search progress..."
+              wrapClassName="sm:max-w-xs"
+            />
+            <div className="hide-scrollbar flex w-full gap-2 overflow-x-auto pb-1 sm:w-auto sm:pb-0">
+              {PROGRESS_FILTERS.map(f => (
+                <button
+                  key={f}
+                  onClick={() => setActiveFilter(f)}
+                  className={cn(
+                    'whitespace-nowrap rounded-full border px-4 py-2 text-[13px] font-semibold transition-colors',
+                    activeFilter === f
+                      ? 'border-ink-deep bg-ink-deep text-white'
+                      : 'border-hairline-soft bg-card text-slate hover:bg-surface hover:text-ink-deep',
+                  )}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="table-header">
+                <tr>
+                  <Th>Assessment</Th>
+                  <Th>Location</Th>
+                  <Th>Status</Th>
+                  <Th className="text-right">Score</Th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-hairline-soft">
+                {filteredInspections.length === 0 ? (
                   <tr>
-                    <th className="px-6 py-4">Assessment</th>
-                    <th className="px-6 py-4">Location</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4 text-right">Score</th>
+                    <td colSpan={4}>
+                      <EmptyState icon={<Presentation className="h-6 w-6" />} title="No progress records found." />
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-divider">
-                  {filteredInspections.length === 0 ? (
-                    <tr><td colSpan={4} className="text-center py-12 text-muted-foreground">No progress records found.</td></tr>
-                  ) : (
-                    filteredInspections.map(item => (
-                      <tr key={item.id} className="hover:bg-surface/50 transition-colors">
-                        <td className="px-6 py-4">
-                          <p className="font-semibold text-foreground text-sm">{item.title}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{item.templateName} &middot; {item.date}</p>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-foreground">{item.site}</td>
-                        <td className="px-6 py-4">
-                          <span className={cn(
-                            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
-                            item.status === 'Dinilai' ? "bg-success-green/10 text-success-green" : "bg-danger-red/10 text-danger-red"
-                          )}>
-                            {item.status === 'Dinilai' ? <CheckCircle2 className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
-                            {item.status}
+                ) : (
+                  filteredInspections.map(item => (
+                    <tr key={item.id} className="transition-colors hover:bg-surface/60">
+                      <Td>
+                        <p className="text-sm font-semibold text-ink-deep">{item.title}</p>
+                        <p className="mt-0.5 text-xs text-stone">
+                          {item.templateName} &middot; {item.date}
+                        </p>
+                      </Td>
+                      <Td className="text-sm text-charcoal">{item.site}</Td>
+                      <Td>
+                        <Badge tone={item.status === 'Dinilai' ? 'success' : 'danger'}>
+                          {item.status === 'Dinilai' ? <CheckCircle2 className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
+                          {item.status}
+                        </Badge>
+                      </Td>
+                      <Td className="text-right">
+                        <div className="flex flex-col items-end">
+                          <span className={cn('text-lg font-semibold tabular-nums', scoreTone(item.score))}>
+                            {item.score !== null ? item.score : '—'}
                           </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex flex-col items-end">
-                            <span className={cn(
-                              "font-bold text-lg",
-                              item.score === null ? "text-muted-foreground" :
-                              item.score > 0.6 ? "text-success-green" : 
-                              item.score > 0 ? "text-warning-amber" : "text-danger-red"
-                            )}>
-                              {item.score !== null ? item.score : '-'}
+                          {item.scoreNote && item.scoreNote !== '-' && (
+                            <span className="max-w-[150px] truncate text-[10px] text-stone" title={item.scoreNote}>
+                              {item.scoreNote}
                             </span>
-                            {item.scoreNote && item.scoreNote !== '-' && (
-                              <span className="text-[10px] text-muted-foreground max-w-[150px] truncate" title={item.scoreNote}>
-                                {item.scoreNote}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                          )}
+                        </div>
+                      </Td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {activeTab === 'rankings' && (
+        <Card className="overflow-hidden">
+          <div className="flex flex-col items-start justify-between gap-4 border-b border-hairline-soft bg-surface/40 p-5 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-stone" />
+              <span className="text-sm font-semibold text-ink-deep">Minggu Penilaian</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <IconButton onClick={handlePrevWeek} disabled={rankingsLoading} aria-label="Minggu sebelumnya">
+                <ChevronLeft className="h-4 w-4" />
+              </IconButton>
+              <span className="rounded-full border border-hairline-soft bg-card px-3 py-1.5 font-mono text-sm text-ink-deep">
+                {currentWeekStart} s/d {weeklyScores?.weekEnd || '-'}
+              </span>
+              <IconButton onClick={handleNextWeek} disabled={rankingsLoading} aria-label="Minggu berikutnya">
+                <ChevronRight className="h-4 w-4" />
+              </IconButton>
             </div>
           </div>
-        )}
 
-        {activeTab === 'rankings' && (
-          <div>
-            <div className="p-6 border-b border-divider flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-surface/30">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-muted-foreground" />
-                <span className="text-sm font-semibold text-foreground">Minggu Penilaian</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <button className="icon-button" onClick={handlePrevWeek} disabled={rankingsLoading}>
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <span className="text-sm font-mono bg-card border border-divider px-3 py-1.5 rounded-lg text-foreground shadow-sm">
-                  {currentWeekStart} s/d {weeklyScores?.weekEnd || '-'}
-                </span>
-                <button className="icon-button" onClick={handleNextWeek} disabled={rankingsLoading}>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="table-header">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="table-header">
+                <tr>
+                  <Th className="w-16 text-center">Rank</Th>
+                  <Th>Dealer</Th>
+                  <Th>Skor Total</Th>
+                  <Th>Kepatuhan</Th>
+                  <Th>Sesi Selesai</Th>
+                  <Th className="text-right">Keterangan</Th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-hairline-soft">
+                {rankingsLoading ? (
                   <tr>
-                    <th className="px-6 py-4 w-16 text-center">Rank</th>
-                    <th className="px-6 py-4">Dealer</th>
-                    <th className="px-6 py-4">Skor Total</th>
-                    <th className="px-6 py-4">Kepatuhan</th>
-                    <th className="px-6 py-4">Sesi Selesai</th>
-                    <th className="px-6 py-4 text-right">Keterangan</th>
+                    <td colSpan={6} className="py-12 text-center">
+                      <Spinner className="mx-auto h-6 w-6 text-primary-blue" />
+                      <p className="mt-2 text-xs text-stone">Memuat peringkat dealer...</p>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-divider">
-                  {rankingsLoading ? (
-                    <tr>
-                      <td colSpan={6} className="text-center py-12">
-                        <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary-blue" />
-                        <p className="text-xs text-muted-foreground mt-2">Memuat peringkat dealer...</p>
-                      </td>
-                    </tr>
-                  ) : sortedDealers.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="text-center py-12 text-muted-foreground">
-                        Tidak ada data peringkat pada minggu ini.
-                      </td>
-                    </tr>
-                  ) : (
-                    sortedDealers.map((dealer, idx) => {
-                      const rank = idx + 1;
-                      const isTop3 = rank <= 3;
-                      
-                      return (
-                        <tr key={dealer.groupId} className="hover:bg-surface/50 transition-colors">
-                          <td className="px-6 py-4 text-center font-bold">
-                            {isTop3 ? (
-                              <span className={cn(
-                                "inline-flex items-center justify-center w-6 h-6 rounded-full text-xs text-[#181a20]",
-                                rank === 1 ? "bg-amber-400" :
-                                rank === 2 ? "bg-slate-300" : "bg-amber-600"
-                              )}>
-                                {rank}
-                              </span>
-                            ) : rank}
-                          </td>
-                          <td className="px-6 py-4 font-semibold text-foreground text-sm">
-                            {dealer.dealerName}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-foreground">
-                            {dealer.totalScore} / {dealer.maxPossibleScore}
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2 max-w-[120px]">
-                              <div className="flex-1 bg-divider rounded-full h-2 overflow-hidden">
-                                <div 
-                                  className={cn(
-                                    "h-full rounded-full",
-                                    dealer.percentage >= 85 ? "bg-success-green" :
-                                    dealer.percentage >= 70 ? "bg-warning-amber" : "bg-danger-red"
-                                  )}
-                                  style={{ width: `${dealer.percentage}%` }}
-                                />
-                              </div>
-                              <span className="text-xs font-bold text-foreground">{dealer.percentage}%</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-foreground">
-                            {dealer.sessionsSubmitted} / {dealer.sessionsExpected}
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            {dealer.sessionsLate > 0 ? (
-                              <span className="inline-flex items-center gap-1 text-xs text-warning-amber bg-warning-amber/10 px-2 py-0.5 rounded-full font-medium">
-                                <AlertTriangle className="w-3.5 h-3.5" />
-                                {dealer.sessionsLate} Terlambat
-                              </span>
-                            ) : (
-                              <span className="text-xs text-success-green bg-success-green/10 px-2 py-0.5 rounded-full font-medium">
-                                Tepat Waktu
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+                ) : sortedDealers.length === 0 ? (
+                  <tr>
+                    <td colSpan={6}>
+                      <EmptyState icon={<Trophy className="h-6 w-6" />} title="Tidak ada data peringkat pada minggu ini." />
+                    </td>
+                  </tr>
+                ) : (
+                  sortedDealers.map((dealer, idx) => {
+                    const rank = idx + 1;
+                    const isTop3 = rank <= 3;
+                    return (
+                      <tr key={dealer.groupId} className="transition-colors hover:bg-surface/60">
+                        <Td className="text-center font-semibold">
+                          {isTop3 ? (
+                            <span
+                              className={cn(
+                                'inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-white',
+                                rank === 1 ? 'bg-warning-amber' : rank === 2 ? 'bg-stone' : 'bg-[oklch(52%_0.11_60)]',
+                              )}
+                            >
+                              {rank}
+                            </span>
+                          ) : (
+                            <span className="text-stone tabular-nums">{rank}</span>
+                          )}
+                        </Td>
+                        <Td className="text-sm font-semibold text-ink-deep">{dealer.dealerName}</Td>
+                        <Td className="text-sm text-charcoal tabular-nums">
+                          {dealer.totalScore} / {dealer.maxPossibleScore}
+                        </Td>
+                        <Td>
+                          <div className="flex max-w-[140px] items-center gap-2">
+                            <ProgressBar
+                              value={dealer.percentage}
+                              tone={dealer.percentage >= 85 ? 'success' : dealer.percentage >= 70 ? 'warning' : 'danger'}
+                              className="flex-1"
+                            />
+                            <span className="text-xs font-semibold text-ink-deep tabular-nums">{dealer.percentage}%</span>
+                          </div>
+                        </Td>
+                        <Td className="text-sm text-charcoal tabular-nums">
+                          {dealer.sessionsSubmitted} / {dealer.sessionsExpected}
+                        </Td>
+                        <Td className="text-right">
+                          {dealer.sessionsLate > 0 ? (
+                            <Badge tone="warning">
+                              <AlertTriangle className="h-3.5 w-3.5" />
+                              {dealer.sessionsLate} Terlambat
+                            </Badge>
+                          ) : (
+                            <Badge tone="success">Tepat Waktu</Badge>
+                          )}
+                        </Td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
-      </div>
+        </Card>
+      )}
     </div>
   );
 };

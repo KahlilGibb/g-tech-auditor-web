@@ -16,3 +16,26 @@ export interface NotificationItem {
   /** Optional deep-link route within the app */
   route?: string
 }
+
+// ─── Gotify types ─────────────────────────────────────────────────────────────
+
+export interface GotifyConfig {
+  url: string
+  client_token: string
+}
+
+export interface GotifyMessage {
+  id: number
+  appid: number
+  message: string
+  title: string
+  priority: number
+  extras?: {
+    app?: {
+      type?: NotificationType
+      route?: string
+    }
+    [key: string]: unknown
+  }
+  date: string
+}

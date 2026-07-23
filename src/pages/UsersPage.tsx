@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { BellPlus, Loader2, Pencil, Plus, RefreshCcw, Search, Trash2, UserPlus, Users, X } from 'lucide-react';
+import { BellPlus, Loader2, Pencil, Plus, RefreshCcw, Trash2, UserPlus, Users } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { useRoleStore } from '../stores/roleStore';
 import { useUserStore } from '../stores/userStore';
@@ -8,6 +8,24 @@ import { appSwal } from '../lib/appSwal';
 import { getApiErrorMessage } from '../lib/apiResponse';
 import { useTranslation } from 'react-i18next';
 import { Can } from '../components/rbac/Can';
+import {
+  Alert,
+  Badge,
+  Button,
+  EmptyState,
+  Field,
+  IconButton,
+  Input,
+  Modal,
+  PageHeader,
+  RowAction,
+  SearchInput,
+  Select,
+  Spinner,
+  TableWrap,
+  Td,
+  Th,
+} from '../components/ui';
 
 const EMPTY_FORM: UserFormInput = {
   username: '',
@@ -186,220 +204,201 @@ const UsersPage: React.FC = () => {
 
   return (
     <div className="page-shell">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Users</h1>
-          <p className="page-subtitle">Kelola akun, akses role, dan status user auditor.</p>
-        </div>
-        <div className="flex w-full items-center gap-3 sm:w-auto">
-          <Can resource="users" action="update">
-            <button className="btn-secondary flex-1 sm:flex-none" onClick={handleReconcileGotify} disabled={isReconcilingGotify}>
-              {isReconcilingGotify ? <Loader2 className="h-4 w-4 animate-spin" /> : <BellPlus className="h-4 w-4" />}
-              {t('users.gotify.reconcile')}
-            </button>
-          </Can>
-          <button className="icon-button" onClick={() => fetchUsers()} disabled={isLoading}>
-            <RefreshCcw className={cn('h-5 w-5', isLoading && 'animate-spin')} />
-          </button>
-          <Can resource="users" action="create">
-            <button className="btn-primary flex-1 sm:flex-none" onClick={openCreate}>
-              <UserPlus className="h-4 w-4" />
-              Tambah User
-            </button>
-          </Can>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Manajemen"
+        title="Users"
+        subtitle="Kelola akun, akses role, dan status user auditor."
+        actions={
+          <>
+            <Can resource="users" action="update">
+              <Button
+                variant="secondary"
+                className="flex-1 sm:flex-none"
+                onClick={handleReconcileGotify}
+                loading={isReconcilingGotify}
+                icon={!isReconcilingGotify ? <BellPlus className="h-4 w-4" /> : undefined}
+              >
+                {t('users.gotify.reconcile')}
+              </Button>
+            </Can>
+            <IconButton onClick={() => fetchUsers()} disabled={isLoading} aria-label="Refresh">
+              <RefreshCcw className={cn('h-5 w-5', isLoading && 'animate-spin')} />
+            </IconButton>
+            <Can resource="users" action="create">
+              <Button className="flex-1 sm:flex-none" onClick={openCreate} icon={<UserPlus className="h-4 w-4" />}>
+                Tambah User
+              </Button>
+            </Can>
+          </>
+        }
+      />
 
       <div className="toolbar">
-        <div className="relative w-full sm:max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={query}
-            onChange={event => setQuery(event.target.value)}
-            className="form-input pl-9"
-            placeholder="Cari nama, email, username, atau role..."
-          />
-        </div>
-        <div className="rounded-lg border border-divider bg-card px-3 py-2 text-sm text-muted-foreground shadow-sm">
+        <SearchInput
+          value={query}
+          onChange={event => setQuery(event.target.value)}
+          placeholder="Cari nama, email, username, atau role..."
+        />
+        <Badge tone="outline" className="px-3.5 py-2 text-xs">
           {filteredUsers.length} user
-        </div>
+        </Badge>
       </div>
 
-      {error && (
-        <div className="rounded-lg border border-danger-red/20 bg-danger-red/10 p-4 text-sm font-medium text-danger-red">
-          {error}
-        </div>
-      )}
+      {error && <Alert tone="danger">{error}</Alert>}
 
-      <div className="panel overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="table-header">
-              <tr>
-                <th className="px-6 py-4">User</th>
-                <th className="px-6 py-4">Role</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-divider">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-sm text-muted-foreground">
-                    Memuat user...
-                  </td>
-                </tr>
-              ) : filteredUsers.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-6 py-14 text-center">
-                    <Users className="mx-auto mb-3 h-10 w-10 text-muted-foreground/30" />
-                    <p className="text-sm font-semibold text-foreground">Belum ada user</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Data dari API /users akan tampil di sini.</p>
-                  </td>
-                </tr>
-              ) : (
-                filteredUsers.map(user => (
-                  <tr key={user.id} className="transition hover:bg-surface/60">
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-semibold text-foreground">{user.name}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {user.email} - @{user.username}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="rounded-full bg-primary-blue/10 px-2.5 py-1 text-xs font-semibold text-primary-blue">
-                        {user.roleName || '-'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="rounded-full bg-success-green/10 px-2.5 py-1 text-xs font-semibold capitalize text-success-green">
-                        {user.status || 'active'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="inline-flex items-center gap-1">
-                        <Can resource="users" action="update">
-                          <button
-                            className="rounded-lg p-2 text-muted-foreground transition hover:bg-primary-blue/10 hover:text-primary-blue disabled:opacity-50"
-                            onClick={() => handleProvisionGotify(user)}
-                            disabled={gotifyUserId === user.id}
-                            title={t('users.gotify.provision')}
-                          >
-                            {gotifyUserId === user.id
-                              ? <Loader2 className="h-4 w-4 animate-spin" />
-                              : <BellPlus className="h-4 w-4" />}
-                          </button>
-                          <button
-                            className="rounded-lg p-2 text-muted-foreground transition hover:bg-surface hover:text-foreground"
-                            onClick={() => openEdit(user)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                        </Can>
-                        <Can resource="users" action="delete">
-                          <button
-                            className="rounded-lg p-2 text-muted-foreground transition hover:bg-danger-red/10 hover:text-danger-red"
-                            onClick={() => handleDelete(user)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </Can>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-          <form onSubmit={handleSubmit} className="w-full max-w-xl rounded-lg border border-divider bg-card shadow-xl">
-            <div className="flex items-center justify-between border-b border-divider px-5 py-4">
-              <div>
-                <h2 className="text-base font-semibold text-foreground">
-                  {editingUser ? 'Edit User' : 'Tambah User'}
-                </h2>
-                <p className="text-xs text-muted-foreground">Field mengikuti kontrak API /users.</p>
-              </div>
-              <button type="button" onClick={() => setIsModalOpen(false)} className="rounded-lg p-2 hover:bg-surface">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="grid gap-4 p-5 sm:grid-cols-2">
-              {(formError || error) && (
-                <div className="rounded-lg border border-danger-red/20 bg-danger-red/10 p-3 text-sm text-danger-red sm:col-span-2">
-                  {formError || error}
-                </div>
-              )}
-
-              <label className="space-y-1.5">
-                <span className="text-xs font-semibold text-muted-foreground">Nama</span>
-                <input className="form-input" value={form.name} onChange={event => patchForm({ name: event.target.value })} />
-              </label>
-
-              <label className="space-y-1.5">
-                <span className="text-xs font-semibold text-muted-foreground">Username</span>
-                <input className="form-input" value={form.username} onChange={event => patchForm({ username: event.target.value })} />
-              </label>
-
-              <label className="space-y-1.5">
-                <span className="text-xs font-semibold text-muted-foreground">Email</span>
-                <input className="form-input" type="email" value={form.email} onChange={event => patchForm({ email: event.target.value })} />
-              </label>
-
-              <label className="space-y-1.5">
-                <span className="text-xs font-semibold text-muted-foreground">
-                  Password {editingUser && <span className="font-normal">(kosongkan bila tidak diganti)</span>}
-                </span>
-                <input
-                  className="form-input"
-                  type="password"
-                  value={form.password ?? ''}
-                  onChange={event => patchForm({ password: event.target.value })}
+      <TableWrap>
+        <thead className="table-header">
+          <tr>
+            <Th>User</Th>
+            <Th>Role</Th>
+            <Th>Status</Th>
+            <Th className="text-right">Aksi</Th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-hairline-soft">
+          {isLoading ? (
+            <tr>
+              <td colSpan={4} className="px-6 py-12 text-center text-sm text-stone">
+                <Spinner className="mx-auto h-6 w-6 text-primary-blue" />
+              </td>
+            </tr>
+          ) : filteredUsers.length === 0 ? (
+            <tr>
+              <td colSpan={4}>
+                <EmptyState
+                  icon={<Users className="h-6 w-6" />}
+                  title="Belum ada user"
+                  description="Data dari API /users akan tampil di sini."
                 />
-              </label>
+              </td>
+            </tr>
+          ) : (
+            filteredUsers.map(user => (
+              <tr key={user.id} className="transition hover:bg-surface/60">
+                <Td>
+                  <p className="text-sm font-semibold text-ink-deep">{user.name}</p>
+                  <p className="mt-0.5 text-xs text-stone">
+                    {user.email} - @{user.username}
+                  </p>
+                </Td>
+                <Td>
+                  <Badge tone="brand">{user.roleName || '-'}</Badge>
+                </Td>
+                <Td>
+                  <Badge tone={user.status === 'inactive' ? 'neutral' : 'success'} className="capitalize">
+                    {user.status || 'active'}
+                  </Badge>
+                </Td>
+                <Td className="text-right">
+                  <div className="inline-flex items-center gap-1">
+                    <Can resource="users" action="update">
+                      <RowAction
+                        tone="brand"
+                        onClick={() => handleProvisionGotify(user)}
+                        disabled={gotifyUserId === user.id}
+                        title={t('users.gotify.provision')}
+                        aria-label={t('users.gotify.provision')}
+                      >
+                        {gotifyUserId === user.id
+                          ? <Loader2 className="h-4 w-4 animate-spin" />
+                          : <BellPlus className="h-4 w-4" />}
+                      </RowAction>
+                      <RowAction onClick={() => openEdit(user)} aria-label="Edit">
+                        <Pencil className="h-4 w-4" />
+                      </RowAction>
+                    </Can>
+                    <Can resource="users" action="delete">
+                      <RowAction tone="danger" onClick={() => handleDelete(user)} aria-label="Delete">
+                        <Trash2 className="h-4 w-4" />
+                      </RowAction>
+                    </Can>
+                  </div>
+                </Td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </TableWrap>
 
-              <label className="space-y-1.5">
-                <span className="text-xs font-semibold text-muted-foreground">Role</span>
-                {roles.length > 0 ? (
-                  <select className="form-input" value={form.roleName} onChange={event => handleRoleChange(event.target.value)}>
-                    <option value="">Pilih role</option>
-                    {roles.map(role => (
-                      <option key={role.id} value={role.name}>
-                        {role.name}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input className="form-input" value={form.roleName} onChange={event => patchForm({ roleName: event.target.value })} />
-                )}
-              </label>
+      <Modal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        eyebrow={editingUser ? 'Edit' : 'Baru'}
+        title={editingUser ? 'Edit User' : 'Tambah User'}
+        subtitle="Field mengikuti kontrak API /users."
+        size="lg"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
+              Batal
+            </Button>
+            <Button
+              type="submit"
+              form="user-form"
+              loading={isSaving}
+              icon={!isSaving ? <Plus className="h-4 w-4" /> : undefined}
+            >
+              Simpan
+            </Button>
+          </>
+        }
+      >
+        <form id="user-form" onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
+          {(formError || error) && (
+            <Alert tone="danger" className="sm:col-span-2">
+              {formError || error}
+            </Alert>
+          )}
 
-              <label className="space-y-1.5">
-                <span className="text-xs font-semibold text-muted-foreground">Status</span>
-                <select className="form-input" value={form.status ?? 'active'} onChange={event => patchForm({ status: event.target.value })}>
-                  <option value="active">active</option>
-                  <option value="inactive">inactive</option>
-                </select>
-              </label>
-            </div>
+          <Field label="Nama">
+            <Input value={form.name} onChange={event => patchForm({ name: event.target.value })} />
+          </Field>
 
-            <div className="flex justify-end gap-3 border-t border-divider px-5 py-4">
-              <button type="button" className="btn-secondary" onClick={() => setIsModalOpen(false)}>
-                Batal
-              </button>
-              <button type="submit" className="btn-primary" disabled={isSaving}>
-                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                Simpan
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+          <Field label="Username">
+            <Input value={form.username} onChange={event => patchForm({ username: event.target.value })} />
+          </Field>
+
+          <Field label="Email">
+            <Input type="email" value={form.email} onChange={event => patchForm({ email: event.target.value })} />
+          </Field>
+
+          <Field
+            label={
+              <>
+                Password {editingUser && <span className="font-normal text-stone">(kosongkan bila tidak diganti)</span>}
+              </>
+            }
+          >
+            <Input
+              type="password"
+              value={form.password ?? ''}
+              onChange={event => patchForm({ password: event.target.value })}
+            />
+          </Field>
+
+          <Field label="Role">
+            {roles.length > 0 ? (
+              <Select value={form.roleName} onChange={event => handleRoleChange(event.target.value)}>
+                <option value="">Pilih role</option>
+                {roles.map(role => (
+                  <option key={role.id} value={role.name}>
+                    {role.name}
+                  </option>
+                ))}
+              </Select>
+            ) : (
+              <Input value={form.roleName} onChange={event => patchForm({ roleName: event.target.value })} />
+            )}
+          </Field>
+
+          <Field label="Status">
+            <Select value={form.status ?? 'active'} onChange={event => patchForm({ status: event.target.value })}>
+              <option value="active">active</option>
+              <option value="inactive">inactive</option>
+            </Select>
+          </Field>
+        </form>
+      </Modal>
     </div>
   );
 };

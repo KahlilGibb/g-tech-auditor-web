@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Building2, Loader2, Mail, Pencil, Phone, Plus, RefreshCcw, Search, Trash2, X } from 'lucide-react';
+import { Building2, Mail, Pencil, Phone, Plus, RefreshCcw, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getApiErrorMessage } from '../lib/apiResponse';
 import { appSwal } from '../lib/appSwal';
@@ -7,6 +7,25 @@ import { useOrganizationStore } from '../stores/organizationStore';
 import type { Organization, OrganizationFormInput } from '../types/management';
 import { cn } from '../utils/cn';
 import { Can } from '../components/rbac/Can';
+import {
+  Alert,
+  Badge,
+  Button,
+  EmptyState,
+  Field,
+  IconButton,
+  Input,
+  Modal,
+  PageHeader,
+  RowAction,
+  SearchInput,
+  Select,
+  Spinner,
+  TableWrap,
+  Td,
+  Textarea,
+  Th,
+} from '../components/ui';
 
 const EMPTY_FORM: OrganizationFormInput = {
   name: '',
@@ -124,206 +143,170 @@ const OrganizationsPage: React.FC = () => {
 
   return (
     <div className="page-shell">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Organizations</h1>
-          <p className="page-subtitle">Kelola data organisasi yang menjadi induk site dan branch.</p>
-        </div>
-        <div className="flex w-full items-center gap-3 sm:w-auto">
-          <button className="icon-button" onClick={() => fetchOrganizations()} disabled={isLoading}>
-            <RefreshCcw className={cn('h-5 w-5', isLoading && 'animate-spin')} />
-          </button>
-          <Can resource="organizations" action="create">
-            <button className="btn-primary flex-1 sm:flex-none" onClick={openCreate}>
-              <Plus className="h-4 w-4" />
-              Tambah Organization
-            </button>
-          </Can>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Organisasi"
+        title="Organizations"
+        subtitle="Kelola data organisasi yang menjadi induk site dan branch."
+        actions={
+          <>
+            <IconButton onClick={() => fetchOrganizations()} disabled={isLoading} aria-label="Refresh">
+              <RefreshCcw className={cn('h-5 w-5', isLoading && 'animate-spin')} />
+            </IconButton>
+            <Can resource="organizations" action="create">
+              <Button className="flex-1 sm:flex-none" onClick={openCreate} icon={<Plus className="h-4 w-4" />}>
+                Tambah Organization
+              </Button>
+            </Can>
+          </>
+        }
+      />
 
       <div className="toolbar">
-        <div className="relative w-full sm:max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={query}
-            onChange={event => setQuery(event.target.value)}
-            className="form-input pl-9"
-            placeholder="Cari organization, kode, email..."
-          />
-        </div>
-        <div className="rounded-lg border border-divider bg-card px-3 py-2 text-sm text-muted-foreground shadow-sm">
+        <SearchInput
+          value={query}
+          onChange={event => setQuery(event.target.value)}
+          placeholder="Cari organization, kode, email..."
+        />
+        <Badge tone="outline" className="px-3.5 py-2 text-xs">
           {filteredOrganizations.length} organization
-        </div>
+        </Badge>
       </div>
 
-      {error && (
-        <div className="rounded-lg border border-danger-red/20 bg-danger-red/10 p-4 text-sm font-medium text-danger-red">
-          {error}
-        </div>
-      )}
+      {error && <Alert tone="danger">{error}</Alert>}
 
-      <div className="panel overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="table-header">
-              <tr>
-                <th className="px-6 py-4">Organization</th>
-                <th className="px-6 py-4">Contact</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-divider">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-sm text-muted-foreground">
-                    Memuat organization...
-                  </td>
-                </tr>
-              ) : filteredOrganizations.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-6 py-14 text-center">
-                    <Building2 className="mx-auto mb-3 h-10 w-10 text-muted-foreground/30" />
-                    <p className="text-sm font-semibold text-foreground">Belum ada organization</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Data dari API /organizations akan tampil di sini.</p>
-                  </td>
-                </tr>
-              ) : (
-                filteredOrganizations.map(organization => (
-                  <tr key={organization.id} className="transition hover:bg-surface/60">
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-semibold text-foreground">{organization.name}</p>
-                      <p className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-primary-blue">
-                        {organization.code}
-                      </p>
-                      {organization.address && (
-                        <p className="mt-1 max-w-xl text-xs text-muted-foreground">{organization.address}</p>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1 text-sm text-muted-foreground">
-                        {organization.email && (
-                          <p className="flex items-center gap-2">
-                            <Mail className="h-3.5 w-3.5" />
-                            {organization.email}
-                          </p>
-                        )}
-                        {organization.phone && (
-                          <p className="flex items-center gap-2">
-                            <Phone className="h-3.5 w-3.5" />
-                            {organization.phone}
-                          </p>
-                        )}
-                        {!organization.email && !organization.phone && '-'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="rounded-full bg-success-green/10 px-2.5 py-1 text-xs font-semibold capitalize text-success-green">
-                        {organization.status || 'active'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="inline-flex items-center gap-1">
-                        <Can resource="organizations" action="update">
-                          <button
-                            className="rounded-lg p-2 text-muted-foreground transition hover:bg-surface hover:text-foreground"
-                            onClick={() => openEdit(organization)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                        </Can>
-                        <Can resource="organizations" action="delete">
-                          <button
-                            className="rounded-lg p-2 text-muted-foreground transition hover:bg-danger-red/10 hover:text-danger-red"
-                            onClick={() => handleDelete(organization)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </Can>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-          <form onSubmit={handleSubmit} className="w-full max-w-lg rounded-lg border border-divider bg-card shadow-xl">
-            <div className="flex items-center justify-between border-b border-divider px-5 py-4">
-              <div>
-                <h2 className="text-base font-semibold text-foreground">
-                  {editingOrganization ? 'Edit Organization' : 'Tambah Organization'}
-                </h2>
-                <p className="text-xs text-muted-foreground">Field mengikuti kontrak API /organizations.</p>
-              </div>
-              <button type="button" onClick={() => setIsModalOpen(false)} className="rounded-lg p-2 hover:bg-surface">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="space-y-4 p-5">
-              {(formError || error) && (
-                <div className="rounded-lg border border-danger-red/20 bg-danger-red/10 p-3 text-sm text-danger-red">
-                  {formError || error}
-                </div>
-              )}
-
-              <label className="space-y-1.5">
-                <span className="text-xs font-semibold text-muted-foreground">Nama Organization</span>
-                <input className="form-input" value={form.name} onChange={event => patchForm({ name: event.target.value })} />
-              </label>
-
-              <label className="space-y-1.5">
-                <span className="text-xs font-semibold text-muted-foreground">Kode</span>
-                <input className="form-input" value={form.code} onChange={event => patchForm({ code: event.target.value })} />
-              </label>
-
-              <label className="space-y-1.5">
-                <span className="text-xs font-semibold text-muted-foreground">Alamat</span>
-                <textarea
-                  className="form-input min-h-24"
-                  value={form.address ?? ''}
-                  onChange={event => patchForm({ address: event.target.value })}
+      <TableWrap>
+        <thead className="table-header">
+          <tr>
+            <Th>Organization</Th>
+            <Th>Contact</Th>
+            <Th>Status</Th>
+            <Th className="text-right">Aksi</Th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-hairline-soft">
+          {isLoading ? (
+            <tr>
+              <td colSpan={4} className="px-6 py-12 text-center text-sm text-stone">
+                <Spinner className="mx-auto h-6 w-6 text-primary-blue" />
+              </td>
+            </tr>
+          ) : filteredOrganizations.length === 0 ? (
+            <tr>
+              <td colSpan={4}>
+                <EmptyState
+                  icon={<Building2 className="h-6 w-6" />}
+                  title="Belum ada organization"
+                  description="Data dari API /organizations akan tampil di sini."
                 />
-              </label>
+              </td>
+            </tr>
+          ) : (
+            filteredOrganizations.map(organization => (
+              <tr key={organization.id} className="transition hover:bg-surface/60">
+                <Td>
+                  <p className="text-sm font-semibold text-ink-deep">{organization.name}</p>
+                  <p className="mt-0.5 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-primary-blue">
+                    {organization.code}
+                  </p>
+                  {organization.address && (
+                    <p className="mt-1 max-w-xl text-xs text-stone">{organization.address}</p>
+                  )}
+                </Td>
+                <Td>
+                  <div className="space-y-1 text-sm text-stone">
+                    {organization.email && (
+                      <p className="flex items-center gap-2">
+                        <Mail className="h-3.5 w-3.5" />
+                        {organization.email}
+                      </p>
+                    )}
+                    {organization.phone && (
+                      <p className="flex items-center gap-2">
+                        <Phone className="h-3.5 w-3.5" />
+                        {organization.phone}
+                      </p>
+                    )}
+                    {!organization.email && !organization.phone && '-'}
+                  </div>
+                </Td>
+                <Td>
+                  <Badge tone={organization.status === 'inactive' ? 'neutral' : 'success'} className="capitalize">
+                    {organization.status || 'active'}
+                  </Badge>
+                </Td>
+                <Td className="text-right">
+                  <div className="inline-flex items-center gap-1">
+                    <Can resource="organizations" action="update">
+                      <RowAction onClick={() => openEdit(organization)} aria-label="Edit">
+                        <Pencil className="h-4 w-4" />
+                      </RowAction>
+                    </Can>
+                    <Can resource="organizations" action="delete">
+                      <RowAction tone="danger" onClick={() => handleDelete(organization)} aria-label="Delete">
+                        <Trash2 className="h-4 w-4" />
+                      </RowAction>
+                    </Can>
+                  </div>
+                </Td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </TableWrap>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="space-y-1.5">
-                  <span className="text-xs font-semibold text-muted-foreground">Email</span>
-                  <input className="form-input" value={form.email ?? ''} onChange={event => patchForm({ email: event.target.value })} />
-                </label>
-                <label className="space-y-1.5">
-                  <span className="text-xs font-semibold text-muted-foreground">Telepon</span>
-                  <input className="form-input" value={form.phone ?? ''} onChange={event => patchForm({ phone: event.target.value })} />
-                </label>
-              </div>
-
-              <label className="space-y-1.5">
-                <span className="text-xs font-semibold text-muted-foreground">Status</span>
-                <select className="form-input" value={form.status ?? 'active'} onChange={event => patchForm({ status: event.target.value })}>
-                  <option value="active">active</option>
-                  <option value="inactive">inactive</option>
-                </select>
-              </label>
-            </div>
-
-            <div className="flex justify-end gap-3 border-t border-divider px-5 py-4">
-              <button type="button" className="btn-secondary" onClick={() => setIsModalOpen(false)}>
-                Batal
-              </button>
-              <button type="submit" className="btn-primary" disabled={isSaving}>
-                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                Simpan
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+      <Modal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        eyebrow={editingOrganization ? 'Edit' : 'Baru'}
+        title={editingOrganization ? 'Edit Organization' : 'Tambah Organization'}
+        subtitle="Field mengikuti kontrak API /organizations."
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
+              Batal
+            </Button>
+            <Button
+              type="submit"
+              form="organization-form"
+              loading={isSaving}
+              icon={!isSaving ? <Plus className="h-4 w-4" /> : undefined}
+            >
+              Simpan
+            </Button>
+          </>
+        }
+      >
+        <form id="organization-form" onSubmit={handleSubmit} className="space-y-4">
+          {(formError || error) && <Alert tone="danger">{formError || error}</Alert>}
+          <Field label="Nama Organization" required>
+            <Input value={form.name} onChange={event => patchForm({ name: event.target.value })} />
+          </Field>
+          <Field label="Kode" required>
+            <Input value={form.code} onChange={event => patchForm({ code: event.target.value })} />
+          </Field>
+          <Field label="Alamat">
+            <Textarea
+              rows={3}
+              value={form.address ?? ''}
+              onChange={event => patchForm({ address: event.target.value })}
+            />
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Email">
+              <Input value={form.email ?? ''} onChange={event => patchForm({ email: event.target.value })} />
+            </Field>
+            <Field label="Telepon">
+              <Input value={form.phone ?? ''} onChange={event => patchForm({ phone: event.target.value })} />
+            </Field>
+          </div>
+          <Field label="Status">
+            <Select value={form.status ?? 'active'} onChange={event => patchForm({ status: event.target.value })}>
+              <option value="active">active</option>
+              <option value="inactive">inactive</option>
+            </Select>
+          </Field>
+        </form>
+      </Modal>
     </div>
   );
 };

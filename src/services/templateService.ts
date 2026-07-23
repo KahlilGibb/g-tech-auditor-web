@@ -319,6 +319,7 @@ function defaultPassFailOptions(fieldId: string): FieldOption[] {
 function fieldPayload(field: TemplateField) {
   if (field.master_field_id) {
     return {
+      id: field.id,
       master_field_id: field.master_field_id,
       required: field.required,
       order: field.order,
@@ -334,6 +335,7 @@ function fieldPayload(field: TemplateField) {
   const rules = optionsToRules(options)
 
   return {
+    id: field.id,
     label: field.label,
     type: apiFieldType(field.type),
     required: field.required,
@@ -354,6 +356,7 @@ function templateBuildPayload(
   fields: Record<string, TemplateField[]>,
 ) {
   return {
+    id: template.id,
     type: template.form_type,
     title: template.title || 'Untitled Template',
     description: template.description || '',
@@ -362,6 +365,7 @@ function templateBuildPayload(
       .slice()
       .sort((a, b) => a.order - b.order)
       .map((section, index) => ({
+        id: section.id,
         title: section.title || 'Untitled Page',
         description: section.description || '',
         order: index + 1,
@@ -380,6 +384,9 @@ function templateListItem(raw: unknown): TemplateListItem {
     toNumberValue(record.question_count || record.questionCount || record.fields_count || record.fieldsCount) ||
     pages.reduce<number>((total, page) => total + toArray(toRecord(page).fields).length, 0)
 
+  const rawFormType = toStringValue(record.form_type || record.formType || record.type)
+  const form_type: import('../types/template').FormType = rawFormType === 'cps' ? 'cps' : 'inspection'
+
   return {
     id: toStringValue(record.id || record.template_id) || uid(),
     name: toStringValue(record.name || record.title) || 'Untitled Template',
@@ -394,6 +401,7 @@ function templateListItem(raw: unknown): TemplateListItem {
     modifiedDate:
       toStringValue(record.modified_date || record.modifiedDate || record.updated_at || record.updatedAt) ||
       '',
+    form_type,
   }
 }
 
@@ -563,6 +571,7 @@ export interface TemplateListItem {
   questionCount: number
   lastModified: string
   modifiedDate: string
+  form_type: import('../types/template').FormType
 }
 
 const MOCK_TEMPLATE_LIST: TemplateListItem[] = [
@@ -574,6 +583,7 @@ const MOCK_TEMPLATE_LIST: TemplateListItem[] = [
     questionCount: 21,
     lastModified: '27 Feb 2026',
     modifiedDate: '2026-02-27',
+    form_type: 'inspection',
   },
   {
     id: 'tpl-002',
@@ -583,6 +593,7 @@ const MOCK_TEMPLATE_LIST: TemplateListItem[] = [
     questionCount: 18,
     lastModified: '4 Feb 2026',
     modifiedDate: '2026-02-04',
+    form_type: 'inspection',
   },
   {
     id: 'tpl-003',
@@ -592,6 +603,17 @@ const MOCK_TEMPLATE_LIST: TemplateListItem[] = [
     questionCount: 20,
     lastModified: '4 Feb 2026',
     modifiedDate: '2026-02-04',
+    form_type: 'inspection',
+  },
+  {
+    id: 'cps-tmpl-1',
+    name: 'Daily CPS Sunter',
+    description: 'Checklist CPS Harian untuk Dealer Sunter.',
+    author: 'System',
+    questionCount: 2,
+    lastModified: '14 Jul 2026',
+    modifiedDate: '2026-07-14',
+    form_type: 'cps',
   },
 ]
 
@@ -791,6 +813,18 @@ export const templateService = {
             .sort((a, b) => a.order - b.order)
         }
         return { template, version, sections, fields }
+      }
+      throw e
+    }
+  },
+
+  async getTemplateEdit(templateId: string): Promise<TemplateWithVersion> {
+    try {
+      const res = await apiClient.get(API_ENDPOINTS.TEMPLATES.EDIT(templateId))
+      return normalizeTemplateTree(unwrapData(res.data), templateId)
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        return this.getTemplateWithVersion(templateId)
       }
       throw e
     }

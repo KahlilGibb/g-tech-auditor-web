@@ -10,9 +10,7 @@ import {
   ChevronDown,
   MoreVertical,
   ChevronUp,
-  AlertTriangle,
   Loader2,
-  CheckSquare,
   LayoutList,
   Send,
 } from 'lucide-react'
@@ -24,6 +22,7 @@ import FieldTypePicker from '../components/builder/FieldTypePicker'
 import FieldOptionsEditor from '../components/builder/FieldOptionsEditor'
 import { appSwal } from '../lib/appSwal'
 import { getApiErrorMessage } from '../lib/apiResponse'
+import { Alert, Badge, Button, Eyebrow, IconButton, Toggle } from '../components/ui'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -59,94 +58,87 @@ const FieldRow: React.FC<FieldRowProps> = ({
   onMoveDown,
   onOpenPicker,
 }) => {
-  const { t } = useTranslation()
   const color = fieldTypeColor(field.type)
   const label = fieldTypeLabel(field.type)
   const showOptions = HAS_OPTIONS.includes(field.type)
 
   return (
-    <div
-      className="bg-card rounded-xl border border-divider overflow-hidden group transition-shadow duration-150 hover:shadow-sm animate-slide-in-down"
-    >
-      {/* Main row */}
-      <div className="flex items-start gap-3 p-3">
-        {/* Up/Down handle */}
-        <div className="flex flex-col gap-0.5 mt-1 shrink-0">
-          <button
-            onClick={onMoveUp}
-            disabled={index === 0}
-            className="p-0.5 rounded hover:bg-surface disabled:opacity-20 text-muted-foreground hover:text-foreground transition-all"
-          >
-            <ChevronUp className="w-3 h-3" />
-          </button>
-          <button
-            onClick={onMoveDown}
-            disabled={index === total - 1}
-            className="p-0.5 rounded hover:bg-surface disabled:opacity-20 text-muted-foreground hover:text-foreground transition-all"
-          >
-            <ChevronDown className="w-3 h-3" />
-          </button>
+    <div className="group overflow-hidden rounded-2xl border border-hairline-soft bg-card transition-all hover:border-hairline hover:shadow-soft-sm animate-slide-in-down">
+      {/* Main card row */}
+      <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+        {/* Index & Reorder tools */}
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="w-6 rounded-lg border border-hairline-soft bg-surface py-0.5 text-center text-xs font-bold tabular-nums text-stone">
+            {index + 1}
+          </span>
+          <div className="flex gap-0.5 sm:flex-col">
+            <button
+              type="button"
+              onClick={onMoveUp}
+              disabled={index === 0}
+              className="rounded-lg p-1 text-slate transition-all hover:bg-surface hover:text-ink-deep disabled:opacity-20"
+            >
+              <ChevronUp className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={onMoveDown}
+              disabled={index === total - 1}
+              className="rounded-lg p-1 text-slate transition-all hover:bg-surface hover:text-ink-deep disabled:opacity-20"
+            >
+              <ChevronDown className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
 
-        {/* Label input */}
-        <input
-          type="text"
-          value={field.label}
-          onChange={(e) => onUpdate({ label: e.target.value })}
-          placeholder="Pertanyaan..."
-          className="flex-1 text-sm font-medium text-foreground bg-transparent border-none focus:outline-none placeholder:text-muted-foreground/40 py-0.5"
-        />
-
-        {/* Type button */}
-        <button
-          onClick={onOpenPicker}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-80 active:scale-95 shrink-0"
-          style={{
-            backgroundColor: hexAlpha(color, 0.12),
-            color,
-          }}
-        >
-          <span
-            className="w-2 h-2 rounded-full shrink-0"
-            style={{ backgroundColor: color }}
+        {/* Question Label Input */}
+        <div className="min-w-0 flex-1">
+          <input
+            type="text"
+            value={field.label}
+            onChange={(e) => onUpdate({ label: e.target.value })}
+            placeholder="Tulis Pertanyaan Anda..."
+            className="w-full border-none bg-transparent py-1 text-sm font-semibold text-ink-deep placeholder:text-stone/50 focus:outline-none"
           />
-          {label}
-        </button>
+        </div>
 
-        {/* Required toggle */}
-        <label className="flex items-center gap-1.5 shrink-0 cursor-pointer select-none">
-          <div
-            onClick={() => onUpdate({ required: !field.required })}
-            className={cn(
-              'w-4 h-4 rounded border-2 flex items-center justify-center transition-all cursor-pointer',
-              field.required
-                ? 'bg-primary-blue border-primary-blue'
-                : 'border-divider hover:border-primary-blue/50',
-            )}
+        {/* Right Area: Type, Required Switch, Delete */}
+        <div className="flex shrink-0 items-center justify-between gap-4 border-t border-hairline-soft pt-2 sm:justify-end sm:border-t-0 sm:pt-0">
+          {/* Picker Toggle */}
+          <button
+            type="button"
+            onClick={onOpenPicker}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-2 text-[11px] font-semibold transition-all hover:brightness-95 active:scale-95"
+            style={{
+              borderColor: hexAlpha(color, 0.35),
+              backgroundColor: hexAlpha(color, 0.06),
+              color,
+            }}
           >
-            {field.required && (
-              <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 10 10" fill="none">
-                <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            )}
-          </div>
-          <span className="text-[11px] text-muted-foreground font-medium hidden sm:inline">
-            {t('builder.requireQuestion')}
-          </span>
-        </label>
+            <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+            {label}
+          </button>
 
-        {/* Delete */}
-        <button
-          onClick={onDelete}
-          className="p-1.5 rounded-lg text-muted-foreground hover:text-danger-red hover:bg-danger-red/5 transition-all opacity-0 group-hover:opacity-100 shrink-0"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
+          {/* Required Switch */}
+          <label className="flex shrink-0 cursor-pointer select-none items-center gap-2">
+            <Toggle
+              checked={field.required}
+              onChange={() => onUpdate({ required: !field.required })}
+              label="Wajib"
+            />
+            <span className="text-[11px] font-semibold text-stone">Wajib</span>
+          </label>
+
+          {/* Delete Button */}
+          <IconButton tone="danger" onClick={onDelete} aria-label="Hapus" className="h-9 w-9 shrink-0 border-transparent bg-transparent">
+            <Trash2 className="h-4 w-4" />
+          </IconButton>
+        </div>
       </div>
 
-      {/* Options editor for dropdown / checkbox / pass_fail */}
+      {/* Embedded Options Editor */}
       {showOptions && (
-        <div className="px-3 pb-3">
+        <div className="border-t border-hairline-soft bg-surface/40 px-4 pb-4">
           <FieldOptionsEditor
             fieldId={field.id}
             options={field.options ?? []}
@@ -210,174 +202,176 @@ const SectionCard: React.FC<SectionCardProps> = ({
 
   return (
     <>
-      <div className="bg-card rounded-2xl border border-divider shadow-sm overflow-hidden animate-fade-in-scale">
+      <div id={`section-${section.id}`} className="panel overflow-hidden animate-fade-in-scale">
         {/* Section Header */}
         <div
           className={cn(
-            'flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-colors duration-150 select-none',
-            isExpanded ? 'bg-primary-blue/5 border-b border-divider' : 'hover:bg-surface/60',
+            'flex cursor-pointer select-none items-center justify-between gap-3 px-4 py-3.5 transition-colors duration-150',
+            isExpanded ? 'border-b border-hairline-soft bg-primary-blue/[0.03]' : 'hover:bg-surface/50',
           )}
           onClick={onToggle}
         >
-          {/* Section number + up/down */}
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              onClick={(e) => { e.stopPropagation(); onMoveUp() }}
-              disabled={index === 0}
-              className="p-0.5 rounded hover:bg-card disabled:opacity-20 text-muted-foreground hover:text-foreground transition-all"
-            >
-              <ChevronUp className="w-3.5 h-3.5" />
-            </button>
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            {/* Number Index */}
             <div className={cn(
-              'w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0',
-              isExpanded ? 'bg-primary-blue text-[#181a20]' : 'bg-surface text-muted-foreground',
+              'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold',
+              isExpanded ? 'bg-ink-deep text-white shadow-soft-sm' : 'bg-surface text-stone',
             )}>
               {index + 1}
             </div>
-            <button
-              onClick={(e) => { e.stopPropagation(); onMoveDown() }}
-              disabled={index === total - 1}
-              className="p-0.5 rounded hover:bg-card disabled:opacity-20 text-muted-foreground hover:text-foreground transition-all"
-            >
-              <ChevronDown className="w-3.5 h-3.5" />
-            </button>
+
+            {/* Editable Title */}
+            <input
+              type="text"
+              value={section.title}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => onUpdateSection({ title: e.target.value })}
+              placeholder={t('builder.sectionTitlePlaceholder')}
+              className="w-full truncate border-none bg-transparent py-0.5 text-sm font-semibold text-ink-deep placeholder:text-stone/40 focus:outline-none"
+            />
           </div>
 
-          {/* Title input */}
-          <input
-            type="text"
-            value={section.title}
-            onClick={(e) => e.stopPropagation()}
-            onChange={(e) => onUpdateSection({ title: e.target.value })}
-            placeholder={t('builder.sectionTitlePlaceholder')}
-            className="flex-1 text-sm font-bold text-foreground bg-transparent border-none focus:outline-none placeholder:text-muted-foreground/40"
-          />
+          <div className="flex shrink-0 items-center gap-2" onClick={(e) => e.stopPropagation()}>
+            {/* Indicators */}
+            <Badge tone="neutral">{sectionFields.length} Pertanyaan</Badge>
 
-          {/* Question count */}
-          <span className="px-2 py-0.5 rounded-full bg-surface text-muted-foreground text-[10px] font-bold shrink-0">
-            {sectionFields.length}q
-          </span>
+            {/* Reorder up/down */}
+            <div className="flex items-center overflow-hidden rounded-full border border-hairline-soft bg-card">
+              <button
+                type="button"
+                onClick={onMoveUp}
+                disabled={index === 0}
+                className="p-1.5 text-slate transition-all hover:bg-surface hover:text-ink-deep disabled:opacity-20"
+              >
+                <ChevronUp className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={onMoveDown}
+                disabled={index === total - 1}
+                className="border-l border-hairline-soft p-1.5 text-slate transition-all hover:bg-surface hover:text-ink-deep disabled:opacity-20"
+              >
+                <ChevronDown className="h-4 w-4" />
+              </button>
+            </div>
 
-          {/* Chevron toggle */}
-          <ChevronDown
-            className={cn(
-              'w-4 h-4 text-muted-foreground transition-transform duration-300 shrink-0',
-              isExpanded && 'rotate-180',
+            {/* Menu options */}
+            {!isTitlePage && (
+              <div className="relative">
+                <IconButton
+                  onClick={() => setShowMenu(!showMenu)}
+                  aria-label="Opsi bab"
+                  className="h-9 w-9"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </IconButton>
+                {showMenu && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-20"
+                      onClick={() => setShowMenu(false)}
+                    />
+                    <div className="absolute right-0 top-11 z-30 w-40 overflow-hidden rounded-2xl border border-hairline-soft bg-card shadow-soft-lg animate-fade-in-scale">
+                      <button
+                        type="button"
+                        onClick={() => { onDuplicate(); setShowMenu(false) }}
+                        className="flex w-full items-center gap-2 px-3 py-2.5 text-xs font-semibold text-ink-deep transition-colors hover:bg-surface"
+                      >
+                        <Copy className="h-4 w-4 text-stone" />
+                        Duplikat Bab
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { onDelete(); setShowMenu(false) }}
+                        className="flex w-full items-center gap-2 border-t border-hairline-soft px-3 py-2.5 text-xs font-semibold text-danger-red transition-colors hover:bg-danger-red/8"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Hapus Bab
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             )}
-          />
-
-          {/* More menu (not for title page) */}
-          {!isTitlePage && (
-            <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
-              <button
-                onClick={() => setShowMenu(!showMenu)}
-                className="p-1.5 rounded-lg hover:bg-card text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <MoreVertical className="w-4 h-4" />
-              </button>
-              {showMenu && (
-                <>
-                  <div
-                    className="fixed inset-0 z-20"
-                    onClick={() => setShowMenu(false)}
-                  />
-                  <div className="absolute right-0 top-8 z-30 w-40 bg-card rounded-xl border border-divider shadow-xl overflow-hidden animate-fade-in-scale">
-                    <button
-                      onClick={() => { onDuplicate(); setShowMenu(false) }}
-                      className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-foreground hover:bg-surface transition-colors"
-                    >
-                      <Copy className="w-4 h-4 text-muted-foreground" />
-                      Duplikat
-                    </button>
-                    <button
-                      onClick={() => { onDelete(); setShowMenu(false) }}
-                      className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-danger-red hover:bg-danger-red/5 transition-colors border-t border-divider"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Hapus
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Animated body */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateRows: isExpanded ? '1fr' : '0fr',
-            transition: 'grid-template-rows 280ms cubic-bezier(0.4, 0, 0.2, 1)',
-          }}
-        >
-          <div style={{ overflow: 'hidden' }}>
-            <div className="p-4 space-y-3 bg-surface/30">
-              {/* Section description */}
-              <input
-                type="text"
-                value={section.description || ''}
-                onChange={(e) => onUpdateSection({ description: e.target.value })}
-                placeholder="Deskripsi bab (opsional)..."
-                className="w-full text-xs text-muted-foreground bg-card border border-divider rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-blue/20 focus:border-primary-blue/40 placeholder:text-muted-foreground/40 transition-all"
-              />
-
-              {/* Fields table header */}
-              {sectionFields.length > 0 && (
-                <div className="flex items-center gap-3 px-3 pb-1">
-                  <div className="w-8 shrink-0" />
-                  <span className="flex-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                    Pertanyaan
-                  </span>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                    Tipe
-                  </span>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground hidden sm:block">
-                    Wajib
-                  </span>
-                  <div className="w-7" />
-                </div>
-              )}
-
-              {/* Fields */}
-              {sectionFields.map((field, fi) => (
-                <FieldRow
-                  key={field.id}
-                  field={field}
-                  index={fi}
-                  total={sectionFields.length}
-                  onUpdate={(patch) => onUpdateField(field.id, patch)}
-                  onDelete={async () => {
-                    const confirmed = await appSwal.confirmDelete(field.label || 'Question', 'question')
-                    if (!confirmed) return
-
-                    try {
-                      await onDeleteField(field.id)
-                      await appSwal.successDeleted('question', field.label || 'Question')
-                    } catch (deleteError) {
-                      await appSwal.errorDeleteFailed('question', getApiErrorMessage(deleteError))
-                    }
-                  }}
-                  onMoveUp={() => onMoveFieldUp(fi)}
-                  onMoveDown={() => onMoveFieldDown(fi)}
-                  onOpenPicker={() => setPickerOpenFor(field.id)}
-                />
-              ))}
-
-              {/* Add question button */}
-              <button
-                onClick={() => onAddField('text_answer')}
-                className="w-full py-3 border-2 border-dashed border-divider rounded-xl flex items-center justify-center gap-2 text-muted-foreground hover:text-primary-blue hover:border-primary-blue/30 hover:bg-primary-blue/5 transition-all text-sm font-semibold group"
-              >
-                <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                {t('builder.addQuestion')}
-              </button>
-            </div>
           </div>
         </div>
+
+        {/* Section Body */}
+        {isExpanded && (
+          <div className="space-y-4 bg-surface/20 p-5">
+            {/* Keterangan bab */}
+            <input
+              type="text"
+              value={section.description || ''}
+              onChange={(e) => onUpdateSection({ description: e.target.value })}
+              placeholder="Tulis Keterangan tambahan atau petunjuk pengerjaan bab (opsional)..."
+              className="form-input text-xs"
+            />
+
+            {/* Questions Container */}
+            {sectionFields.length > 0 && (
+              <div className="space-y-3">
+                {sectionFields.map((field, fi) => (
+                  <FieldRow
+                    key={field.id}
+                    field={field}
+                    index={fi}
+                    total={sectionFields.length}
+                    onUpdate={(patch) => onUpdateField(field.id, patch)}
+                    onDelete={async () => {
+                      const confirmed = await appSwal.confirmDelete(field.label || 'Pertanyaan', 'question')
+                      if (!confirmed) return
+
+                      try {
+                        await onDeleteField(field.id)
+                        await appSwal.successDeleted('question', field.label || 'Pertanyaan')
+                      } catch (deleteError) {
+                        await appSwal.errorDeleteFailed('question', getApiErrorMessage(deleteError))
+                      }
+                    }}
+                    onMoveUp={() => onMoveFieldUp(fi)}
+                    onMoveDown={() => onMoveFieldDown(fi)}
+                    onOpenPicker={() => setPickerOpenFor(field.id)}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Redesigned Quick-Add Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline-soft pt-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <Eyebrow className="mr-1">+ Tambah Cepat</Eyebrow>
+                {[
+                  { type: 'text_answer', label: 'Teks Bebas', color: '#F59E0B' },
+                  { type: 'pass_fail', label: 'Pass / Fail', color: '#10B981' },
+                  { type: 'photo', label: 'Bukti Foto', color: '#14B8A6' },
+                  { type: 'number', label: 'Input Angka', color: '#3B82F6' },
+                ].map((btn) => (
+                  <Button
+                    key={btn.type}
+                    variant="subtle"
+                    size="sm"
+                    onClick={() => onAddField(btn.type as FieldType)}
+                  >
+                    {btn.label}
+                  </Button>
+                ))}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={<Plus className="h-4 w-4" />}
+                  onClick={() => onAddField('text_answer')}
+                  className="text-primary-blue hover:text-primary-blue-dark"
+                >
+                  Pilihan Tipe Lainnya...
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Field type picker for this section */}
+      {/* Field Type Picker */}
       <FieldTypePicker
         isOpen={pickerOpenFor !== null}
         currentType={activeField?.type ?? ''}
@@ -435,7 +429,6 @@ export const TemplateBuilderPage: React.FC = () => {
   useEffect(() => {
     loadMasterFields()
     if (!id || id === 'new') {
-      // Create new template, then redirect to its builder URL
       initCreateTemplate('inspection').then((newId) => {
         navigate(`/templates/${newId}/builder`, { replace: true })
       })
@@ -538,14 +531,18 @@ export const TemplateBuilderPage: React.FC = () => {
     [sections, reorderSections],
   )
 
-  // ── Loading state ─────────────────────────────────────────────────────────
+  // Calculate Total Questions
+  const totalQuestions = Object.values(fields).reduce((acc, fList) => acc + fList.length, 0)
+
+  // Sidebar active item (independent of expanded state)
+  const [activeSidebarId, setActiveSidebarId] = useState<string | null>(null)
 
   if (isLoading || !template) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-surface">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-10 h-10 text-primary-blue animate-spin" />
-          <p className="text-sm text-muted-foreground font-medium">Memuat template...</p>
+          <Loader2 className="h-10 w-10 animate-spin text-primary-blue" />
+          <p className="text-sm font-medium text-stone">Memuat data template builder...</p>
         </div>
       </div>
     )
@@ -554,216 +551,251 @@ export const TemplateBuilderPage: React.FC = () => {
   const isNew = id === 'new'
 
   return (
-    <div className="min-h-screen bg-surface flex flex-col">
+    <div className="flex h-screen min-h-screen flex-col overflow-hidden bg-surface">
       {/* ── Sticky Header ──────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 h-14 bg-card border-b border-divider flex items-center justify-between px-4 sm:px-6">
+      <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-hairline-soft bg-card/80 px-4 backdrop-blur-xl sm:px-6">
         <div className="flex items-center gap-3">
-          <button
-            onClick={handleBack}
-            className="p-2 hover:bg-surface rounded-xl transition-colors text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
+          <IconButton onClick={handleBack} aria-label="Kembali">
+            <ArrowLeft className="h-5 w-5" />
+          </IconButton>
 
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-primary-blue/10 flex items-center justify-center">
-              <LayoutList className="w-4 h-4 text-primary-blue" />
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-blue/10 text-primary-blue">
+              <LayoutList className="h-4.5 w-4.5" />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-foreground leading-tight">
+              <Eyebrow className="text-primary-blue">Template Builder</Eyebrow>
+              <h1 className="text-sm font-semibold leading-tight text-ink-deep">
                 {isNew ? t('builder.createTemplate') : t('builder.title')}
               </h1>
-              {isDirty && (
-                <p className="text-[10px] text-warning-amber font-medium leading-none mt-0.5">
-                  Perubahan belum disimpan
-                </p>
-              )}
+              <p className="mt-0.5 text-[11px] font-medium leading-none text-stone">
+                {sections.length} Bab • {totalQuestions} Pertanyaan
+              </p>
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <button
+          {isDirty && (
+            <Badge tone="warning" dot className="mr-1 hidden animate-pulse sm:inline-flex">
+              Perubahan belum disimpan
+            </Badge>
+          )}
+
+          <Button
+            variant="primary"
+            size="sm"
             onClick={handlePublish}
             disabled={isSaving || !template.title.trim()}
-            className={cn(
-              'flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200',
-              !isSaving && template.title.trim()
-                ? 'bg-success-green text-white shadow-sm hover:bg-success-green-light active:scale-95'
-                : 'bg-surface text-muted-foreground cursor-not-allowed',
-            )}
+            loading={isSaving}
+            icon={!isSaving ? <Send className="h-4 w-4" /> : undefined}
           >
-            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             {t('builder.publish')}
-          </button>
+          </Button>
 
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={handleSave}
             disabled={!isDirty || isSaving}
-            className={cn(
-              'flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200',
-              isDirty && !isSaving
-                ? 'bg-primary-blue text-[#181a20] shadow-sm shadow-primary-blue/30 hover:bg-primary-blue-dark active:scale-95'
-                : 'bg-surface text-muted-foreground cursor-not-allowed',
-            )}
+            loading={isSaving}
+            icon={!isSaving ? <Save className="h-4 w-4" /> : undefined}
           >
-            {isSaving ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4" />
-            )}
             {t('builder.save')}
-          </button>
+          </Button>
         </div>
       </header>
 
       {/* ── Error Banner ───────────────────────────────────────────── */}
       {error && (
-        <div className="mx-4 sm:mx-6 mt-4 p-3 bg-danger-red/10 border border-danger-red/20 rounded-xl flex items-center gap-2 text-danger-red text-sm animate-slide-in-down">
-          <AlertTriangle className="w-4 h-4 shrink-0" />
-          <span className="flex-1">{error}</span>
-        </div>
+        <Alert tone="danger" className="mx-4 mt-4 shrink-0 animate-slide-in-down sm:mx-6">
+          {error}
+        </Alert>
       )}
 
-      {/* ── Page Content ───────────────────────────────────────────── */}
-      <div className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 py-6 space-y-4">
-
-        {/* ── Template Config Card ─────────────────────────────────── */}
-        <div className="bg-card rounded-2xl border border-divider shadow-sm p-5 space-y-4 animate-fade-in-scale">
-          {/* Title */}
-          <input
-            type="text"
-            value={template.title}
-            onChange={(e) => updateTemplateInfo({ title: e.target.value })}
-            placeholder={t('builder.templateTitlePlaceholder')}
-            className="w-full text-xl font-bold text-foreground bg-transparent border-none focus:outline-none placeholder:text-muted-foreground/40"
-          />
-
-          {/* Description */}
-          <textarea
-            value={template.description || ''}
-            onChange={(e) => updateTemplateInfo({ description: e.target.value })}
-            placeholder={t('builder.addDescription')}
-            rows={2}
-            className="w-full text-sm text-muted-foreground bg-transparent border-none focus:outline-none resize-none placeholder:text-muted-foreground/40"
-          />
-
-          {/* Divider */}
-          <div className="border-t border-divider" />
-
-          {/* Form type + Scoring */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            {/* Form type toggle */}
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                {t('builder.typeToggle')}
-              </span>
-              <div className="flex bg-surface p-1 rounded-xl">
-                {(['inspection', 'cps'] as const).map((ft) => (
+      {/* ── Main Layout (Two Column) ───────────────────────────────── */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar Left: Bab Index Navigation */}
+        <aside className="hidden w-68 shrink-0 flex-col space-y-4 overflow-y-auto border-r border-hairline-soft bg-card p-4.5 md:flex">
+          <div className="flex-1 space-y-1.5">
+            <Eyebrow className="mb-3 px-2">Index Halaman Bab</Eyebrow>
+            <div className="space-y-1">
+              {sections.map((s, idx) => {
+                const isActive = s.id === activeSidebarId
+                return (
                   <button
-                    key={ft}
-                    onClick={() => updateTemplateInfo({ form_type: ft })}
+                    key={s.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveSidebarId(s.id)
+                      if (!expandedSections.includes(s.id)) toggleSection(s.id)
+                      const el = document.getElementById(`section-${s.id}`)
+                      el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    }}
                     className={cn(
-                      'px-4 py-1.5 rounded-lg text-xs font-bold capitalize transition-all duration-200',
-                      template.form_type === ft
-                        ? 'bg-card text-primary-blue shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground',
+                      'flex w-full items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-left text-xs font-semibold transition-all',
+                      isActive
+                        ? 'bg-primary-blue/10 text-primary-blue'
+                        : 'text-ink-deep hover:bg-surface'
                     )}
                   >
-                    {ft}
+                    <span className={cn(
+                      'flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold',
+                      isActive ? 'bg-primary-blue text-white' : 'bg-surface text-stone'
+                    )}>
+                      {idx + 1}
+                    </span>
+                    <span className="flex-1 truncate leading-none">{s.title || 'Untitled Section'}</span>
+                    <span className="rounded-full bg-surface px-1.5 py-0.5 text-[9px] font-bold text-stone">
+                      {(fields[s.id] ?? []).length}q
+                    </span>
                   </button>
-                ))}
+                )
+              })}
+            </div>
+          </div>
+
+          <Button
+            variant="subtle"
+            block
+            icon={<Plus className="h-4 w-4" />}
+            onClick={addSection}
+            className="mt-auto shrink-0 border-dashed border-primary-blue/35 text-primary-blue"
+          >
+            Tambah Bab Baru
+          </Button>
+        </aside>
+
+        {/* Middle/Right Container: Scrollable Workspace */}
+        <main className="flex-1 overflow-y-auto scroll-smooth bg-surface/30 px-4 py-6 sm:px-6">
+          <div className="mx-auto max-w-3xl space-y-5">
+            {/* ── Template Configuration Card ─────────────────────── */}
+            <div className="panel space-y-4 p-6 animate-fade-in-scale">
+              {/* Title Input */}
+              <input
+                type="text"
+                value={template.title}
+                onChange={(e) => updateTemplateInfo({ title: e.target.value })}
+                placeholder={t('builder.templateTitlePlaceholder')}
+                className="w-full border-none bg-transparent text-lg font-bold tracking-tight text-ink-deep placeholder:text-stone/40 focus:outline-none"
+              />
+
+              {/* Description Textarea */}
+              <textarea
+                value={template.description || ''}
+                onChange={(e) => updateTemplateInfo({ description: e.target.value })}
+                placeholder="Tulis deskripsi ringkas mengenai template audit ini..."
+                rows={2}
+                className="w-full resize-none border-none bg-transparent text-xs leading-relaxed text-stone placeholder:text-stone/50 focus:outline-none"
+              />
+
+              {/* Line Divider */}
+              <div className="border-t border-hairline-soft" />
+
+              {/* Toggles */}
+              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                {/* Form type options */}
+                <div className="flex items-center gap-3">
+                  <Eyebrow>Kategori Template</Eyebrow>
+                  <div className="flex gap-1 rounded-full border border-hairline-soft bg-surface p-1">
+                    {(['inspection', 'cps'] as const).map((ft) => (
+                      <button
+                        key={ft}
+                        type="button"
+                        onClick={() => updateTemplateInfo({ form_type: ft })}
+                        className={cn(
+                          'rounded-full px-4 py-1.5 text-xs font-semibold capitalize transition-all duration-200',
+                          template.form_type === ft
+                            ? 'bg-card text-primary-blue shadow-soft-sm'
+                            : 'text-stone hover:text-ink-deep',
+                        )}
+                      >
+                        {ft === 'inspection' ? 'Inspection Standard' : 'CPS Weekly'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Enable Scoring Switch */}
+                <label className="flex cursor-pointer select-none items-center gap-2.5">
+                  <span className="text-xs font-semibold text-ink-deep">
+                    Aktifkan Penilaian (Scoring)
+                  </span>
+                  <Toggle
+                    checked={!!template.scoring_enabled}
+                    onChange={() => updateTemplateInfo({ scoring_enabled: !template.scoring_enabled })}
+                    label="Aktifkan Penilaian"
+                  />
+                </label>
               </div>
             </div>
 
-            {/* Scoring toggle */}
-            <label className="flex items-center gap-2.5 cursor-pointer select-none">
-              <span className="text-xs font-semibold text-foreground">
-                {t('builder.enableScoring')}
-              </span>
-              <button
-                onClick={() => updateTemplateInfo({ scoring_enabled: !template.scoring_enabled })}
-                className={cn(
-                  'relative w-10 h-5.5 rounded-full transition-colors duration-200',
-                  template.scoring_enabled ? 'bg-primary-blue' : 'bg-divider',
-                )}
-                style={{ height: '22px' }}
-              >
-                <span
-                  className={cn(
-                    'absolute top-0.5 w-4 h-4 bg-card rounded-full shadow-sm transition-transform duration-200',
-                    template.scoring_enabled ? 'translate-x-5' : 'translate-x-0.5',
-                  )}
-                />
-              </button>
-              {template.scoring_enabled && (
-                <CheckSquare className="w-4 h-4 text-primary-blue animate-fade-in" />
+            {/* ── Sections Cards ──────────────────────────────────── */}
+            <div className="space-y-4">
+              {sections.length === 0 && (
+                <div className="panel px-6 py-16 text-center text-stone animate-fade-in">
+                  <p className="text-sm font-semibold text-ink-deep">Belum Ada Bab Pembuat Template</p>
+                  <p className="mt-1 text-xs text-stone">Tambahkan bab pertama Anda di tombol bawah atau sidebar.</p>
+                </div>
               )}
-            </label>
-          </div>
-        </div>
 
-        {/* ── Sections ─────────────────────────────────────────────── */}
-        <div className="space-y-3">
-          {sections.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground animate-fade-in">
-              <p className="font-semibold">{t('builder.noSections')}</p>
-              <p className="text-sm mt-1">Tambahkan bab pertama di bawah.</p>
+              {sections.map((section, si) => {
+                const isExpanded = expandedSections.includes(section.id)
+                const sectionFields = fields[section.id] ?? []
+                const isTitlePage = si === 0
+
+                return (
+                  <SectionCard
+                    key={section.id}
+                    section={section}
+                    sectionFields={sectionFields}
+                    isExpanded={isExpanded}
+                    isTitlePage={isTitlePage}
+                    index={si}
+                    total={sections.length}
+                    onToggle={() => toggleSection(section.id)}
+                    onUpdateSection={(patch) => updateSection(section.id, patch)}
+                    onDuplicate={() => duplicateSection(section.id)}
+                    onDelete={async () => {
+                      const confirmed = await appSwal.confirmDelete(section.title, 'section')
+                      if (!confirmed) return
+
+                      try {
+                        await deleteSection(section.id)
+                        await appSwal.successDeleted('section', section.title)
+                      } catch (deleteError) {
+                        await appSwal.errorDeleteFailed('section', getApiErrorMessage(deleteError))
+                      }
+                    }}
+                    onMoveUp={() => moveSectionUp(si)}
+                    onMoveDown={() => moveSectionDown(si)}
+                    onAddField={(type) => addField(section.id, type)}
+                    onAddFieldFromMaster={(masterFieldId) => addFieldFromMaster(section.id, masterFieldId)}
+                    onUpdateField={(fieldId, patch) => updateField(section.id, fieldId, patch)}
+                    onDeleteField={(fieldId) => deleteField(section.id, fieldId)}
+                    onMoveFieldUp={(fi) => moveFieldUp(section.id, fi)}
+                    onMoveFieldDown={(fi) => moveFieldDown(section.id, fi)}
+                  />
+                )
+              })}
             </div>
-          )}
 
-          {sections.map((section, si) => {
-            const isExpanded = expandedSections.includes(section.id)
-            const sectionFields = fields[section.id] ?? []
-            const isTitlePage = si === 0
+            {/* ── Add Section Footer Action ────────────────────────── */}
+            <Button
+              variant="subtle"
+              block
+              size="lg"
+              icon={<Plus className="h-5 w-5" />}
+              onClick={addSection}
+              className="border-dashed border-primary-blue/30 py-4 text-primary-blue"
+            >
+              Tambah Bab Halaman Baru (Section)
+            </Button>
 
-            return (
-              <SectionCard
-                key={section.id}
-                section={section}
-                sectionFields={sectionFields}
-                isExpanded={isExpanded}
-                isTitlePage={isTitlePage}
-                index={si}
-                total={sections.length}
-                onToggle={() => toggleSection(section.id)}
-                onUpdateSection={(patch) => updateSection(section.id, patch)}
-                onDuplicate={() => duplicateSection(section.id)}
-                onDelete={async () => {
-                  const confirmed = await appSwal.confirmDelete(section.title, 'section')
-                  if (!confirmed) return
-
-                  try {
-                    await deleteSection(section.id)
-                    await appSwal.successDeleted('section', section.title)
-                  } catch (deleteError) {
-                    await appSwal.errorDeleteFailed('section', getApiErrorMessage(deleteError))
-                  }
-                }}
-                onMoveUp={() => moveSectionUp(si)}
-                onMoveDown={() => moveSectionDown(si)}
-                onAddField={(type) => addField(section.id, type)}
-                onAddFieldFromMaster={(masterFieldId) => addFieldFromMaster(section.id, masterFieldId)}
-                onUpdateField={(fieldId, patch) => updateField(section.id, fieldId, patch)}
-                onDeleteField={(fieldId) => deleteField(section.id, fieldId)}
-                onMoveFieldUp={(fi) => moveFieldUp(section.id, fi)}
-                onMoveFieldDown={(fi) => moveFieldDown(section.id, fi)}
-              />
-            )
-          })}
-        </div>
-
-        {/* ── Add Section ──────────────────────────────────────────── */}
-        <button
-          onClick={addSection}
-          className="w-full py-4 border-2 border-dashed border-primary-blue/25 bg-primary-blue/[0.03] rounded-2xl flex items-center justify-center gap-2 text-primary-blue font-bold hover:bg-primary-blue/[0.07] hover:border-primary-blue/40 transition-all group"
-        >
-          <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
-          {t('builder.addSection')}
-        </button>
-
-        {/* Bottom spacer */}
-        <div className="h-6" />
+            {/* Bottom spacer */}
+            <div className="h-6" />
+          </div>
+        </main>
       </div>
     </div>
   )

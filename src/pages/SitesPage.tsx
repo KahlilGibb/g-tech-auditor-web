@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Loader2, MapPinned, Pencil, Plus, RefreshCcw, Search, Trash2, X } from 'lucide-react';
+import { MapPinned, Pencil, Plus, RefreshCcw, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getApiErrorMessage } from '../lib/apiResponse';
 import { appSwal } from '../lib/appSwal';
@@ -9,6 +9,25 @@ import { useSites } from '../hooks/useSites';
 import type { Site, SiteFormInput } from '../types/management';
 import { cn } from '../utils/cn';
 import { Can } from '../components/rbac/Can';
+import {
+  Alert,
+  Badge,
+  Button,
+  EmptyState,
+  Field,
+  IconButton,
+  Input,
+  Modal,
+  PageHeader,
+  RowAction,
+  SearchInput,
+  Select,
+  Spinner,
+  TableWrap,
+  Td,
+  Textarea,
+  Th,
+} from '../components/ui';
 
 const EMPTY_FORM: SiteFormInput = {
   name: '',
@@ -119,216 +138,183 @@ const SitesPage: React.FC = () => {
 
   return (
     <div className="page-shell">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Sites</h1>
-          <p className="page-subtitle">Kelola lokasi/site yang digunakan pada inspeksi dan dokumen.</p>
-        </div>
-        <div className="flex w-full items-center gap-3 sm:w-auto">
-          <button className="icon-button" onClick={() => fetchSites()} disabled={isLoading}>
-            <RefreshCcw className={cn('h-5 w-5', isLoading && 'animate-spin')} />
-          </button>
-          <Can resource="sites" action="create">
-            <button className="btn-primary flex-1 sm:flex-none" onClick={openCreate}>
-              <Plus className="h-4 w-4" />
-              Tambah Site
-            </button>
-          </Can>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Organisasi"
+        title="Sites"
+        subtitle="Kelola lokasi/site yang digunakan pada inspeksi dan dokumen."
+        actions={
+          <>
+            <IconButton onClick={() => fetchSites()} disabled={isLoading} aria-label="Refresh">
+              <RefreshCcw className={cn('h-5 w-5', isLoading && 'animate-spin')} />
+            </IconButton>
+            <Can resource="sites" action="create">
+              <Button className="flex-1 sm:flex-none" onClick={openCreate} icon={<Plus className="h-4 w-4" />}>
+                Tambah Site
+              </Button>
+            </Can>
+          </>
+        }
+      />
 
       <div className="toolbar">
-        <div className="relative w-full sm:max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={query}
-            onChange={event => setQuery(event.target.value)}
-            className="form-input pl-9"
-            placeholder="Cari site, branch, atau organization..."
-          />
-        </div>
-        <div className="rounded-lg border border-divider bg-card px-3 py-2 text-sm text-muted-foreground shadow-sm">
+        <SearchInput
+          value={query}
+          onChange={event => setQuery(event.target.value)}
+          placeholder="Cari site, branch, atau organization..."
+        />
+        <Badge tone="outline" className="px-3.5 py-2 text-xs">
           {filteredSites.length} site
-        </div>
+        </Badge>
       </div>
 
-      {error && (
-        <div className="rounded-lg border border-danger-red/20 bg-danger-red/10 p-4 text-sm font-medium text-danger-red">
-          {error}
-        </div>
-      )}
+      {error && <Alert tone="danger">{error}</Alert>}
 
-      <div className="panel overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="table-header">
-              <tr>
-                <th className="px-6 py-4">Site</th>
-                <th className="px-6 py-4">Organization</th>
-                <th className="px-6 py-4">Branch/Group</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-divider">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-sm text-muted-foreground">
-                    Memuat site...
-                  </td>
-                </tr>
-              ) : filteredSites.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-14 text-center">
-                    <MapPinned className="mx-auto mb-3 h-10 w-10 text-muted-foreground/30" />
-                    <p className="text-sm font-semibold text-foreground">Belum ada site</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Data dari API /sites akan tampil di sini.</p>
-                  </td>
-                </tr>
-              ) : (
-                filteredSites.map(site => (
-                  <tr key={site.id} className="transition hover:bg-surface/60">
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-semibold text-foreground">{site.name}</p>
-                      <p className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-primary-blue">
-                        {site.code}
-                      </p>
-                      {site.address && <p className="mt-1 max-w-xl text-xs text-muted-foreground">{site.address}</p>}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-foreground">
-                      {organizations.find(o => o.id === site.organizationId)?.name || site.organizationName || site.organizationId || '-'}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-foreground">
-                      {branches.find(b => b.id === site.branchId)?.name || site.branchName || site.branchId || '-'}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="rounded-full bg-success-green/10 px-2.5 py-1 text-xs font-semibold capitalize text-success-green">
-                        {site.status || 'active'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="inline-flex items-center gap-1">
-                        <Can resource="sites" action="update">
-                          <button
-                            className="rounded-lg p-2 text-muted-foreground transition hover:bg-surface hover:text-foreground"
-                            onClick={() => openEdit(site)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                        </Can>
-                        <Can resource="sites" action="delete">
-                          <button
-                            className="rounded-lg p-2 text-muted-foreground transition hover:bg-danger-red/10 hover:text-danger-red"
-                            onClick={() => handleDelete(site)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </Can>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-          <form onSubmit={handleSubmit} className="w-full max-w-lg rounded-lg border border-divider bg-card shadow-xl">
-            <div className="flex items-center justify-between border-b border-divider px-5 py-4">
-              <div>
-                <h2 className="text-base font-semibold text-foreground">
-                  {editingSite ? 'Edit Site' : 'Tambah Site'}
-                </h2>
-                <p className="text-xs text-muted-foreground">Field mengikuti kontrak API /sites.</p>
-              </div>
-              <button type="button" onClick={() => setIsModalOpen(false)} className="rounded-lg p-2 hover:bg-surface">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="space-y-4 p-5">
-              {(formError || error) && (
-                <div className="rounded-lg border border-danger-red/20 bg-danger-red/10 p-3 text-sm text-danger-red">
-                  {formError || error}
-                </div>
-              )}
-
-              <label className="space-y-1.5">
-                <span className="text-xs font-semibold text-muted-foreground">Nama Site</span>
-                <input className="form-input" value={form.name} onChange={event => patchForm({ name: event.target.value })} />
-              </label>
-
-              <label className="space-y-1.5">
-                <span className="text-xs font-semibold text-muted-foreground">Kode</span>
-                <input className="form-input" value={form.code} onChange={event => patchForm({ code: event.target.value })} />
-              </label>
-
-              <label className="space-y-1.5">
-                <span className="text-xs font-semibold text-muted-foreground">Alamat</span>
-                <textarea
-                  className="form-input min-h-24"
-                  value={form.address ?? ''}
-                  onChange={event => patchForm({ address: event.target.value })}
+      <TableWrap>
+        <thead className="table-header">
+          <tr>
+            <Th>Site</Th>
+            <Th>Organization</Th>
+            <Th>Branch/Group</Th>
+            <Th>Status</Th>
+            <Th className="text-right">Aksi</Th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-hairline-soft">
+          {isLoading ? (
+            <tr>
+              <td colSpan={5} className="px-6 py-12 text-center text-sm text-stone">
+                <Spinner className="mx-auto h-6 w-6 text-primary-blue" />
+              </td>
+            </tr>
+          ) : filteredSites.length === 0 ? (
+            <tr>
+              <td colSpan={5}>
+                <EmptyState
+                  icon={<MapPinned className="h-6 w-6" />}
+                  title="Belum ada site"
+                  description="Data dari API /sites akan tampil di sini."
                 />
-              </label>
+              </td>
+            </tr>
+          ) : (
+            filteredSites.map(site => (
+              <tr key={site.id} className="transition hover:bg-surface/60">
+                <Td>
+                  <p className="text-sm font-semibold text-ink-deep">{site.name}</p>
+                  <p className="mt-0.5 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-primary-blue">
+                    {site.code}
+                  </p>
+                  {site.address && <p className="mt-1 max-w-xl text-xs text-stone">{site.address}</p>}
+                </Td>
+                <Td className="text-sm text-charcoal">
+                  {organizations.find(o => o.id === site.organizationId)?.name || site.organizationName || site.organizationId || '-'}
+                </Td>
+                <Td className="text-sm text-charcoal">
+                  {branches.find(b => b.id === site.branchId)?.name || site.branchName || site.branchId || '-'}
+                </Td>
+                <Td>
+                  <Badge tone={site.status === 'inactive' ? 'neutral' : 'success'} className="capitalize">
+                    {site.status || 'active'}
+                  </Badge>
+                </Td>
+                <Td className="text-right">
+                  <div className="inline-flex items-center gap-1">
+                    <Can resource="sites" action="update">
+                      <RowAction onClick={() => openEdit(site)} aria-label="Edit">
+                        <Pencil className="h-4 w-4" />
+                      </RowAction>
+                    </Can>
+                    <Can resource="sites" action="delete">
+                      <RowAction tone="danger" onClick={() => handleDelete(site)} aria-label="Delete">
+                        <Trash2 className="h-4 w-4" />
+                      </RowAction>
+                    </Can>
+                  </div>
+                </Td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </TableWrap>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="space-y-1.5">
-                  <span className="text-xs font-semibold text-muted-foreground">Organization</span>
-                  <select
-                    className="form-input"
-                    value={form.organizationId ?? ''}
-                    onChange={event => patchForm({ organizationId: event.target.value })}
-                  >
-                    <option value="">Pilih organization</option>
-                    {organizations.map(organization => (
-                      <option key={organization.id} value={organization.id}>
-                        {organization.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="space-y-1.5">
-                  <span className="text-xs font-semibold text-muted-foreground">Branch/Group</span>
-                  <select
-                    className="form-input"
-                    value={form.branchId ?? ''}
-                    onChange={event => patchForm({ branchId: event.target.value })}
-                  >
-                    <option value="">Pilih branch</option>
-                    {branches.map(branch => (
-                      <option key={branch.id} value={branch.id}>
-                        {branch.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
+      <Modal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        eyebrow={editingSite ? 'Edit' : 'Baru'}
+        title={editingSite ? 'Edit Site' : 'Tambah Site'}
+        subtitle="Field mengikuti kontrak API /sites."
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
+              Batal
+            </Button>
+            <Button
+              type="submit"
+              form="site-form"
+              loading={isSaving}
+              icon={!isSaving ? <Plus className="h-4 w-4" /> : undefined}
+            >
+              Simpan
+            </Button>
+          </>
+        }
+      >
+        <form id="site-form" onSubmit={handleSubmit} className="space-y-4">
+          {(formError || error) && <Alert tone="danger">{formError || error}</Alert>}
 
-              <label className="space-y-1.5">
-                <span className="text-xs font-semibold text-muted-foreground">Status</span>
-                <select className="form-input" value={form.status ?? 'active'} onChange={event => patchForm({ status: event.target.value })}>
-                  <option value="active">active</option>
-                  <option value="inactive">inactive</option>
-                </select>
-              </label>
-            </div>
+          <Field label="Nama Site" required>
+            <Input value={form.name} onChange={event => patchForm({ name: event.target.value })} />
+          </Field>
 
-            <div className="flex justify-end gap-3 border-t border-divider px-5 py-4">
-              <button type="button" className="btn-secondary" onClick={() => setIsModalOpen(false)}>
-                Batal
-              </button>
-              <button type="submit" className="btn-primary" disabled={isSaving}>
-                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                Simpan
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+          <Field label="Kode" required>
+            <Input value={form.code} onChange={event => patchForm({ code: event.target.value })} />
+          </Field>
+
+          <Field label="Alamat">
+            <Textarea
+              rows={3}
+              value={form.address ?? ''}
+              onChange={event => patchForm({ address: event.target.value })}
+            />
+          </Field>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Organization">
+              <Select
+                value={form.organizationId ?? ''}
+                onChange={event => patchForm({ organizationId: event.target.value })}
+              >
+                <option value="">Pilih organization</option>
+                {organizations.map(organization => (
+                  <option key={organization.id} value={organization.id}>
+                    {organization.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Branch/Group">
+              <Select
+                value={form.branchId ?? ''}
+                onChange={event => patchForm({ branchId: event.target.value })}
+              >
+                <option value="">Pilih branch</option>
+                {branches.map(branch => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+
+          <Field label="Status">
+            <Select value={form.status ?? 'active'} onChange={event => patchForm({ status: event.target.value })}>
+              <option value="active">active</option>
+              <option value="inactive">inactive</option>
+            </Select>
+          </Field>
+        </form>
+      </Modal>
     </div>
   );
 };

@@ -9,7 +9,6 @@ import {
   CheckCheck,
   CheckCircle2,
   CheckSquare,
-  ChevronRight,
   ClipboardCheck,
   ClipboardList,
   Database,
@@ -39,6 +38,7 @@ import { appSwal } from '../lib/appSwal';
 import { getApiErrorMessage } from '../lib/apiResponse';
 import { NAV_PERMISSIONS, type NavPermissionRequirement } from '../constants/rbac';
 import { useRbac } from '../hooks/useRbac';
+import { Avatar, Badge } from '../components/ui';
 
 const SidebarItem: React.FC<{
   to: string;
@@ -50,21 +50,24 @@ const SidebarItem: React.FC<{
   <Link
     to={to}
     onClick={onClick}
+    aria-current={active ? 'page' : undefined}
     className={cn(
-      'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition',
+      'group relative flex items-center gap-3 rounded-full px-3.5 py-2.5 text-[13px] font-semibold transition-all duration-150',
       active
-        ? 'bg-primary-blue/10 text-primary-blue ring-1 ring-primary-blue/15'
-        : 'text-muted-foreground hover:bg-surface hover:text-foreground',
+        ? 'bg-ink-deep text-white shadow-soft-sm'
+        : 'text-slate hover:bg-surface hover:text-ink-deep',
     )}
   >
+    {active && (
+      <span className="absolute -left-3 top-1/2 h-4 w-1 -translate-y-1/2 rounded-full bg-primary-blue" />
+    )}
     <Icon
       className={cn(
-        'h-[18px] w-[18px] shrink-0',
-        active ? 'text-primary-blue' : 'text-muted-foreground group-hover:text-foreground',
+        'h-[18px] w-[18px] shrink-0 transition-colors',
+        active ? 'text-white' : 'text-stone group-hover:text-ink-deep',
       )}
     />
     <span className="flex-1 truncate">{label}</span>
-    {active && <ChevronRight className="h-3.5 w-3.5 text-primary-blue/70" />}
   </Link>
 );
 
@@ -105,7 +108,7 @@ const NotificationPanel: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     return (
       <div>
-        <p className="border-b border-divider bg-surface px-4 py-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+        <p className="border-b border-hairline-soft bg-surface px-4 py-2 font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-stone">
           {label}
         </p>
         {items.map(notification => (
@@ -115,11 +118,11 @@ const NotificationPanel: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               markAsRead(notification.id);
             }}
             className={cn(
-              'flex w-full items-start gap-3 border-b border-divider px-4 py-3 text-left transition last:border-0 hover:bg-surface',
-              !notification.is_read && 'bg-primary-blue/[0.04]',
+              'flex w-full items-start gap-3 border-b border-hairline-soft px-4 py-3 text-left transition last:border-0 hover:bg-surface',
+              !notification.is_read && 'bg-primary-blue/[0.05]',
             )}
           >
-            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface text-primary-blue">
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface text-primary-blue">
               <TypeIcon type={notification.type} />
             </span>
             <span className="min-w-0 flex-1">
@@ -139,9 +142,7 @@ const NotificationPanel: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               <span className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                 {notification.message}
               </span>
-              <span className="mt-1 block text-[10px] text-muted-foreground">
-                {notification.time}
-              </span>
+              <span className="mt-1 block font-mono text-[10px] text-stone">{notification.time}</span>
             </span>
           </button>
         ))}
@@ -152,17 +153,13 @@ const NotificationPanel: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   return (
     <div
       ref={panelRef}
-      className="absolute right-0 top-full z-50 mt-2 w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-lg border border-divider bg-card shadow-xl shadow-black/40"
+      className="absolute right-0 top-full z-50 mt-2 w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-3xl border border-hairline bg-card/95 shadow-meta-popup backdrop-blur-md animate-scale-in"
     >
-      <div className="flex items-center justify-between border-b border-divider px-4 py-3">
+      <div className="flex items-center justify-between border-b border-hairline-soft px-4 py-3">
         <div className="flex items-center gap-2">
           <BellRing className="h-4 w-4 text-primary-blue" />
           <span className="text-sm font-semibold text-foreground">{t('nav.notifications')}</span>
-          {unreadCount > 0 && (
-            <span className="rounded-full bg-primary-blue px-1.5 py-0.5 text-[10px] font-semibold text-[#181a20]">
-              {unreadCount}
-            </span>
-          )}
+          {unreadCount > 0 && <Badge tone="brand">{unreadCount}</Badge>}
         </div>
         {unreadCount > 0 && (
           <button
@@ -175,14 +172,14 @@ const NotificationPanel: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         )}
       </div>
 
-      <div className="max-h-[400px] overflow-y-auto">
+      <div className="max-h-[400px] overflow-y-auto sidebar-scroll">
         {isLoading ? (
           <div className="flex items-center justify-center py-10">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-blue border-t-transparent" />
           </div>
         ) : notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center px-6 py-10 text-center">
-            <Bell className="mb-3 h-10 w-10 text-muted-foreground/30" />
+            <Bell className="mb-3 h-10 w-10 text-stone/40" />
             <p className="text-sm font-semibold text-foreground">{t('nav.noNotifications')}</p>
             <p className="mt-1 text-xs text-muted-foreground">{t('nav.allRead')}</p>
           </div>
@@ -216,12 +213,7 @@ const DashboardLayout: React.FC = () => {
 
   const displayName = profile.fullName || (user?.name ?? 'Inspector');
   const role = profile.role || user?.role || 'Inspector';
-  const initials = displayName
-    .split(' ')
-    .map(name => name[0])
-    .join('')
-    .substring(0, 2)
-    .toUpperCase();
+  const avatarSrc = profile.avatarBase64 ? `data:image/jpeg;base64,${profile.avatarBase64}` : null;
 
   const mainNavItems: Array<{
     to: string;
@@ -307,11 +299,11 @@ const DashboardLayout: React.FC = () => {
   const isInspectionSession = location.pathname.includes('/session');
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen overflow-hidden">
       {!isInspectionSession && isSidebarOpen && (
         <button
           aria-label="Tutup menu"
-          className="fixed inset-0 z-30 bg-slate-950/30 backdrop-blur-[1px] lg:hidden"
+          className="fixed inset-0 z-30 bg-ink-deep/30 backdrop-blur-[2px] lg:hidden"
           onClick={closeSidebar}
         />
       )}
@@ -319,27 +311,25 @@ const DashboardLayout: React.FC = () => {
       {!isInspectionSession && (
         <aside
           className={cn(
-            'fixed inset-y-0 left-0 z-40 flex h-dvh w-64 shrink-0 flex-col overflow-hidden border-r border-divider bg-card shadow-xl shadow-slate-900/10 lg:sticky lg:top-0 lg:h-screen lg:shadow-none',
+            'fixed inset-y-0 left-0 z-40 flex h-dvh w-[264px] shrink-0 flex-col overflow-hidden border-r border-hairline-soft bg-card/80 backdrop-blur-xl shadow-meta-popup lg:sticky lg:top-0 lg:h-screen lg:shadow-none',
             'transform transition-transform duration-300 ease-in-out lg:translate-x-0',
             !isSidebarOpen && '-translate-x-full',
           )}
         >
-          <div className="flex h-16 shrink-0 items-center gap-3 border-b border-divider px-5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-blue text-[#181a20] shadow-sm">
+          <div className="flex h-16 shrink-0 items-center gap-3 border-b border-hairline-soft px-5">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-ink-deep text-white">
               <ShieldCheck className="h-5 w-5" />
             </div>
-            <div className="min-w-0">
-              <span className="block text-base font-semibold leading-none tracking-tight text-foreground">
-                G-Tech
-              </span>
-              <span className="mt-1 block text-[11px] font-medium text-muted-foreground">
+            <div className="min-w-0 leading-tight">
+              <span className="block text-[15px] font-semibold tracking-tight text-ink-deep">G-Tech</span>
+              <span className="block font-mono text-[10px] uppercase tracking-[0.14em] text-stone">
                 Auditor System
               </span>
             </div>
           </div>
 
-          <div className="sidebar-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4">
-            <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          <div className="sidebar-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-5">
+            <p className="px-3 pb-2 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-stone">
               {t('nav.menuUtama')}
             </p>
             <nav className="space-y-1">
@@ -357,7 +347,7 @@ const DashboardLayout: React.FC = () => {
               ))}
             </nav>
 
-            <p className="mt-6 px-3 pb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+            <p className="mt-7 px-3 pb-2 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-stone">
               {t('nav.administrasi')}
             </p>
             <nav className="space-y-1">
@@ -376,36 +366,24 @@ const DashboardLayout: React.FC = () => {
             </nav>
           </div>
 
-          <div className="shrink-0 border-t border-divider p-3">
+          <div className="shrink-0 border-t border-hairline-soft p-3">
             <Link
               to="/profile"
               onClick={() => {
                 if (window.innerWidth < 1024) closeSidebar();
               }}
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition hover:bg-surface"
+              className="flex items-center gap-3 rounded-2xl px-3 py-2.5 transition hover:bg-surface"
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-primary-blue/20 bg-primary-blue/10">
-                {profile.avatarBase64 ? (
-                  <img
-                    src={`data:image/jpeg;base64,${profile.avatarBase64}`}
-                    alt={displayName}
-                    className="h-full w-full rounded-full object-cover"
-                  />
-                ) : (
-                  <span className="text-xs font-semibold text-primary-blue">{initials}</span>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold leading-none text-foreground">
-                  {displayName}
-                </p>
-                <p className="mt-1 truncate text-[11px] capitalize text-muted-foreground">{role}</p>
+              <Avatar name={displayName} src={avatarSrc} size={38} />
+              <div className="min-w-0 flex-1 leading-tight">
+                <p className="truncate text-sm font-semibold text-ink-deep">{displayName}</p>
+                <p className="mt-0.5 truncate text-[11px] capitalize text-stone">{role}</p>
               </div>
             </Link>
 
             <button
               onClick={handleLogout}
-              className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-danger-red transition hover:bg-danger-red/5"
+              className="mt-1 flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold text-danger-red transition hover:bg-danger-red/8"
             >
               <LogOut className="h-[18px] w-[18px] shrink-0" />
               <span>{t('nav.logout')}</span>
@@ -416,23 +394,23 @@ const DashboardLayout: React.FC = () => {
 
       <div className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden">
         {!isInspectionSession && (
-          <header className="z-20 flex h-16 shrink-0 items-center justify-between border-b border-divider bg-card/95 px-4 backdrop-blur lg:px-6">
+          <header className="z-20 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-hairline-soft bg-card/70 px-4 backdrop-blur-xl lg:px-6">
             <div className="flex min-w-0 items-center gap-3">
               <button
                 type="button"
                 onClick={() => setIsSidebarOpen(prev => !prev)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-surface hover:text-foreground lg:hidden"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate transition hover:bg-surface hover:text-ink-deep lg:hidden"
                 aria-label="Buka menu"
               >
                 {isSidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </button>
 
               <div className="relative hidden md:block">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone" />
                 <input
                   type="text"
                   placeholder={t('nav.searchPlaceholder')}
-                  className="h-10 w-72 rounded-lg border border-divider bg-surface pl-9 pr-4 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary-blue focus:bg-card focus:ring-4 focus:ring-primary-blue/10"
+                  className="h-11 w-72 rounded-full border border-hairline-soft bg-surface pl-11 pr-4 text-sm text-ink-deep outline-none transition duration-150 placeholder:text-stone hover:border-hairline focus:border-primary-blue focus:bg-card focus:ring-4 focus:ring-primary-blue/12"
                 />
               </div>
             </div>
@@ -442,48 +420,38 @@ const DashboardLayout: React.FC = () => {
                 <button
                   onClick={() => setIsNotifOpen(prev => !prev)}
                   className={cn(
-                    'relative inline-flex h-10 w-10 items-center justify-center rounded-lg transition',
+                    'relative inline-flex h-11 w-11 items-center justify-center rounded-full transition duration-150',
                     isNotifOpen
-                      ? 'bg-primary-blue/10 text-primary-blue'
-                      : 'text-muted-foreground hover:bg-surface hover:text-foreground',
+                      ? 'bg-surface text-primary-blue'
+                      : 'text-slate hover:bg-surface hover:text-ink-deep',
                   )}
                   aria-label={t('nav.notifications')}
                 >
                   <Bell className="h-5 w-5" />
                   {unreadCount > 0 && (
-                    <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-danger-red ring-2 ring-white" />
+                    <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-danger-red ring-2 ring-card" />
                   )}
                 </button>
                 {isNotifOpen && <NotificationPanel onClose={() => setIsNotifOpen(false)} />}
               </div>
 
-              <div className="mx-1 h-6 w-px bg-divider" />
+              <div className="mx-1 h-6 w-px bg-hairline-soft" />
 
               <Link
                 to="/profile"
-                className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition hover:bg-surface"
+                className="flex items-center gap-2.5 rounded-full py-1.5 pl-1.5 pr-3 transition hover:bg-surface"
               >
-                <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-primary-blue/20 bg-primary-blue/10">
-                  {profile.avatarBase64 ? (
-                    <img
-                      src={`data:image/jpeg;base64,${profile.avatarBase64}`}
-                      alt={displayName}
-                      className="h-full w-full rounded-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-xs font-semibold text-primary-blue">{initials}</span>
-                  )}
-                </div>
-                <div className="hidden text-right sm:block">
-                  <p className="text-sm font-semibold leading-none text-foreground">{displayName}</p>
-                  <p className="mt-1 text-[11px] capitalize text-muted-foreground">{role}</p>
+                <Avatar name={displayName} src={avatarSrc} size={36} />
+                <div className="hidden text-left leading-tight sm:block">
+                  <p className="text-sm font-semibold text-ink-deep">{displayName}</p>
+                  <p className="mt-0.5 text-[11px] capitalize text-stone">{role}</p>
                 </div>
               </Link>
             </div>
           </header>
         )}
 
-        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-background p-4 lg:p-6">
+        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 lg:p-6">
           <Outlet />
         </main>
       </div>

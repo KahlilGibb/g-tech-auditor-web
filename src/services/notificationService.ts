@@ -148,4 +148,95 @@ export const notificationService = {
       throw e
     }
   },
+
+  async getGotifyConfig(): Promise<import('../types/notification').GotifyConfig> {
+    try {
+      const res = await apiClient.get<import('../types/notification').GotifyConfig>(API_ENDPOINTS.USERS.GOTIFY_CONFIG)
+      return res.data
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        return {
+          url: 'http://localhost:8080',
+          client_token: 'mock-gotify-token'
+        }
+      }
+      throw e;
+    }
+  },
+
+  async getGotifyMessages(config: import('../types/notification').GotifyConfig): Promise<NotificationItem[]> {
+    try {
+      const res = await fetch(`${config.url}/message?limit=50`, {
+        headers: { 'X-Gotify-Key': config.client_token },
+      })
+      if (!res.ok) throw new Error('Failed to fetch Gotify messages')
+      const data = await res.json()
+      return (data.messages as import('../types/notification').GotifyMessage[]).map(gotifyToNotification)
+    } catch {
+      return []
+    }
+  },
+
+  async deleteGotifyMessage(config: import('../types/notification').GotifyConfig, id: string): Promise<void> {
+    await fetch(`${config.url}/message/${id}`, {
+      method: 'DELETE',
+      headers: { 'X-Gotify-Key': config.client_token },
+    })
+  },
+
+  async deleteAllGotifyMessages(config: import('../types/notification').GotifyConfig): Promise<void> {
+    await fetch(`${config.url}/message`, {
+      method: 'DELETE',
+      headers: { 'X-Gotify-Key': config.client_token },
+    })
+  },
+
+  connectWebSocket(
+    config: import('../types/notification').GotifyConfig,
+    onMessage: (item: NotificationItem) => void,
+    onClose: () => void,
+  ): WebSocket {
+    const ws = new WebSocket(`${toWsUrl(config.url)}/stream?token=${config.client_token}`)
+    ws.onmessage = (event) => {
+      try {
+        const msg: import('../types/notification').GotifyMessage = JSON.parse(event.data)
+        onMessage(gotifyToNotification(msg))
+      } catch {}
+    }
+    ws.onclose = onClose
+    ws.onerror = onClose
+    return ws
+  },
+}
+
+function toWsUrl(httpsUrl: string): string {
+  return httpsUrl.replace(/^https?/, (s) => (s === 'https' ? 'wss' : 'ws'))
+}
+
+function gotifyToNotification(msg: import('../types/notification').GotifyMessage): NotificationItem {
+  const created = new Date(msg.date)
+  const isToday = created.toDateString() === new Date().toDateString()
+  const type: import('../types/notification').NotificationType = msg.extras?.app?.type ?? 'assignment'
+  return {
+    id: String(msg.id),
+    type,
+    title: msg.title,
+    message: msg.message,
+    time: relativeTime(msg.date),
+    created_at: msg.date,
+    is_read: false,
+    group: isToday ? 'today' : 'earlier',
+    route: msg.extras?.app?.route,
+  }
+}
+
+function relativeTime(isoDate: string): string {
+  const diffMs = Date.now() - new Date(isoDate).getTime()
+  const mins = Math.floor(diffMs / 60_000)
+  const hours = Math.floor(diffMs / 3_600_000)
+  const days = Math.floor(diffMs / 86_400_000)
+  if (mins < 1) return 'Baru saja'
+  if (mins < 60) return `${mins} mnt lalu`
+  if (hours < 24) return `${hours} jam lalu`
+  return `${days} hari lalu`
 }

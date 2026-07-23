@@ -19,7 +19,6 @@ import {
   Archive,
   FolderPlus,
   RefreshCcw,
-  X,
   Edit2,
   Move,
   ChevronLeft,
@@ -41,6 +40,20 @@ import type {
   ReferenceType,
 } from '../types/document';
 import { Can } from '../components/rbac/Can';
+import {
+  Badge,
+  Button,
+  Card,
+  Eyebrow,
+  EmptyState,
+  Field,
+  IconButton,
+  Input,
+  Modal,
+  PageHeader,
+  RowAction,
+  Select,
+} from '../components/ui';
 
 const INITIAL_ACTIVITIES: ActivityLog[] = [];
 
@@ -440,28 +453,23 @@ const DocumentManagementPage: React.FC = () => {
 
   // Render Status Badge
   const renderStatus = (status: FileStatus) => {
-    const styles = {
-      Verified: 'bg-success-green/10 text-success-green border border-success-green/10',
-      Pending: 'bg-warning-amber/10 text-warning-amber border border-warning-amber/10',
-      Archived: 'bg-muted-foreground/10 text-muted-foreground border border-muted-foreground/10',
-    };
+    const tones = {
+      Verified: 'success',
+      Pending: 'warning',
+      Archived: 'neutral',
+    } as const;
 
     const icons = {
-      Verified: <CheckCircle2 className="w-3.5 h-3.5" />,
-      Pending: <AlertCircle className="w-3.5 h-3.5" />,
-      Archived: <Archive className="w-3.5 h-3.5" />,
+      Verified: <CheckCircle2 className="h-3.5 w-3.5" />,
+      Pending: <AlertCircle className="h-3.5 w-3.5" />,
+      Archived: <Archive className="h-3.5 w-3.5" />,
     };
 
     return (
-      <span
-        className={cn(
-          'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider',
-          styles[status],
-        )}
-      >
+      <Badge tone={tones[status]} className="uppercase tracking-wider">
         {icons[status]}
         {status}
-      </span>
+      </Badge>
     );
   };
 
@@ -516,52 +524,52 @@ const DocumentManagementPage: React.FC = () => {
     <div className="page-shell">
 
       {/* Header */}
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">{t('documents.title')}</h1>
-          <p className="page-subtitle">{t('documents.subtitle')}</p>
-        </div>
-        <div className="flex w-full items-center gap-3 sm:w-auto">
-          <button
-            className="icon-button"
-            onClick={() => fetchFolders(activeFolderId)}
-            disabled={isLoading}
-          >
-            <RefreshCcw className={cn('h-5 w-5', isLoading && 'animate-spin')} />
-          </button>
-          <Can resource="documents" action="create">
-            <button
-              onClick={() => setIsFolderModalOpen(true)}
-              className="btn-secondary"
-              disabled={isLoading || isSaving}
+      <PageHeader
+        eyebrow="Dokumen"
+        title={t('documents.title')}
+        subtitle={t('documents.subtitle')}
+        actions={
+          <>
+            <IconButton
+              onClick={() => fetchFolders(activeFolderId)}
+              disabled={isLoading}
+              aria-label="Refresh"
             >
-              <FolderPlus className="h-4.5 w-4.5" />
-              {t('documents.actions.createFolder')}
-            </button>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="btn-primary"
-              disabled={isLoading || isSaving}
-            >
-              <UploadCloud className="h-4.5 w-4.5" />
-              {t('documents.actions.upload')}
-            </button>
-          </Can>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileSelect}
-            className="hidden"
-            accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.csv"
-          />
-        </div>
-      </div>
+              <RefreshCcw className={cn('h-5 w-5', isLoading && 'animate-spin')} />
+            </IconButton>
+            <Can resource="documents" action="create">
+              <Button
+                variant="secondary"
+                onClick={() => setIsFolderModalOpen(true)}
+                disabled={isLoading || isSaving}
+                icon={<FolderPlus className="h-4 w-4" />}
+              >
+                {t('documents.actions.createFolder')}
+              </Button>
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isLoading || isSaving}
+                icon={<UploadCloud className="h-4 w-4" />}
+              >
+                {t('documents.actions.upload')}
+              </Button>
+            </Can>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              className="hidden"
+              accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.csv"
+            />
+          </>
+        }
+      />
 
       {/* Breadcrumbs */}
       <div className="flex items-center gap-2 text-sm">
         {breadcrumbs.map((crumb, idx) => (
           <React.Fragment key={idx}>
-            {idx > 0 && <ChevronRight className="h-4 w-4 text-muted-foreground/60" />}
+            {idx > 0 && <ChevronRight className="h-4 w-4 text-stone/60" />}
             <button
               onClick={() => {
                 setActiveFolderId(crumb.id);
@@ -569,7 +577,7 @@ const DocumentManagementPage: React.FC = () => {
               }}
               className={cn(
                 'font-medium transition hover:text-primary-blue',
-                idx === breadcrumbs.length - 1 ? 'text-foreground font-semibold' : 'text-muted-foreground',
+                idx === breadcrumbs.length - 1 ? 'font-semibold text-ink-deep' : 'text-stone',
               )}
             >
               {crumb.name}
@@ -581,51 +589,47 @@ const DocumentManagementPage: React.FC = () => {
       {/* Toolbar / Search & Filters */}
       <div className="toolbar">
         <div className="relative w-full sm:max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone" />
           <input
             value={searchQuery}
             onChange={e => {
               setSearchQuery(e.target.value);
               setCurrentPage(1);
             }}
-            className="form-input pl-9"
+            className="form-input pl-11"
             placeholder={t('documents.searchPlaceholder')}
             disabled={isLoading}
           />
         </div>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+        <div className="flex w-full items-center justify-end gap-3 sm:w-auto">
           {/* Status Filter */}
-          <div className="relative">
-            <select
-              value={statusFilter}
-              onChange={e => {
-                setStatusFilter(e.target.value as FileStatus | 'All');
-                setCurrentPage(1);
-              }}
-              className="form-input pr-8"
-              disabled={isLoading}
-            >
-              <option value="All">{t('documents.status.all')}</option>
-              <option value="Verified">{t('documents.status.verified')}</option>
-              <option value="Pending">{t('documents.status.pending')}</option>
-              <option value="Archived">{t('documents.status.archived')}</option>
-            </select>
-          </div>
+          <Select
+            value={statusFilter}
+            onChange={e => {
+              setStatusFilter(e.target.value as FileStatus | 'All');
+              setCurrentPage(1);
+            }}
+            className="w-auto"
+            disabled={isLoading}
+          >
+            <option value="All">{t('documents.status.all')}</option>
+            <option value="Verified">{t('documents.status.verified')}</option>
+            <option value="Pending">{t('documents.status.pending')}</option>
+            <option value="Archived">{t('documents.status.archived')}</option>
+          </Select>
 
           {/* Sort Filter */}
-          <div className="relative">
-            <select
-              value={sortBy}
-              onChange={e => setSortBy(e.target.value as 'name' | 'date' | 'size')}
-              className="form-input pr-8"
-              disabled={isLoading}
-            >
-              <option value="name">{t('documents.sort.name')}</option>
-              <option value="date">{t('documents.sort.date')}</option>
-              <option value="size">{t('documents.sort.size')}</option>
-            </select>
-          </div>
+          <Select
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value as 'name' | 'date' | 'size')}
+            className="w-auto"
+            disabled={isLoading}
+          >
+            <option value="name">{t('documents.sort.name')}</option>
+            <option value="date">{t('documents.sort.date')}</option>
+            <option value="size">{t('documents.sort.size')}</option>
+          </Select>
         </div>
       </div>
 
@@ -638,43 +642,44 @@ const DocumentManagementPage: React.FC = () => {
           {/* FOLDERS GRID SECTION */}
           {(isLoading || currentFolders.length > 0) && (
             <div className="space-y-3">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              <Eyebrow>
                 {t('documents.foldersTitle')} ({currentFolders.length})
-              </h2>
+              </Eyebrow>
 
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {isLoading ? (
                   Array.from({ length: 3 }).map((_, idx) => (
                     <div
                       key={idx}
-                      className="bg-card p-4 rounded-lg border border-divider shadow-sm animate-pulse flex items-center gap-3"
+                      className="panel flex animate-pulse items-center gap-3 p-4"
                     >
-                      <div className="h-10 w-10 bg-surface rounded-lg shrink-0"></div>
+                      <div className="h-10 w-10 shrink-0 rounded-full bg-surface"></div>
                       <div className="flex-1 space-y-2">
-                        <div className="h-4 bg-surface rounded w-3/4"></div>
-                        <div className="h-3 bg-surface rounded w-1/2"></div>
+                        <div className="h-4 w-3/4 rounded bg-surface"></div>
+                        <div className="h-3 w-1/2 rounded bg-surface"></div>
                       </div>
                     </div>
                   ))
                 ) : (
                   currentFolders.map(folder => (
-                    <div
+                    <Card
                       key={folder.id}
-                      className="group relative flex items-center justify-between rounded-lg border border-divider bg-card p-4 transition hover:border-primary-blue/30 hover:shadow-md cursor-pointer"
+                      interactive
+                      className="group relative flex items-center justify-between p-4"
                       onClick={() => {
                         setActiveFolderId(folder.id);
                         setCurrentPage(1);
                       }}
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-blue/10 text-primary-blue">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-blue/10 text-primary-blue">
                           <Folder className="h-5 w-5 fill-primary-blue/10" />
                         </div>
                         <div className="min-w-0">
-                          <h3 className="truncate text-sm font-semibold text-foreground">
+                          <h3 className="truncate text-sm font-semibold text-ink-deep">
                             {folder.name}
                           </h3>
-                          <p className="mt-0.5 text-xs text-muted-foreground">
+                          <p className="mt-0.5 text-xs text-stone">
                             {folder.totalFiles} files · {folder.created_by_name}
                           </p>
                         </div>
@@ -687,37 +692,37 @@ const DocumentManagementPage: React.FC = () => {
                           e.stopPropagation();
                         }}
                       >
-                        <button
+                        <RowAction
                           onClick={() =>
                             setActiveFolderMenuId(activeFolderMenuId === folder.id ? null : folder.id)
                           }
-                          className="rounded-lg p-2 text-muted-foreground hover:bg-surface hover:text-foreground transition"
+                          aria-label="Menu"
                         >
                           <MoreVertical className="h-4 w-4" />
-                        </button>
+                        </RowAction>
                         {activeFolderMenuId === folder.id && (
-                          <div className="absolute right-0 top-full z-10 mt-1 w-36 rounded-lg border border-divider bg-card p-1 shadow-lg animate-fade-in">
+                          <div className="absolute right-0 top-full z-10 mt-1 w-36 rounded-2xl border border-hairline-soft bg-card p-1 shadow-lg animate-fade-in">
                             <Can resource="documents" action="update">
                               <button
                                 onClick={() => openRenameModal(folder.id, 'folder', folder.name)}
-                                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-foreground hover:bg-surface"
+                                className="flex w-full items-center gap-2 rounded-full px-3 py-2 text-left text-xs font-medium text-ink-deep hover:bg-surface"
                               >
                                 <Edit2 className="h-3.5 w-3.5" />
                                 {t('documents.actions.rename')}
                               </button>
                               <button
                                 onClick={() => openMoveModal(folder.id, 'folder')}
-                                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-foreground hover:bg-surface"
+                                className="flex w-full items-center gap-2 rounded-full px-3 py-2 text-left text-xs font-medium text-ink-deep hover:bg-surface"
                               >
                                 <Move className="h-3.5 w-3.5" />
                                 {t('documents.actions.move')}
                               </button>
                             </Can>
                             <Can resource="documents" action="delete">
-                              <hr className="my-1 border-divider" />
+                              <hr className="my-1 border-hairline-soft" />
                               <button
                                 onClick={() => handleDeleteFolder(folder)}
-                                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-semibold text-danger-red hover:bg-danger-red/5"
+                                className="flex w-full items-center gap-2 rounded-full px-3 py-2 text-left text-xs font-semibold text-danger-red hover:bg-danger-red/5"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
                                 {t('documents.actions.delete')}
@@ -726,7 +731,7 @@ const DocumentManagementPage: React.FC = () => {
                           </div>
                         )}
                       </div>
-                    </div>
+                    </Card>
                   ))
                 )}
               </div>
@@ -735,25 +740,25 @@ const DocumentManagementPage: React.FC = () => {
 
           {/* FILES TABLE SECTION */}
           <div className="space-y-3">
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            <Eyebrow>
               {t('documents.filesTitle')} ({filteredFiles.length})
-            </h2>
+            </Eyebrow>
 
-            <div className="panel overflow-hidden">
+            <Card className="overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+                <table className="w-full text-left">
                   <thead className="table-header">
                     <tr>
-                      <th className="px-6 py-4">{t('documents.table.name')}</th>
-                      <th className="px-6 py-4">{t('documents.table.reference')}</th>
-                      <th className="px-6 py-4">{t('documents.table.uploadedBy')}</th>
-                      <th className="px-6 py-4">{t('documents.table.size')}</th>
-                      <th className="px-6 py-4">{t('documents.table.date')}</th>
-                      <th className="px-6 py-4">{t('documents.table.status')}</th>
-                      <th className="px-6 py-4 text-right">{t('documents.table.actions')}</th>
+                      <th className="px-6 py-3.5">{t('documents.table.name')}</th>
+                      <th className="px-6 py-3.5">{t('documents.table.reference')}</th>
+                      <th className="px-6 py-3.5">{t('documents.table.uploadedBy')}</th>
+                      <th className="px-6 py-3.5">{t('documents.table.size')}</th>
+                      <th className="px-6 py-3.5">{t('documents.table.date')}</th>
+                      <th className="px-6 py-3.5">{t('documents.table.status')}</th>
+                      <th className="px-6 py-3.5 text-right">{t('documents.table.actions')}</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-divider">
+                  <tbody className="divide-y divide-hairline-soft">
                     {isLoading ? (
                       <>
                         <SkeletonRow />
@@ -762,44 +767,42 @@ const DocumentManagementPage: React.FC = () => {
                       </>
                     ) : filteredFiles.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-6 py-14 text-center">
-                          <File className="mx-auto mb-3 h-10 w-10 text-muted-foreground/30" />
-                          <p className="text-sm font-semibold text-foreground">
-                            {t('documents.empty.title')}
-                          </p>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {t('documents.empty.subtitle')}
-                          </p>
+                        <td colSpan={7}>
+                          <EmptyState
+                            icon={<File className="h-6 w-6" />}
+                            title={t('documents.empty.title')}
+                            description={t('documents.empty.subtitle')}
+                          />
                         </td>
                       </tr>
                     ) : (
                       paginatedFiles.map(file => (
                         <tr
                           key={file.id}
-                          className="hover:bg-surface/50 transition-colors"
+                          className="transition-colors hover:bg-surface/60"
                         >
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface text-muted-foreground">
-                                <FileText className="h-4.5 w-4.5" />
+                              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-surface text-slate">
+                                <FileText className="h-4 w-4" />
                               </div>
                               <div className="min-w-0 max-w-[200px]">
-                                <p className="truncate text-sm font-semibold text-foreground leading-snug">
+                                <p className="truncate text-sm font-semibold leading-snug text-ink-deep">
                                   {file.name}
                                 </p>
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-sm text-foreground">
+                          <td className="px-6 py-4 text-sm text-ink-deep">
                             {renderReferenceBadge(file.reference_type, file.reference_id)}
                           </td>
-                          <td className="px-6 py-4 text-sm text-foreground">
+                          <td className="px-6 py-4 text-sm text-ink-deep">
                             {file.uploaded_by_name}
                           </td>
-                          <td className="px-6 py-4 text-sm text-muted-foreground">
+                          <td className="px-6 py-4 text-sm text-stone">
                             {file.size}
                           </td>
-                          <td className="px-6 py-4 text-sm text-muted-foreground">
+                          <td className="px-6 py-4 text-sm text-stone">
                             {file.upload_date}
                           </td>
                           <td className="px-6 py-4">
@@ -810,26 +813,26 @@ const DocumentManagementPage: React.FC = () => {
                               className="relative inline-block text-left"
                               onClick={e => e.stopPropagation()}
                             >
-                              <button
+                              <RowAction
                                 onClick={() =>
                                   setActiveFileMenuId(activeFileMenuId === file.id ? null : file.id)
                                 }
-                                className="rounded-lg p-2 text-muted-foreground hover:bg-surface hover:text-foreground transition"
+                                aria-label="Menu"
                               >
                                 <MoreVertical className="h-4 w-4" />
-                              </button>
+                              </RowAction>
                               {activeFileMenuId === file.id && (
-                                <div className="absolute right-0 top-full z-10 mt-1 w-40 rounded-lg border border-divider bg-card p-1 shadow-lg animate-fade-in">
+                                <div className="absolute right-0 top-full z-10 mt-1 w-40 rounded-2xl border border-hairline-soft bg-card p-1 shadow-lg animate-fade-in">
                                   <button
                                     onClick={() => handlePreview(file)}
-                                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-foreground hover:bg-surface"
+                                    className="flex w-full items-center gap-2 rounded-full px-3 py-2 text-left text-xs font-medium text-ink-deep hover:bg-surface"
                                   >
                                     <Eye className="h-3.5 w-3.5" />
                                     {t('documents.actions.preview')}
                                   </button>
                                   <button
                                     onClick={() => handleDownload(file.id, file.name)}
-                                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-foreground hover:bg-surface"
+                                    className="flex w-full items-center gap-2 rounded-full px-3 py-2 text-left text-xs font-medium text-ink-deep hover:bg-surface"
                                   >
                                     <Download className="h-3.5 w-3.5" />
                                     {t('documents.actions.download')}
@@ -837,24 +840,24 @@ const DocumentManagementPage: React.FC = () => {
                                   <Can resource="documents" action="update">
                                     <button
                                       onClick={() => openRenameModal(file.id, 'file', file.name)}
-                                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-foreground hover:bg-surface"
+                                      className="flex w-full items-center gap-2 rounded-full px-3 py-2 text-left text-xs font-medium text-ink-deep hover:bg-surface"
                                     >
                                       <Edit2 className="h-3.5 w-3.5" />
                                       {t('documents.actions.rename')}
                                     </button>
                                     <button
                                       onClick={() => openMoveModal(file.id, 'file')}
-                                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-foreground hover:bg-surface"
+                                      className="flex w-full items-center gap-2 rounded-full px-3 py-2 text-left text-xs font-medium text-ink-deep hover:bg-surface"
                                     >
                                       <Move className="h-3.5 w-3.5" />
                                       {t('documents.actions.move')}
                                     </button>
                                   </Can>
                                   <Can resource="documents" action="delete">
-                                    <hr className="my-1 border-divider" />
+                                    <hr className="my-1 border-hairline-soft" />
                                     <button
                                       onClick={() => handleDeleteFile(file)}
-                                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-semibold text-danger-red hover:bg-danger-red/5"
+                                      className="flex w-full items-center gap-2 rounded-full px-3 py-2 text-left text-xs font-semibold text-danger-red hover:bg-danger-red/5"
                                     >
                                       <Trash2 className="h-3.5 w-3.5" />
                                       {t('documents.actions.delete')}
@@ -873,36 +876,38 @@ const DocumentManagementPage: React.FC = () => {
 
               {/* Pagination UI */}
               {filteredFiles.length > ITEMS_PER_PAGE && !isLoading && (
-                <div className="flex items-center justify-between border-t border-divider px-6 py-4 bg-card">
-                  <span className="text-xs text-muted-foreground">
+                <div className="flex items-center justify-between border-t border-hairline-soft bg-card px-6 py-4">
+                  <span className="text-xs text-stone">
                     {t('documents.table.paginationText', {
                       start: (currentPage - 1) * ITEMS_PER_PAGE + 1,
                       end: Math.min(currentPage * ITEMS_PER_PAGE, filteredFiles.length),
                       total: filteredFiles.length,
                     })}
                   </span>
-                  <div className="flex gap-2">
-                    <button
+                  <div className="flex items-center gap-2">
+                    <IconButton
                       onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                       disabled={currentPage === 1}
-                      className="icon-button h-9 w-9 disabled:opacity-50"
+                      className="h-9 w-9"
+                      aria-label="Previous"
                     >
                       <ChevronLeft className="h-4 w-4" />
-                    </button>
-                    <span className="flex items-center text-xs font-semibold px-3 border border-divider rounded-lg bg-surface">
+                    </IconButton>
+                    <span className="flex items-center rounded-full border border-hairline-soft bg-surface px-3 text-xs font-semibold tabular-nums">
                       {currentPage} / {totalPages}
                     </span>
-                    <button
+                    <IconButton
                       onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                       disabled={currentPage === totalPages}
-                      className="icon-button h-9 w-9 disabled:opacity-50"
+                      className="h-9 w-9"
+                      aria-label="Next"
                     >
                       <ChevronRightIcon className="h-4 w-4" />
-                    </button>
+                    </IconButton>
                   </div>
                 </div>
               )}
-            </div>
+            </Card>
           </div>
 
           {/* DRAG-AND-DROP FILE UPLOAD AREA */}
@@ -911,52 +916,52 @@ const DocumentManagementPage: React.FC = () => {
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             className={cn(
-              'border-2 border-dashed rounded-lg p-8 text-center transition flex flex-col items-center justify-center gap-3 cursor-pointer',
+              'flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-8 text-center transition',
               isDragging
                 ? 'border-primary-blue bg-primary-blue/5'
-                : 'border-divider bg-card hover:border-primary-blue/30',
+                : 'border-hairline bg-card hover:border-primary-blue/40',
             )}
             onClick={() => fileInputRef.current?.click()}
           >
-            <UploadCloud className="h-10 w-10 text-primary-blue animate-bounce" />
+            <UploadCloud className="h-10 w-10 animate-bounce text-primary-blue" />
             <div>
-              <p className="text-sm font-semibold text-foreground">
+              <p className="text-sm font-semibold text-ink-deep">
                 {t('documents.uploadArea.dragDrop')}
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-1 text-xs text-stone">
                 {t('documents.uploadArea.supportText')}
               </p>
             </div>
-            <button className="btn-secondary px-3 py-1.5 text-xs">
+            <Button variant="subtle" size="sm">
               {t('documents.uploadArea.orBrowse')}
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Sidebar Info Panels */}
         <div className="space-y-5">
-          
+
           {/* STORAGE USAGE PANEL */}
-          <section className="panel p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <HardDrive className="h-4.5 w-4.5 text-primary-blue" />
-              <h2 className="text-sm font-bold text-foreground">
+          <Card className="p-5">
+            <div className="mb-4 flex items-center gap-2">
+              <HardDrive className="h-4 w-4 text-primary-blue" />
+              <h2 className="text-sm font-semibold text-ink-deep">
                 {t('documents.storage.title')}
               </h2>
             </div>
 
             <div className="space-y-4">
               <div>
-                <p className="text-2xl font-bold tracking-tight text-foreground">
+                <p className="text-2xl font-semibold tracking-tight text-ink-deep tabular-nums">
                   {totalStorageUsed} GB
                 </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="mt-0.5 text-xs text-stone">
                   {t('documents.storage.usedOf')} {totalStorageCapacity} GB
                 </p>
               </div>
 
               {/* Progress visual bar */}
-              <div className="h-2.5 w-full bg-secondary rounded-full overflow-hidden flex">
+              <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-surface">
                 {storageBreakdown.map(cat => (
                   <div
                     key={cat.name}
@@ -968,41 +973,41 @@ const DocumentManagementPage: React.FC = () => {
               </div>
 
               {/* Category legends */}
-              <div className="space-y-2 pt-2 border-t border-divider">
+              <div className="space-y-2 border-t border-hairline-soft pt-2">
                 {storageBreakdown.map(cat => (
                   <div key={cat.name} className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2">
-                      <span className={cn('h-2.5 w-2.5 rounded-full shrink-0', cat.color_class)} />
-                      <span className="font-medium text-muted-foreground">{cat.name}</span>
+                      <span className={cn('h-2.5 w-2.5 shrink-0 rounded-full', cat.color_class)} />
+                      <span className="font-medium text-stone">{cat.name}</span>
                     </div>
-                    <span className="font-semibold text-foreground">{cat.used} GB</span>
+                    <span className="font-semibold text-ink-deep">{cat.used} GB</span>
                   </div>
                 ))}
               </div>
             </div>
-          </section>
+          </Card>
 
           {/* RECENT ACTIVITY STREAM */}
-          <section className="panel p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <Activity className="h-4.5 w-4.5 text-primary-blue" />
-              <h2 className="text-sm font-bold text-foreground">
+          <Card className="p-5">
+            <div className="mb-4 flex items-center gap-2">
+              <Activity className="h-4 w-4 text-primary-blue" />
+              <h2 className="text-sm font-semibold text-ink-deep">
                 {t('documents.activity.title')}
               </h2>
             </div>
 
-            <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
+            <div className="max-h-[300px] space-y-4 overflow-y-auto pr-1">
               {activities.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-4">{t('documents.activity.empty')}</p>
+                <p className="py-4 text-center text-xs text-stone">{t('documents.activity.empty')}</p>
               ) : (
                 activities.map(log => (
-                  <div key={log.id} className="flex items-start gap-3 border-l-2 border-divider pl-3 relative">
+                  <div key={log.id} className="relative flex items-start gap-3 border-l-2 border-hairline-soft pl-3">
                     <span className="absolute -left-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-primary-blue" />
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold text-foreground leading-snug break-words">
+                      <p className="break-words text-xs font-semibold leading-snug text-ink-deep">
                         {log.details}
                       </p>
-                      <p className="mt-1 text-[10px] text-muted-foreground">
+                      <p className="mt-1 text-[10px] text-stone">
                         {log.time} · {log.user}
                       </p>
                     </div>
@@ -1010,205 +1015,142 @@ const DocumentManagementPage: React.FC = () => {
                 ))
               )}
             </div>
-          </section>
+          </Card>
         </div>
       </div>
 
       {/* CREATE FOLDER MODAL */}
-      {isFolderModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-          <form
-            onSubmit={handleCreateFolder}
-            className="w-full max-w-md rounded-lg border border-divider bg-card shadow-xl animate-fade-in-scale"
-          >
-            <div className="flex items-center justify-between border-b border-divider px-5 py-4">
-              <h2 className="text-base font-semibold text-foreground">
-                {t('documents.modals.createFolderTitle')}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setIsFolderModalOpen(false)}
-                className="rounded-lg p-2 hover:bg-surface text-muted-foreground"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="p-5 space-y-3">
-              <label className="block space-y-1.5">
-                <span className="text-xs font-semibold text-muted-foreground">
-                  {t('documents.modals.folderName')}
-                </span>
-                <input
-                  value={newFolderName}
-                  onChange={e => setNewFolderName(e.target.value)}
-                  className="form-input"
-                  placeholder={t('documents.modals.folderPlaceholder')}
-                  autoFocus
-                />
-              </label>
-            </div>
-
-            <div className="flex justify-end gap-3 border-t border-divider px-5 py-4">
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => setIsFolderModalOpen(false)}
-              >
-                {t('common.cancel')}
-              </button>
-              <button type="submit" className="btn-primary">
-                <Plus className="h-4 w-4" />
-                {t('common.create')}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+      <Modal
+        open={isFolderModalOpen}
+        onClose={() => setIsFolderModalOpen(false)}
+        eyebrow="Baru"
+        title={t('documents.modals.createFolderTitle')}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setIsFolderModalOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button type="submit" form="folder-form" icon={<Plus className="h-4 w-4" />}>
+              {t('common.create')}
+            </Button>
+          </>
+        }
+      >
+        <form id="folder-form" onSubmit={handleCreateFolder} className="space-y-4">
+          <Field label={t('documents.modals.folderName')}>
+            <Input
+              value={newFolderName}
+              onChange={e => setNewFolderName(e.target.value)}
+              placeholder={t('documents.modals.folderPlaceholder')}
+              autoFocus
+            />
+          </Field>
+        </form>
+      </Modal>
 
       {/* RENAME MODAL */}
-      {isRenameModalOpen && renameTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-          <form
-            onSubmit={handleRenameSubmit}
-            className="w-full max-w-md rounded-lg border border-divider bg-card shadow-xl animate-fade-in-scale"
-          >
-            <div className="flex items-center justify-between border-b border-divider px-5 py-4">
-              <h2 className="text-base font-semibold text-foreground">
-                {t('documents.modals.renameTitle')}: {renameTarget.currentName}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setIsRenameModalOpen(false)}
-                className="rounded-lg p-2 hover:bg-surface text-muted-foreground"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="p-5 space-y-3">
-              <label className="block space-y-1.5">
-                <span className="text-xs font-semibold text-muted-foreground">
-                  {t('documents.modals.renamePlaceholder')}
-                </span>
-                <input
-                  value={renameInputValue}
-                  onChange={e => setRenameInputValue(e.target.value)}
-                  className="form-input"
-                  autoFocus
-                />
-              </label>
-            </div>
-
-            <div className="flex justify-end gap-3 border-t border-divider px-5 py-4">
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => setIsRenameModalOpen(false)}
-              >
-                {t('common.cancel')}
-              </button>
-              <button type="submit" className="btn-primary">
-                {t('common.save')}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+      <Modal
+        open={isRenameModalOpen && !!renameTarget}
+        onClose={() => setIsRenameModalOpen(false)}
+        eyebrow="Edit"
+        title={renameTarget ? `${t('documents.modals.renameTitle')}: ${renameTarget.currentName}` : ''}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setIsRenameModalOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button type="submit" form="rename-form">
+              {t('common.save')}
+            </Button>
+          </>
+        }
+      >
+        <form id="rename-form" onSubmit={handleRenameSubmit} className="space-y-4">
+          <Field label={t('documents.modals.renamePlaceholder')}>
+            <Input
+              value={renameInputValue}
+              onChange={e => setRenameInputValue(e.target.value)}
+              autoFocus
+            />
+          </Field>
+        </form>
+      </Modal>
 
       {/* MOVE MODAL */}
-      {isMoveModalOpen && moveTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-          <form
-            onSubmit={handleMoveSubmit}
-            className="w-full max-w-md rounded-lg border border-divider bg-card shadow-xl animate-fade-in-scale"
-          >
-            <div className="flex items-center justify-between border-b border-divider px-5 py-4">
-              <h2 className="text-base font-semibold text-foreground">
-                {t('documents.modals.moveTitle')}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setIsMoveModalOpen(false)}
-                className="rounded-lg p-2 hover:bg-surface text-muted-foreground"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="p-5 space-y-3">
-              <label className="block space-y-1.5">
-                <span className="text-xs font-semibold text-muted-foreground">
-                  {t('documents.modals.selectFolder')}
-                </span>
-                <select
-                  value={selectedDestinationFolder}
-                  onChange={e => setSelectedDestinationFolder(e.target.value)}
-                  className="form-input"
-                >
-                  <option value="root">{t('documents.modals.rootFolder')}</option>
-                  {assignableFoldersForMove.map(f => (
-                    <option key={f.id} value={f.id}>
-                      {f.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            <div className="flex justify-end gap-3 border-t border-divider px-5 py-4">
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => setIsMoveModalOpen(false)}
-              >
-                {t('common.cancel')}
-              </button>
-              <button type="submit" className="btn-primary">
-                {t('documents.actions.move')}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+      <Modal
+        open={isMoveModalOpen && !!moveTarget}
+        onClose={() => setIsMoveModalOpen(false)}
+        eyebrow="Pindah"
+        title={t('documents.modals.moveTitle')}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setIsMoveModalOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button type="submit" form="move-form" icon={<Move className="h-4 w-4" />}>
+              {t('documents.actions.move')}
+            </Button>
+          </>
+        }
+      >
+        <form id="move-form" onSubmit={handleMoveSubmit} className="space-y-4">
+          <Field label={t('documents.modals.selectFolder')}>
+            <Select
+              value={selectedDestinationFolder}
+              onChange={e => setSelectedDestinationFolder(e.target.value)}
+            >
+              <option value="root">{t('documents.modals.rootFolder')}</option>
+              {assignableFoldersForMove.map(f => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        </form>
+      </Modal>
 
       {/* PREVIEW MODAL */}
-      {isPreviewOpen && previewFile && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4">
-          <div className="w-full max-w-3xl rounded-lg border border-divider bg-card shadow-2xl flex flex-col md:flex-row overflow-hidden animate-fade-in-scale">
-            
+      <Modal
+        open={isPreviewOpen && !!previewFile}
+        onClose={() => setIsPreviewOpen(false)}
+        eyebrow="Preview"
+        title={t('documents.modals.previewMetadata')}
+        size="xl"
+      >
+        {previewFile && (
+          <div className="-mx-6 -my-5 flex flex-col overflow-hidden md:flex-row">
             {/* Left Box: Graphic / File View */}
-            <div className="flex-1 bg-surface p-6 flex items-center justify-center border-r border-divider min-h-[300px] max-h-[450px]">
+            <div className="flex max-h-[450px] min-h-[300px] flex-1 items-center justify-center border-b border-hairline-soft bg-surface p-6 md:border-b-0 md:border-r">
               {['png', 'jpg', 'jpeg'].includes(previewFile.type.toLowerCase()) ? (
-                <div className="flex flex-col items-center justify-center text-center w-full">
+                <div className="flex w-full flex-col items-center justify-center text-center">
                   {previewUrl ? (
-                    <div className="rounded-lg border border-divider overflow-hidden bg-card max-w-full max-h-[320px] shadow-sm">
+                    <div className="max-h-[320px] max-w-full overflow-hidden rounded-2xl border border-hairline-soft bg-card shadow-soft-sm">
                       <img
                         src={previewUrl}
                         alt={previewFile.name}
-                        className="object-contain max-h-[320px]"
+                        className="max-h-[320px] object-contain"
                       />
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center gap-2">
-                      <RefreshCcw className="w-8 h-8 animate-spin text-primary-blue" />
-                      <span className="text-xs text-muted-foreground">Memuat gambar...</span>
+                      <RefreshCcw className="h-8 w-8 animate-spin text-primary-blue" />
+                      <span className="text-xs text-stone">Memuat gambar...</span>
                     </div>
                   )}
                 </div>
               ) : (
-                // Non-image generic beautiful representation
-                <div className="flex flex-col items-center justify-center text-center gap-4">
+                <div className="flex flex-col items-center justify-center gap-4 text-center">
                   <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-blue/10 text-primary-blue shadow-inner">
                     <FileText className="h-8 w-8" />
                   </div>
                   <div>
-                    <p className="text-base font-bold text-foreground">{previewFile.name}</p>
-                    <p className="text-xs text-muted-foreground uppercase mt-1">
+                    <p className="text-base font-semibold text-ink-deep">{previewFile.name}</p>
+                    <p className="mt-1 text-xs uppercase text-stone">
                       {previewFile.type} DOCUMENT
                     </p>
                   </div>
-                  <span className="text-[11px] text-muted-foreground max-w-xs leading-relaxed">
+                  <span className="max-w-xs text-[11px] leading-relaxed text-stone">
                     {t('documents.modals.unsupportedPreview', { type: previewFile.type.toUpperCase() })}
                   </span>
                 </div>
@@ -1216,105 +1158,74 @@ const DocumentManagementPage: React.FC = () => {
             </div>
 
             {/* Right Box: Metadata Details */}
-            <div className="w-full md:w-[280px] p-5 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-4 border-b border-divider pb-3">
-                  <h3 className="text-sm font-bold text-foreground">
-                    {t('documents.modals.previewMetadata')}
-                  </h3>
-                  <button
-                    onClick={() => setIsPreviewOpen(false)}
-                    className="rounded-lg p-1 hover:bg-surface text-muted-foreground"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+            <div className="flex w-full flex-col justify-between p-5 md:w-[280px]">
+              <div className="space-y-3.5">
+                <div>
+                  <Eyebrow>{t('documents.table.name')}</Eyebrow>
+                  <p className="mt-0.5 break-all text-xs font-semibold leading-snug text-ink-deep">
+                    {previewFile.name}
+                  </p>
                 </div>
 
-                <div className="space-y-3.5">
-                  <div>
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block">
-                      {t('documents.table.name')}
-                    </label>
-                    <p className="text-xs font-bold text-foreground mt-0.5 leading-snug break-all">
-                      {previewFile.name}
-                    </p>
-                  </div>
+                <div>
+                  <Eyebrow>{t('documents.table.type')}</Eyebrow>
+                  <p className="mt-0.5 text-xs font-semibold uppercase text-ink-deep">
+                    {previewFile.type}
+                  </p>
+                </div>
 
-                  <div>
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block">
-                      {t('documents.table.type')}
-                    </label>
-                    <p className="text-xs font-semibold text-foreground uppercase mt-0.5">
-                      {previewFile.type}
-                    </p>
-                  </div>
+                <div>
+                  <Eyebrow>{t('documents.table.size')}</Eyebrow>
+                  <p className="mt-0.5 text-xs font-semibold text-ink-deep">
+                    {previewFile.size}
+                  </p>
+                </div>
 
-                  <div>
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block">
-                      {t('documents.table.size')}
-                    </label>
-                    <p className="text-xs font-semibold text-foreground mt-0.5">
-                      {previewFile.size}
-                    </p>
-                  </div>
+                <div>
+                  <Eyebrow>R2 Object Key</Eyebrow>
+                  <p className="mt-0.5 break-all rounded-lg bg-surface p-1 font-mono text-[10px] text-stone">
+                    {previewFile.r2_key}
+                  </p>
+                </div>
 
-                  <div>
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block">
-                      R2 Object Key
-                    </label>
-                    <p className="text-[10px] font-mono text-muted-foreground mt-0.5 break-all bg-secondary p-1 rounded">
-                      {previewFile.r2_key}
-                    </p>
+                <div>
+                  <Eyebrow>{t('documents.table.reference')}</Eyebrow>
+                  <div className="mt-1">
+                    {renderReferenceBadge(previewFile.reference_type, previewFile.reference_id)}
                   </div>
+                </div>
 
-                  <div>
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block">
-                      {t('documents.table.reference')}
-                    </label>
-                    <div className="mt-1">
-                      {renderReferenceBadge(previewFile.reference_type, previewFile.reference_id)}
-                    </div>
-                  </div>
+                <div>
+                  <Eyebrow>{t('documents.table.date')}</Eyebrow>
+                  <p className="mt-0.5 text-xs font-semibold text-ink-deep">
+                    {previewFile.upload_date}
+                  </p>
+                </div>
 
-                  <div>
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block">
-                      {t('documents.table.date')}
-                    </label>
-                    <p className="text-xs font-semibold text-foreground mt-0.5">
-                      {previewFile.upload_date}
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-1">
-                      {t('documents.table.status')}
-                    </label>
-                    {renderStatus(previewFile.status)}
-                  </div>
+                <div>
+                  <Eyebrow className="mb-1">{t('documents.table.status')}</Eyebrow>
+                  {renderStatus(previewFile.status)}
                 </div>
               </div>
 
               {/* Modal footer CTA */}
-              <div className="flex gap-2 pt-5 border-t border-divider mt-5">
-                <button
-                  onClick={() => setIsPreviewOpen(false)}
-                  className="btn-secondary flex-1 text-xs"
-                >
+              <div className="mt-5 flex gap-2 border-t border-hairline-soft pt-5">
+                <Button variant="secondary" size="sm" block onClick={() => setIsPreviewOpen(false)}>
                   {t('common.close')}
-                </button>
-                <button
+                </Button>
+                <Button
+                  size="sm"
+                  block
                   onClick={() => handleDownload(previewFile.id, previewFile.name)}
-                  className="btn-primary flex-1 text-xs"
+                  icon={<Download className="h-3 w-3" />}
                 >
-                  <Download className="h-3 w-3" />
                   {t('common.download')}
-                </button>
+                </Button>
               </div>
             </div>
-
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
 
     </div>
   );

@@ -65,7 +65,7 @@ function restoreDraft(session: InspectionSession): InspectionSession {
     const draft = JSON.parse(saved) as Partial<InspectionSession>;
     return {
       ...session,
-      responses: draft.responses ?? session.responses,
+      responses: { ...session.responses, ...(draft.responses || {}) },
       currentSectionIndex: draft.currentSectionIndex ?? session.currentSectionIndex,
       lastSavedAt: draft.lastSavedAt,
     };

@@ -101,7 +101,7 @@ async function getDownloadUrl(id: string): Promise<DownloadUrlResponse> {
 }
 
 async function updateDocument(id: string, req: UpdateDocumentRequest): Promise<DocumentFile> {
-  const res = await apiClient.put<unknown>(API_ENDPOINTS.DOCUMENTS.DETAIL(id), req);
+  const res = await apiClient.put<unknown>(API_ENDPOINTS.DOCUMENTS.UPDATE(id), req);
   return unwrapData<DocumentFile>(res.data);
 }
 

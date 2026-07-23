@@ -95,7 +95,7 @@ function normalizeInspection(raw: unknown): InspectionSummary {
   const site = toRecord(record.site);
   const assignee = toRecord(record.assignee ?? record.user ?? record.auditor);
   const id = toStringValue(record.id ?? record.inspection_id ?? record.uuid);
-  const templateId = toStringValue(record.template_id ?? record.templateId ?? template.id);
+  const templateId = toStringValue(record.template_id ?? record.templateId ?? template.template_id ?? template.templateId ?? template.id);
   const title =
     toStringValue(record.title ?? record.name) ||
     `${toStringValue(template.title ?? template.name, 'Inspection')} / ${toStringValue(site.name, '-')}`;
@@ -261,25 +261,42 @@ function normalizeResponses(raw: unknown) {
     list.map(item => {
       const record = toRecord(item);
       const fieldId = toStringValue(record.field_id ?? record.fieldId);
-      const attachmentsList = Array.isArray(record.attachments)
-        ? record.attachments.map(a => {
-            const att = toRecord(a);
-            return {
-              uri: toStringValue(att.file_url),
-              attachment_id: toStringValue(att.id),
-              file_url: toStringValue(att.file_url),
-              file_type: toStringValue(att.file_type),
-              filename: toStringValue(att.filename),
-              type: toStringValue(att.type) as 'issue' | 'general',
-            };
-          })
-        : [];
+      
+      const isArrayValue = Array.isArray(record.value);
+      const attachmentsList = isArrayValue
+        ? (record.value as string[]).map(url => ({
+            uri: toStringValue(url),
+            file_url: toStringValue(url),
+            file_type: 'image/jpeg',
+            filename: toStringValue(url).split('/').pop() ?? toStringValue(url),
+            type: (record.note_type === 'issue' ? 'issue' : 'general') as 'issue' | 'general',
+          }))
+        : Array.isArray(record.attachments)
+          ? record.attachments.map(a => {
+              const att = toRecord(a);
+              return {
+                uri: toStringValue(att.file_url),
+                attachment_id: toStringValue(att.id),
+                file_url: toStringValue(att.file_url),
+                file_type: toStringValue(att.file_type),
+                filename: toStringValue(att.filename),
+                type: toStringValue(att.type) as 'issue' | 'general',
+              };
+            })
+          : [];
+
+      let finalValue = record.value ?? record.answer ?? record.response_value;
+      if (typeof finalValue === 'object' && finalValue !== null && !Array.isArray(finalValue)) {
+        const obj = finalValue as Record<string, unknown>;
+        finalValue = obj.answer ?? obj.value ?? finalValue;
+      }
+
       return [
         fieldId,
         {
           fieldId,
           fieldValueId: toStringValue(record.id || record.field_value_id),
-          value: record.value ?? record.answer ?? record.response_value,
+          value: finalValue,
           note: toStringValue(record.note ?? record.notes) || undefined,
           noteType: toStringValue(record.note_type ?? record.noteType) || undefined,
           attachments: attachmentsList,
@@ -635,8 +652,21 @@ export const inspectionService = {
 
   async getDashboardStats(): Promise<DashboardStatsResponse> {
     try {
-      const res = await apiClient.get<DashboardStatsResponse>(API_ENDPOINTS.INSPECTIONS.DASHBOARD_STATS);
-      return res.data;
+      const res = await apiClient.get<any>(API_ENDPOINTS.INSPECTIONS.DASHBOARD_STATS);
+      const data = unwrapData(res.data) as any;
+      const resData = res.data as any;
+      const counts = (data?.counts || resData?.counts || { completed: 0, active: 0, draft: 0 }) as any;
+      const total = (counts.completed || 0) + (counts.active || 0) + (counts.draft || 0);
+      return {
+        totalInspections: total,
+        totalInspectionsChange: '',
+        activeIssues: counts.active || 0,
+        activeIssuesChange: '',
+        auditorsOnline: 0,
+        auditorsOnlineChange: '',
+        avgCompliance: '0%',
+        avgComplianceChange: '',
+      };
     } catch (e) {
       if (e instanceof MockInterceptError) {
         await new Promise<void>(r => setTimeout(r, 400));

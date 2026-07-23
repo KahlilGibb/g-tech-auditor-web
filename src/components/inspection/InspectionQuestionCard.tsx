@@ -34,7 +34,11 @@ function isAnswered(field: TemplateField, response?: InspectionResponse) {
   if (field.type === 'instruction') return true;
   if (!response) return false;
   if (field.type === 'photo' || field.type === 'media') return (response.mediaUris?.length ?? 0) > 0;
-  if (field.type === 'signature') return Boolean((response.value as { signed?: boolean } | undefined)?.signed);
+  if (field.type === 'signature') {
+    const hasName = response.value !== undefined && response.value !== null && response.value !== '';
+    const hasAttachment = (response.attachments ?? []).some(a => a.type === 'general');
+    return Boolean(hasName && hasAttachment);
+  }
   if (field.type === 'checkbox') return Boolean(response.value);
   return response.value !== undefined && response.value !== null && response.value !== '';
 }
@@ -182,26 +186,62 @@ const InspectionQuestionCard: React.FC<InspectionQuestionCardProps> = ({
     }
 
     if (field.type === 'signature') {
-      const signature = (value as { name?: string; signed?: boolean } | undefined) ?? {};
+      const name = valueAsString(value);
+      const signatureAttachments = (response?.attachments ?? []).filter(a => a.type === 'general');
+      const hasSigned = signatureAttachments.length > 0;
+      const signatureUri = signatureAttachments[0]?.file_url ?? signatureAttachments[0]?.uri;
+
+      const handleSign = () => {
+        const slice = window.atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=');
+        const bytes = new Uint8Array(slice.length);
+        for (let i = 0; i < slice.length; i++) {
+          bytes[i] = slice.charCodeAt(i);
+        }
+        const file = new File([bytes], `signature-${field.id}.png`, { type: 'image/png' });
+        onAddMedia(field.id, file);
+      };
+
+      const handleClear = () => {
+        if (signatureUri) {
+          onRemoveMedia(field.id, signatureUri);
+        }
+      };
+
       return (
-        <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-          <input
-            className="form-input"
-            value={signature.name ?? ''}
-            onChange={event => onValueChange(field.id, { ...signature, name: event.target.value })}
-            placeholder="Nama penandatangan"
-          />
-          <button
-            type="button"
-            onClick={() => onValueChange(field.id, { ...signature, signed: true })}
-            className={cn(
-              'btn-secondary justify-center',
-              signature.signed && 'border-success-green/25 bg-success-green/10 text-success-green',
+        <div className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+            <input
+              className="form-input"
+              value={name}
+              onChange={event => onValueChange(field.id, event.target.value)}
+              placeholder="Nama penandatangan"
+            />
+            {hasSigned ? (
+              <button
+                type="button"
+                onClick={handleClear}
+                className="btn-secondary justify-center border-success-green/25 bg-success-green/10 text-success-green"
+              >
+                <Trash2 className="h-4 w-4" />
+                Hapus TTD
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSign}
+                className="btn-secondary justify-center"
+              >
+                <PenLine className="h-4 w-4" />
+                Tanda Tangan
+              </button>
             )}
-          >
-            <PenLine className="h-4 w-4" />
-            {signature.signed ? 'Signed' : 'Sign'}
-          </button>
+          </div>
+          {signatureUri && (
+            <div className="mt-2 max-w-xs rounded-lg border border-divider bg-surface p-2">
+              <p className="mb-1 text-[10px] font-semibold text-muted-foreground uppercase">File TTD:</p>
+              <img src={signatureUri} alt="Signature Preview" className="max-h-20 object-contain" />
+            </div>
+          )}
         </div>
       );
     }

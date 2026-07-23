@@ -12,7 +12,6 @@ import {
   FileText,
   Sliders,
   Play,
-  Search,
   RefreshCcw,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -23,6 +22,18 @@ import { actionService } from '../services/actionService';
 import { appSwal } from '../lib/appSwal';
 import { getApiErrorMessage } from '../lib/apiResponse';
 import { cn } from '../utils/cn';
+import {
+  Badge,
+  Button,
+  EmptyState,
+  IconButton,
+  PageHeader,
+  SearchInput,
+  Spinner,
+  TableWrap,
+  Td,
+  Th,
+} from '../components/ui';
 
 type TabKey =
   | 'users'
@@ -322,123 +333,115 @@ const TrashBinPage: React.FC = () => {
 
   return (
     <div className="page-shell">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Tempat Sampah</h1>
-          <p className="page-subtitle">Pulihkan data yang telah dihapus sementara atau bersihkan secara permanen.</p>
-        </div>
-        <button className="icon-button" onClick={fetchTrashedItems} disabled={isLoading}>
-          <RefreshCcw className={cn('h-5 w-5', isLoading && 'animate-spin')} />
-        </button>
-      </div>
+      <PageHeader
+        eyebrow="Recovery"
+        title="Tempat Sampah"
+        subtitle="Pulihkan data yang telah dihapus sementara atau bersihkan secara permanen."
+        actions={
+          <IconButton onClick={fetchTrashedItems} disabled={isLoading} aria-label="Refresh">
+            <RefreshCcw className={cn('h-5 w-5', isLoading && 'animate-spin')} />
+          </IconButton>
+        }
+      />
 
-      {/* Tabs */}
-      <div className="flex border-b border-divider overflow-x-auto scrollbar-none mb-6">
-        <div className="flex space-x-6 min-w-max px-1">
-          {tabsConfig.map(tab => {
-            const Icon = tab.icon;
-            const active = activeTab === tab.key;
-            return (
-              <button
-                key={tab.key}
-                onClick={() => {
-                  setActiveTab(tab.key);
-                  setQuery('');
-                }}
-                className={cn(
-                  'flex items-center gap-2 border-b-2 py-3 text-sm font-semibold transition-all',
-                  active
-                    ? 'border-primary-blue text-primary-blue'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
+      {/* Category tabs */}
+      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 hide-scrollbar">
+        {tabsConfig.map(tab => {
+          const Icon = tab.icon;
+          const active = activeTab === tab.key;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => {
+                setActiveTab(tab.key);
+                setQuery('');
+              }}
+              className={cn(
+                'inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold transition-all duration-150',
+                active
+                  ? 'bg-ink-deep text-white shadow-soft-sm'
+                  : 'border border-hairline-soft bg-card text-slate hover:bg-surface hover:text-ink-deep',
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       <div className="toolbar">
-        <div className="relative w-full sm:max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            className="form-input pl-9"
-            placeholder="Cari item di tempat sampah..."
-          />
-        </div>
-        <div className="rounded-lg border border-divider bg-card px-3 py-2 text-sm text-muted-foreground shadow-sm">
+        <SearchInput
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Cari item di tempat sampah..."
+        />
+        <Badge tone="outline" className="px-3.5 py-2 text-xs">
           {filteredItems.length} item terhapus
-        </div>
+        </Badge>
       </div>
 
-      <div className="panel overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="table-header">
-              <tr>
-                <th className="px-6 py-4">Nama / Judul</th>
-                <th className="px-6 py-4">Informasi Tambahan</th>
-                <th className="px-6 py-4 text-right">Aksi</th>
+      <TableWrap>
+        <thead className="table-header">
+          <tr>
+            <Th>Nama / Judul</Th>
+            <Th>Informasi Tambahan</Th>
+            <Th className="text-right">Aksi</Th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-hairline-soft">
+          {isLoading ? (
+            <tr>
+              <td colSpan={3} className="px-6 py-12 text-center">
+                <Spinner className="mx-auto h-6 w-6 text-primary-blue" />
+              </td>
+            </tr>
+          ) : filteredItems.length === 0 ? (
+            <tr>
+              <td colSpan={3}>
+                <EmptyState
+                  icon={<Trash2 className="h-6 w-6" />}
+                  title="Tempat sampah kosong"
+                  description={`Tidak ada data terhapus untuk kategori "${tabsConfig.find(t => t.key === activeTab)?.label}".`}
+                />
+              </td>
+            </tr>
+          ) : (
+            filteredItems.map(item => (
+              <tr key={item.id} className="transition hover:bg-surface/60">
+                <Td>
+                  <p className="text-sm font-semibold text-ink-deep">{item.title}</p>
+                  {item.subtitle && <p className="mt-0.5 text-xs text-stone">{item.subtitle}</p>}
+                </Td>
+                <Td className="text-sm text-stone">{item.metadata || '—'}</Td>
+                <Td className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={isProcessing}
+                      onClick={() => handleRestore(item)}
+                      icon={<RotateCcw className="h-3.5 w-3.5" />}
+                    >
+                      Pulihkan
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="!border-danger-red/25 !text-danger-red hover:!bg-danger-red/8"
+                      disabled={isProcessing}
+                      onClick={() => handlePermanentDelete(item)}
+                      icon={<Trash2 className="h-3.5 w-3.5" />}
+                    >
+                      Hapus Permanen
+                    </Button>
+                  </div>
+                </Td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-divider">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={3} className="px-6 py-12 text-center text-sm text-muted-foreground">
-                    Memuat data terhapus...
-                  </td>
-                </tr>
-              ) : filteredItems.length === 0 ? (
-                <tr>
-                  <td colSpan={3} className="px-6 py-14 text-center">
-                    <Trash2 className="mx-auto mb-3 h-10 w-10 text-muted-foreground/30" />
-                    <p className="text-sm font-semibold text-foreground">Tempat sampah kosong</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Tidak ada data terhapus untuk kategori "{tabsConfig.find(t => t.key === activeTab)?.label}".
-                    </p>
-                  </td>
-                </tr>
-              ) : (
-                filteredItems.map(item => (
-                  <tr key={item.id} className="transition hover:bg-surface/60">
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-semibold text-foreground">{item.title}</p>
-                      {item.subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{item.subtitle}</p>}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-muted-foreground">
-                      {item.metadata || '-'}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          className="btn-secondary h-8 px-2 flex items-center gap-1 text-xs text-primary-blue border-primary-blue/20 hover:bg-primary-blue/5"
-                          disabled={isProcessing}
-                          onClick={() => handleRestore(item)}
-                        >
-                          <RotateCcw className="h-3.5 w-3.5" />
-                          Pulihkan
-                        </button>
-                        <button
-                          className="btn-secondary h-8 px-2 flex items-center gap-1 text-xs text-danger-red border-danger-red/20 hover:bg-danger-red/5"
-                          disabled={isProcessing}
-                          onClick={() => handlePermanentDelete(item)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          Hapus Permanen
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            ))
+          )}
+        </tbody>
+      </TableWrap>
     </div>
   );
 };
