@@ -54,7 +54,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const handleExpired = () => {
-      void logout();
+      authStorage.clear();
+      setState({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+      });
     };
     window.addEventListener(AUTH_EXPIRED_EVENT, handleExpired);
     return () => window.removeEventListener(AUTH_EXPIRED_EVENT, handleExpired);

@@ -41,7 +41,12 @@ const UsersPage: React.FC = () => {
   const { t } = useTranslation();
   const { users, isLoading, isSaving, error, fetchUsers, createUser, updateUser, deleteUser, provisionGotify, reconcileGotify } =
     useUserStore();
-  const { roles, fetchRoles } = useRoleStore();
+  const {
+    roles,
+    error: rolesError,
+    isLoading: isLoadingRoles,
+    fetchRoles,
+  } = useRoleStore();
   const [query, setQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<ManagementUser | null>(null);
@@ -96,16 +101,18 @@ const UsersPage: React.FC = () => {
     setForm(prev => ({ ...prev, ...patch }));
   };
 
-  const handleRoleChange = (roleName: string) => {
-    const role = roles.find(item => item.name === roleName);
-    patchForm({ roleName, roleId: role?.id ?? '' });
+  const selectedRoleId = form.roleId || roles.find(role => role.name === form.roleName)?.id || '';
+
+  const handleRoleChange = (roleId: string) => {
+    const role = roles.find(item => item.id === roleId);
+    patchForm({ roleName: role?.name ?? '', roleId });
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setFormError('');
 
-    if (!form.name || !form.email || !form.username || !form.roleName) {
+    if (!form.name || !form.email || !form.username || !form.roleName || !selectedRoleId) {
       const message = t('swal.validation.userRequired');
       setFormError(message);
       await appSwal.errorIncomplete(message);
@@ -350,6 +357,12 @@ const UsersPage: React.FC = () => {
             </Alert>
           )}
 
+          {rolesError && (
+            <Alert tone="danger" className="sm:col-span-2">
+              Gagal memuat role: {rolesError}
+            </Alert>
+          )}
+
           <Field label="Nama">
             <Input value={form.name} onChange={event => patchForm({ name: event.target.value })} />
           </Field>
@@ -377,18 +390,20 @@ const UsersPage: React.FC = () => {
           </Field>
 
           <Field label="Role">
-            {roles.length > 0 ? (
-              <Select value={form.roleName} onChange={event => handleRoleChange(event.target.value)}>
-                <option value="">Pilih role</option>
-                {roles.map(role => (
-                  <option key={role.id} value={role.name}>
-                    {role.name}
-                  </option>
-                ))}
-              </Select>
-            ) : (
-              <Input value={form.roleName} onChange={event => patchForm({ roleName: event.target.value })} />
-            )}
+            <Select
+              value={selectedRoleId}
+              onChange={event => handleRoleChange(event.target.value)}
+              disabled={isLoadingRoles || roles.length === 0}
+            >
+              <option value="">
+                {isLoadingRoles ? 'Memuat role...' : rolesError ? 'Role gagal dimuat' : 'Pilih role'}
+              </option>
+              {roles.map(role => (
+                <option key={role.id} value={role.id}>
+                  {role.name}
+                </option>
+              ))}
+            </Select>
           </Field>
 
           <Field label="Status">

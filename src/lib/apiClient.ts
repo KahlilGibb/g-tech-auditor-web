@@ -57,6 +57,19 @@ export const httpClient: AxiosInstance = axios.create({
 });
 
 let refreshPromise: Promise<AuthTokens | null> | null = null;
+let authExpiredDispatched = false;
+
+const AUTH_ENDPOINTS = new Set([
+  '/auth/login',
+  '/auth/refresh',
+  '/auth/logout',
+  '/auth/logout-all',
+]);
+
+function isAuthEndpoint(url?: string) {
+  if (!url) return false;
+  return AUTH_ENDPOINTS.has(url.split('?')[0]);
+}
 
 async function refreshAccessToken(): Promise<AuthTokens | null> {
   const refreshToken = authStorage.getRefreshToken();
@@ -80,6 +93,8 @@ async function refreshAccessToken(): Promise<AuthTokens | null> {
 }
 
 function dispatchAuthExpired() {
+  if (authExpiredDispatched) return;
+  authExpiredDispatched = true;
   authStorage.clear();
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
@@ -108,7 +123,7 @@ httpClient.interceptors.request.use(config => {
   }
 
   const accessToken = authStorage.getAccessToken();
-  if (accessToken) {
+  if (accessToken && !isAuthEndpoint(config.url)) {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
 
@@ -116,7 +131,10 @@ httpClient.interceptors.request.use(config => {
 });
 
 httpClient.interceptors.response.use(
-  response => response,
+  response => {
+    authExpiredDispatched = false;
+    return response;
+  },
   async (error: unknown) => {
     if (error instanceof MockInterceptError) {
       return Promise.reject(error);
@@ -129,7 +147,12 @@ httpClient.interceptors.response.use(
     const originalRequest = error.config as RetryableRequestConfig | undefined;
     const status = error.response?.status;
 
-    if (status !== 401 || !originalRequest || originalRequest._retry) {
+    if (
+      status !== 401 ||
+      !originalRequest ||
+      originalRequest._retry ||
+      isAuthEndpoint(originalRequest.url)
+    ) {
       return Promise.reject(toApiRequestError(error));
     }
 
