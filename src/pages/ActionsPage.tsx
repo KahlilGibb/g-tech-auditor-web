@@ -18,6 +18,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useActions } from '../hooks/useActions';
+import { useAuth } from '../hooks/useAuth';
 import { useUserStore } from '../stores/userStore';
 import { appSwal } from '../lib/appSwal';
 import { getApiErrorMessage } from '../lib/apiResponse';
@@ -99,6 +100,7 @@ const PriorityBadge: React.FC<{ priority: ActionPriority }> = ({ priority }) => 
 const ActionsPage: React.FC = () => {
   const { t } = useTranslation();
   const { can, isAdmin } = useRbac();
+  const { user: currentUser } = useAuth();
   const {
     actions,
     workflowStatuses,
@@ -264,6 +266,16 @@ const ActionsPage: React.FC = () => {
     return Number.isNaN(date.getTime()) ? '-' : date.toLocaleDateString();
   };
 
+  // Older actions did not persist their group/assignee projection. A branch
+  // user only receives their assigned actions, so their own profile is a safe,
+  // useful fallback until the API's relation data is available.
+  const branchContext = (action: ActionItem) => ({
+    source: action.source === '-' ? (action.inspectionId ? 'Temuan inspeksi' : '') : action.source,
+    site: action.site || currentUser?.groupName || '',
+    assignee: action.assignee === '-' ? currentUser?.name || '' : action.assignee,
+  });
+  const viewingContext = viewingAction ? branchContext(viewingAction) : null;
+
   const handleResolve = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!resolvingAction) return;
@@ -424,6 +436,7 @@ const ActionsPage: React.FC = () => {
             filteredActions.map(action => {
               const status = statusById[action.workflowStatusId];
               const canResolve = !status?.isDone && !action.resolvedAt;
+              const context = branchContext(action);
               return (
                 <Card key={action.id} className="overflow-hidden p-0">
                   <div className="space-y-4 p-4 sm:p-5">
@@ -443,18 +456,24 @@ const ActionsPage: React.FC = () => {
                     {action.description && <p className="text-sm leading-relaxed text-charcoal">{action.description}</p>}
 
                     <div className="grid gap-3 border-y border-hairline-soft py-3 text-sm sm:grid-cols-2">
-                      <div className="flex items-start gap-2 text-charcoal">
-                        <FileText className="mt-0.5 h-4 w-4 shrink-0 text-stone" />
-                        <div><p className="text-xs text-stone">Sumber temuan</p><p>{action.source}</p></div>
-                      </div>
-                      <div className="flex items-start gap-2 text-charcoal">
-                        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-stone" />
-                        <div><p className="text-xs text-stone">Site / lokasi</p><p>{action.site || '-'}</p></div>
-                      </div>
-                      <div className="flex items-start gap-2 text-charcoal">
-                        <CheckSquare className="mt-0.5 h-4 w-4 shrink-0 text-stone" />
-                        <div><p className="text-xs text-stone">PIC</p><p>{action.assignee}</p></div>
-                      </div>
+                      {context.source && (
+                        <div className="flex items-start gap-2 text-charcoal">
+                          <FileText className="mt-0.5 h-4 w-4 shrink-0 text-stone" />
+                          <div><p className="text-xs text-stone">Sumber temuan</p><p>{context.source}</p></div>
+                        </div>
+                      )}
+                      {context.site && (
+                        <div className="flex items-start gap-2 text-charcoal">
+                          <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-stone" />
+                          <div><p className="text-xs text-stone">Site / lokasi</p><p>{context.site}</p></div>
+                        </div>
+                      )}
+                      {context.assignee && (
+                        <div className="flex items-start gap-2 text-charcoal">
+                          <CheckSquare className="mt-0.5 h-4 w-4 shrink-0 text-stone" />
+                          <div><p className="text-xs text-stone">PIC</p><p>{context.assignee}</p></div>
+                        </div>
+                      )}
                       <div className="flex items-start gap-2 text-charcoal">
                         <Calendar className="mt-0.5 h-4 w-4 shrink-0 text-stone" />
                         <div><p className="text-xs text-stone">Tenggat</p><p>{formatDate(action.dueDate)}</p></div>
@@ -628,9 +647,9 @@ const ActionsPage: React.FC = () => {
           <div className="space-y-5">
             {viewingAction.description && <p className="text-sm leading-relaxed text-charcoal">{viewingAction.description}</p>}
             <div className="grid gap-3 sm:grid-cols-2">
-              <div><p className="text-xs text-stone">Sumber temuan</p><p className="mt-1 text-sm font-medium text-charcoal">{viewingAction.source}</p></div>
-              <div><p className="text-xs text-stone">Site / lokasi</p><p className="mt-1 text-sm font-medium text-charcoal">{viewingAction.site || '-'}</p></div>
-              <div><p className="text-xs text-stone">PIC</p><p className="mt-1 text-sm font-medium text-charcoal">{viewingAction.assignee}</p></div>
+              {viewingContext?.source && <div><p className="text-xs text-stone">Sumber temuan</p><p className="mt-1 text-sm font-medium text-charcoal">{viewingContext.source}</p></div>}
+              {viewingContext?.site && <div><p className="text-xs text-stone">Site / lokasi</p><p className="mt-1 text-sm font-medium text-charcoal">{viewingContext.site}</p></div>}
+              {viewingContext?.assignee && <div><p className="text-xs text-stone">PIC</p><p className="mt-1 text-sm font-medium text-charcoal">{viewingContext.assignee}</p></div>}
               <div><p className="text-xs text-stone">Tenggat</p><p className="mt-1 text-sm font-medium text-charcoal">{formatDate(viewingAction.dueDate)}</p></div>
             </div>
             {viewingAction.inspectionConductedByName && (

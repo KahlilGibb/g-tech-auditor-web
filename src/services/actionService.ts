@@ -197,6 +197,7 @@ function normalizeAction(raw: unknown): ActionItem {
   return {
     id,
     code: toStringValue(item.code ?? item.action_code ?? item.number ?? item.reference_no, id),
+    inspectionId: toStringValue(item.inspection_id ?? item.inspectionId) || undefined,
     title: toStringValue(item.title ?? item.name ?? item.summary ?? item.description, 'Untitled action'),
     description: toStringValue(item.description ?? item.notes) || undefined,
     source: toStringValue(

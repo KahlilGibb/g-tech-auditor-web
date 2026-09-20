@@ -25,6 +25,7 @@ export interface ActionAttachment {
 export interface ActionItem {
   id: string;
   code: string;
+  inspectionId?: string;
   title: string;
   description?: string;
   source: string;
