@@ -32,7 +32,14 @@ export const NAV_PERMISSIONS = {
   templateBuilder: { resource: 'templates', action: 'write' },
   masterFields: { resource: 'templates', action: 'write' },
   documents: { resource: 'documents', action: 'read' },
-  actions: { resource: 'actions', action: 'read' },
+  // Branch users receive actions through inspection assignments. The API scopes
+  // their list to actions assigned to them, so inspection read access is enough
+  // to expose this dealer-facing page and its Resolve Issue flow.
+  actions: {
+    resource: 'actions',
+    action: 'read',
+    fallback: [{ resource: 'inspections', action: 'read' }],
+  },
   cps: { resource: 'cps', action: 'read', fallback: [{ resource: 'inspections', action: 'read' }] },
   training: { resource: 'training', action: 'read' },
   users: { resource: 'users', action: 'read' },

@@ -1,4 +1,10 @@
-import type { ActionItem, ActionStatusFormInput, ActionWorkflowStatus, CreateActionPayload } from '../types/action';
+import type {
+  ActionItem,
+  ActionStatusFormInput,
+  ActionWorkflowStatus,
+  CreateActionPayload,
+  ResolveActionPayload,
+} from '../types/action';
 import { apiClient, MockInterceptError } from '../lib/apiClient';
 import { API_ENDPOINTS } from '../constants/api';
 import { toRecord, toStringValue, unwrapData, unwrapList } from '../lib/apiResponse';
@@ -8,7 +14,7 @@ export let MOCK_TRASHED_WORKFLOW_STATUSES: ActionWorkflowStatus[] = [];
 export let MOCK_WORKFLOW_STATUSES: ActionWorkflowStatus[] = [
   { id: 'todo', label: 'To Do', color: '#6B7280', order: 1, isDefault: true },
   { id: 'in_progress', label: 'In Progress', color: '#2563EB', order: 2 },
-  { id: 'completed', label: 'Completed', color: '#10B981', order: 3 },
+  { id: 'completed', label: 'Completed', color: '#10B981', order: 3, isDone: true },
   { id: 'cancelled', label: 'Cancelled', color: '#DC2626', order: 4 },
 ];
 
@@ -105,6 +111,7 @@ function normalizeStatus(raw: unknown): ActionWorkflowStatus {
     color: toStringValue(item.color ?? item.hex_color ?? item.color_code, defaultStatusColor(id)),
     order: Number(item.ord ?? item.order ?? 0) || undefined,
     isDefault: Boolean(item.is_default ?? item.isDefault),
+    isDone: Boolean(item.is_done ?? item.isDone),
   };
 }
 
@@ -150,6 +157,10 @@ function normalizeAction(raw: unknown): ActionItem {
   const item = toRecord(raw);
   const status = toRecord(item.status ?? item.workflow_status ?? item.action_status);
   const assignee = item.assignee ?? item.assigned_to ?? item.pic ?? item.user;
+  const assignees = Array.isArray(item.assignees) ? item.assignees.map(toRecord) : [];
+  const assigneeNames = assignees
+    .map(entry => toStringValue(entry.name ?? entry.user_name ?? entry.full_name ?? entry.username))
+    .filter(Boolean);
   const site = item.site ?? item.location;
   const createdAt = toDateString(item.created_at ?? item.createdAt ?? item.created_date);
   const id = toStringValue(item.id ?? item.action_id ?? item.uuid ?? item.code, crypto.randomUUID());
@@ -178,11 +189,14 @@ function normalizeAction(raw: unknown): ActionItem {
         toRecord(item.template).title,
       '-',
     ),
-    assignee: toStringValue(item.assignee_name ?? item.assigned_to_name ?? item.pic_name, nestedName(assignee) || '-'),
+    assignee: toStringValue(
+      item.assignee_name ?? item.assigned_to_name ?? item.pic_name,
+      assigneeNames.join(', ') || nestedName(assignee) || '-',
+    ),
     assigneeIds: Array.isArray(item.assignee_ids)
       ? item.assignee_ids.map(value => toStringValue(value)).filter(Boolean)
-      : Array.isArray(item.assignees)
-        ? item.assignees.map(value => toStringValue(toRecord(value).id)).filter(Boolean)
+      : assignees.length > 0
+        ? assignees.map(value => toStringValue(value.user_id ?? value.userId ?? value.id)).filter(Boolean)
         : undefined,
     dueDate: toDateString(item.due_date ?? item.dueDate ?? item.deadline ?? item.target_date, createdAt),
     priority: normalizePriority(item.priority ?? item.severity),
@@ -193,6 +207,8 @@ function normalizeAction(raw: unknown): ActionItem {
     asset: toStringValue(item.asset_name, nestedName(item.asset)),
     timeline: normalizeTimeline(item.timeline ?? item.histories ?? item.history),
     createdAt,
+    resolutionNote: toStringValue(item.resolution_note ?? item.resolutionNote) || undefined,
+    resolvedAt: toStringValue(item.resolved_at ?? item.resolvedAt) || undefined,
   };
 }
 
@@ -486,17 +502,35 @@ export const actionService = {
     }
   },
 
-  async resolveAction(id: string): Promise<void> {
+  async resolveAction(id: string, input: ResolveActionPayload): Promise<ActionItem> {
     try {
-      await apiClient.post(API_ENDPOINTS.ACTIONS.RESOLVE(id));
+      const formData = new FormData();
+      formData.append('resolution_note', input.resolutionNote);
+      input.files?.forEach(file => formData.append('files', file));
+      await apiClient.post<unknown>(API_ENDPOINTS.ACTIONS.RESOLVE(id), formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      // The API acknowledges /resolve without echoing the action. Reload the
+      // detail so the resolved status and metadata in the table stay accurate.
+      const response = await apiClient.get<unknown>(API_ENDPOINTS.ACTIONS.DETAIL(id));
+      return normalizeAction(unwrapData(response.data));
     } catch (e) {
       if (e instanceof MockInterceptError) {
         await new Promise<void>(r => setTimeout(r, 200));
         const found = MOCK_ACTIONS.find(item => item.id === id);
         if (found) {
-          found.workflowStatusId = 'completed';
+          const doneStatus = MOCK_WORKFLOW_STATUSES.find(status => status.isDone)?.id ?? 'completed';
+          const resolvedAt = new Date().toISOString();
+          const resolved = {
+            ...found,
+            workflowStatusId: doneStatus,
+            resolutionNote: input.resolutionNote,
+            resolvedAt,
+          };
+          MOCK_ACTIONS = MOCK_ACTIONS.map(action => action.id === id ? resolved : action);
+          return resolved;
         }
-        return;
+        throw new Error('Action not found');
       }
       throw e;
     }

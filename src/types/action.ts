@@ -6,6 +6,7 @@ export interface ActionWorkflowStatus {
   color: string;
   order?: number;
   isDefault?: boolean;
+  isDone?: boolean;
 }
 
 export interface ActionTimelineEntry {
@@ -31,6 +32,8 @@ export interface ActionItem {
   asset?: string;
   timeline: ActionTimelineEntry[];
   createdAt: string;
+  resolutionNote?: string;
+  resolvedAt?: string;
 }
 
 export interface CreateActionPayload {
@@ -50,4 +53,9 @@ export interface ActionStatusFormInput {
   order: number;
   isDefault?: boolean;
   color?: string;
+}
+
+export interface ResolveActionPayload {
+  resolutionNote: string;
+  files?: File[];
 }

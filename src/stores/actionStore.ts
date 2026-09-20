@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { ActionItem, ActionStatusFormInput, ActionWorkflowStatus, CreateActionPayload } from '../types/action';
+import type {
+  ActionItem,
+  ActionStatusFormInput,
+  ActionWorkflowStatus,
+  CreateActionPayload,
+  ResolveActionPayload,
+} from '../types/action';
 import { actionService } from '../services/actionService';
 import { getApiErrorMessage } from '../lib/apiResponse';
 
@@ -17,6 +23,7 @@ interface ActionStoreState {
   updateAction: (id: string, input: CreateActionPayload) => Promise<ActionItem>;
   deleteAction: (id: string) => Promise<void>;
   updateActionStatus: (id: string, statusId: string) => Promise<void>;
+  resolveAction: (id: string, input: ResolveActionPayload) => Promise<ActionItem>;
   createWorkflowStatus: (input: ActionStatusFormInput) => Promise<ActionWorkflowStatus>;
   updateWorkflowStatus: (id: string, input: ActionStatusFormInput) => Promise<ActionWorkflowStatus>;
   deleteWorkflowStatus: (id: string) => Promise<void>;
@@ -105,6 +112,21 @@ export const useActionStore = create<ActionStoreState>()(
         } catch (e) {
           // Rollback on failure
           set({ actions: previousActions, error: getApiErrorMessage(e, 'Failed to update action') });
+        }
+      },
+
+      resolveAction: async (id, input) => {
+        set({ isSaving: true, error: null });
+        try {
+          const action = await actionService.resolveAction(id, input);
+          set(state => ({
+            actions: state.actions.map(item => item.id === id ? action : item),
+            isSaving: false,
+          }));
+          return action;
+        } catch (error) {
+          set({ isSaving: false, error: getApiErrorMessage(error, 'Failed to resolve action') });
+          throw error;
         }
       },
 

@@ -97,7 +97,7 @@ const PriorityBadge: React.FC<{ priority: ActionPriority }> = ({ priority }) => 
 
 const ActionsPage: React.FC = () => {
   const { t } = useTranslation();
-  const { can } = useRbac();
+  const { can, isAdmin } = useRbac();
   const {
     actions,
     workflowStatuses,
@@ -109,6 +109,7 @@ const ActionsPage: React.FC = () => {
     updateAction,
     deleteAction,
     updateStatus,
+    resolveAction,
     createWorkflowStatus,
     updateWorkflowStatus,
     deleteWorkflowStatus,
@@ -126,10 +127,14 @@ const ActionsPage: React.FC = () => {
   const [editingStatusId, setEditingStatusId] = useState<string | null>(null);
   const [statusForm, setStatusForm] = useState<ActionStatusFormInput>(EMPTY_STATUS_FORM);
   const [statusFormError, setStatusFormError] = useState('');
+  const [resolvingAction, setResolvingAction] = useState<ActionItem | null>(null);
+  const [resolutionNote, setResolutionNote] = useState('');
+  const [resolutionFiles, setResolutionFiles] = useState<File[]>([]);
+  const [resolveError, setResolveError] = useState('');
 
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    if (isAdmin) fetchUsers();
+  }, [fetchUsers, isAdmin]);
 
   const defaultStatusId = workflowStatuses.find(status => status.isDefault)?.id || workflowStatuses[0]?.id || '';
 
@@ -241,6 +246,32 @@ const ActionsPage: React.FC = () => {
       await appSwal.successSaved('action');
     } catch (statusError) {
       await appSwal.errorUpdateFailed('action', getApiErrorMessage(statusError));
+    }
+  };
+
+  const openResolve = (action: ActionItem) => {
+    setResolvingAction(action);
+    setResolutionNote('');
+    setResolutionFiles([]);
+    setResolveError('');
+  };
+
+  const handleResolve = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!resolvingAction) return;
+
+    const note = resolutionNote.trim();
+    if (!note) {
+      setResolveError('Catatan perbaikan wajib diisi.');
+      return;
+    }
+
+    try {
+      await resolveAction(resolvingAction.id, { resolutionNote: note, files: resolutionFiles });
+      await appSwal.successSaved('action');
+      setResolvingAction(null);
+    } catch (resolveFailure) {
+      setResolveError(getApiErrorMessage(resolveFailure, 'Gagal menyimpan perbaikan.'));
     }
   };
 
@@ -402,6 +433,7 @@ const ActionsPage: React.FC = () => {
             filteredActions.map(action => {
               const status = statusById[action.workflowStatusId];
               const StatusIcon = statusIcon(action.workflowStatusId);
+              const canResolve = !isAdmin && !status?.isDone;
               return (
                 <tr key={action.id} className="transition hover:bg-surface/60">
                   <Td>
@@ -469,6 +501,11 @@ const ActionsPage: React.FC = () => {
                   </Td>
                   <Td className="text-right">
                     <div className="inline-flex items-center gap-1">
+                      {canResolve && (
+                        <RowAction tone="brand" onClick={() => openResolve(action)} aria-label="Resolve issue" title="Resolve issue">
+                          <CheckCircle2 className="h-4 w-4" />
+                        </RowAction>
+                      )}
                       <Can resource="actions" action="update">
                         <RowAction onClick={() => openEditAction(action)} aria-label="Edit">
                           <Edit3 className="h-4 w-4" />
@@ -487,6 +524,50 @@ const ActionsPage: React.FC = () => {
           )}
         </tbody>
       </TableWrap>
+
+      <Modal
+        open={Boolean(resolvingAction)}
+        onClose={() => !isSaving && setResolvingAction(null)}
+        size="lg"
+        eyebrow="Tindakan"
+        title="Resolve Issue"
+        subtitle={resolvingAction?.title}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setResolvingAction(null)} disabled={isSaving}>
+              {t('common.cancel')}
+            </Button>
+            <Button type="submit" form="resolve-action-form" loading={isSaving} icon={!isSaving ? <CheckCircle2 className="h-4 w-4" /> : undefined}>
+              Submit Perbaikan
+            </Button>
+          </>
+        }
+      >
+        <form id="resolve-action-form" onSubmit={handleResolve} className="space-y-4">
+          {resolveError && <Alert tone="danger">{resolveError}</Alert>}
+          <Field label="Proses Perbaikan / Feedback" required>
+            <Textarea
+              className="min-h-28 resize-y"
+              value={resolutionNote}
+              onChange={event => setResolutionNote(event.target.value)}
+              placeholder="Jelaskan perbaikan yang sudah dilakukan…"
+              disabled={isSaving}
+            />
+          </Field>
+          <Field label="Foto bukti perbaikan" hint="Opsional; Anda dapat memilih lebih dari satu foto.">
+            <Input
+              type="file"
+              accept="image/*"
+              multiple
+              disabled={isSaving}
+              onChange={event => setResolutionFiles(Array.from(event.target.files ?? []))}
+            />
+          </Field>
+          {resolutionFiles.length > 0 && (
+            <p className="text-xs text-stone">{resolutionFiles.length} foto siap diunggah.</p>
+          )}
+        </form>
+      </Modal>
 
       <Modal
         open={isActionModalOpen}
