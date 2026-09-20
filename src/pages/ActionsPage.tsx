@@ -7,6 +7,7 @@ import {
   CheckSquare,
   Clock,
   Edit3,
+  Image,
   FileText,
   Filter,
   MapPin,
@@ -128,6 +129,7 @@ const ActionsPage: React.FC = () => {
   const [statusForm, setStatusForm] = useState<ActionStatusFormInput>(EMPTY_STATUS_FORM);
   const [statusFormError, setStatusFormError] = useState('');
   const [resolvingAction, setResolvingAction] = useState<ActionItem | null>(null);
+  const [viewingAction, setViewingAction] = useState<ActionItem | null>(null);
   const [resolutionNote, setResolutionNote] = useState('');
   const [resolutionFiles, setResolutionFiles] = useState<File[]>([]);
   const [resolveError, setResolveError] = useState('');
@@ -254,6 +256,12 @@ const ActionsPage: React.FC = () => {
     setResolutionNote('');
     setResolutionFiles([]);
     setResolveError('');
+  };
+
+  const formatDate = (value?: string) => {
+    if (!value) return '-';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? '-' : date.toLocaleDateString();
   };
 
   const handleResolve = async (event: React.FormEvent) => {
@@ -400,6 +408,83 @@ const ActionsPage: React.FC = () => {
 
       {error && <Alert tone="danger">{error}</Alert>}
 
+      {!isAdmin ? (
+        <div className="space-y-3">
+          {isLoading && actions.length === 0 ? (
+            <div className="flex justify-center py-12">
+              <Spinner className="h-6 w-6 text-primary-blue" />
+            </div>
+          ) : filteredActions.length === 0 ? (
+            <EmptyState
+              icon={<CheckSquare className="h-6 w-6" />}
+              title={t('actions.empty')}
+              description={t('actions.emptyDetail')}
+            />
+          ) : (
+            filteredActions.map(action => {
+              const status = statusById[action.workflowStatusId];
+              const canResolve = !status?.isDone && !action.resolvedAt;
+              return (
+                <Card key={action.id} className="overflow-hidden p-0">
+                  <div className="space-y-4 p-4 sm:p-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-base font-semibold text-ink-deep">{action.title}</p>
+                        <p className="mt-1 font-mono text-xs text-stone">#{action.code}</p>
+                      </div>
+                      <div className="flex shrink-0 flex-col items-end gap-2">
+                        <Badge tone="outline">
+                          {status?.label ?? 'Open'}
+                        </Badge>
+                        <PriorityBadge priority={action.priority} />
+                      </div>
+                    </div>
+
+                    {action.description && <p className="text-sm leading-relaxed text-charcoal">{action.description}</p>}
+
+                    <div className="grid gap-3 border-y border-hairline-soft py-3 text-sm sm:grid-cols-2">
+                      <div className="flex items-start gap-2 text-charcoal">
+                        <FileText className="mt-0.5 h-4 w-4 shrink-0 text-stone" />
+                        <div><p className="text-xs text-stone">Sumber temuan</p><p>{action.source}</p></div>
+                      </div>
+                      <div className="flex items-start gap-2 text-charcoal">
+                        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-stone" />
+                        <div><p className="text-xs text-stone">Site / lokasi</p><p>{action.site || '-'}</p></div>
+                      </div>
+                      <div className="flex items-start gap-2 text-charcoal">
+                        <CheckSquare className="mt-0.5 h-4 w-4 shrink-0 text-stone" />
+                        <div><p className="text-xs text-stone">PIC</p><p>{action.assignee}</p></div>
+                      </div>
+                      <div className="flex items-start gap-2 text-charcoal">
+                        <Calendar className="mt-0.5 h-4 w-4 shrink-0 text-stone" />
+                        <div><p className="text-xs text-stone">Tenggat</p><p>{formatDate(action.dueDate)}</p></div>
+                      </div>
+                    </div>
+
+                    {action.resolutionNote && (
+                      <div className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                        <p className="font-medium">Perbaikan telah dikirim</p>
+                        <p className="mt-1">{action.resolutionNote}</p>
+                      </div>
+                    )}
+
+                    <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                      <Button variant="secondary" onClick={() => setViewingAction(action)}>
+                        Lihat detail
+                      </Button>
+                      {canResolve && (
+                        <Button onClick={() => openResolve(action)} icon={<CheckCircle2 className="h-4 w-4" />}>
+                          Resolve issue
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              );
+            })
+          )}
+        </div>
+      ) : (
       <TableWrap>
         <thead className="table-header">
           <tr>
@@ -524,6 +609,67 @@ const ActionsPage: React.FC = () => {
           )}
         </tbody>
       </TableWrap>
+      )}
+
+      <Modal
+        open={Boolean(viewingAction)}
+        onClose={() => setViewingAction(null)}
+        size="lg"
+        eyebrow="Detail tindakan"
+        title={viewingAction?.title}
+        subtitle={viewingAction ? `#${viewingAction.code}` : undefined}
+        footer={
+          <Button variant="secondary" onClick={() => setViewingAction(null)}>
+            {t('common.close')}
+          </Button>
+        }
+      >
+        {viewingAction && (
+          <div className="space-y-5">
+            {viewingAction.description && <p className="text-sm leading-relaxed text-charcoal">{viewingAction.description}</p>}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div><p className="text-xs text-stone">Sumber temuan</p><p className="mt-1 text-sm font-medium text-charcoal">{viewingAction.source}</p></div>
+              <div><p className="text-xs text-stone">Site / lokasi</p><p className="mt-1 text-sm font-medium text-charcoal">{viewingAction.site || '-'}</p></div>
+              <div><p className="text-xs text-stone">PIC</p><p className="mt-1 text-sm font-medium text-charcoal">{viewingAction.assignee}</p></div>
+              <div><p className="text-xs text-stone">Tenggat</p><p className="mt-1 text-sm font-medium text-charcoal">{formatDate(viewingAction.dueDate)}</p></div>
+            </div>
+            {viewingAction.inspectionConductedByName && (
+              <div><p className="text-xs text-stone">Diinspeksi oleh</p><p className="mt-1 text-sm font-medium text-charcoal">{viewingAction.inspectionConductedByName}</p></div>
+            )}
+            {viewingAction.inspectionAttachments && viewingAction.inspectionAttachments.length > 0 && (
+              <div>
+                <p className="mb-2 text-sm font-semibold text-ink-deep">Bukti temuan</p>
+                <div className="flex flex-wrap gap-2">
+                  {viewingAction.inspectionAttachments.map(attachment => (
+                    <a key={attachment.id} className="inline-flex items-center gap-1 rounded-lg border border-hairline-soft px-3 py-2 text-xs text-primary-blue hover:bg-surface" href={attachment.fileUrl} target="_blank" rel="noreferrer">
+                      <Image className="h-3.5 w-3.5" /> {attachment.filename || 'Lihat foto'}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+            {viewingAction.resolutionNote && (
+              <div className="rounded-xl bg-emerald-50 p-4">
+                <p className="text-sm font-semibold text-emerald-900">Catatan perbaikan</p>
+                <p className="mt-1 text-sm text-emerald-800">{viewingAction.resolutionNote}</p>
+                {viewingAction.resolvedAt && <p className="mt-2 text-xs text-emerald-700">Dikirim {formatDate(viewingAction.resolvedAt)}</p>}
+              </div>
+            )}
+            {viewingAction.attachments && viewingAction.attachments.length > 0 && (
+              <div>
+                <p className="mb-2 text-sm font-semibold text-ink-deep">Bukti perbaikan</p>
+                <div className="flex flex-wrap gap-2">
+                  {viewingAction.attachments.map(attachment => (
+                    <a key={attachment.id} className="inline-flex items-center gap-1 rounded-lg border border-hairline-soft px-3 py-2 text-xs text-primary-blue hover:bg-surface" href={attachment.fileUrl} target="_blank" rel="noreferrer">
+                      <Image className="h-3.5 w-3.5" /> {attachment.filename || 'Lihat foto'}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
 
       <Modal
         open={Boolean(resolvingAction)}

@@ -153,6 +153,24 @@ function nestedName(value: unknown) {
   return toStringValue(item.name ?? item.full_name ?? item.email ?? item.title);
 }
 
+function normalizeAttachments(raw: unknown): ActionItem['attachments'] {
+  if (!Array.isArray(raw)) return [];
+
+  return raw
+    .map((entry, index) => {
+      const item = toRecord(entry);
+      const fileUrl = toStringValue(item.file_url ?? item.fileUrl ?? item.url);
+      if (!fileUrl) return null;
+      return {
+        id: toStringValue(item.id, String(index + 1)),
+        fileUrl,
+        fileType: toStringValue(item.file_type ?? item.fileType) || undefined,
+        filename: toStringValue(item.filename ?? item.file_name ?? item.name) || undefined,
+      };
+    })
+    .filter((attachment): attachment is NonNullable<typeof attachment> => attachment !== null);
+}
+
 function normalizeAction(raw: unknown): ActionItem {
   const item = toRecord(raw);
   const status = toRecord(item.status ?? item.workflow_status ?? item.action_status);
@@ -186,7 +204,8 @@ function normalizeAction(raw: unknown): ActionItem {
         item.source_title ??
         item.inspection_title ??
         toRecord(item.inspection).title ??
-        toRecord(item.template).title,
+        toRecord(item.template).title ??
+        item.group_name,
       '-',
     ),
     assignee: toStringValue(
@@ -203,12 +222,19 @@ function normalizeAction(raw: unknown): ActionItem {
     workflowStatusId: statusId,
     contentItems: contentItems.length > 0 ? contentItems : [toStringValue(item.description ?? item.notes)].filter(Boolean),
     labels: toStringArray(item.labels ?? item.tags),
-    site: toStringValue(item.site_name ?? item.location_name, nestedName(site)),
+    site: toStringValue(item.site_name ?? item.location_name ?? item.group_name, nestedName(site)),
     asset: toStringValue(item.asset_name, nestedName(item.asset)),
     timeline: normalizeTimeline(item.timeline ?? item.histories ?? item.history),
+    groupName: toStringValue(item.group_name ?? item.groupName) || undefined,
+    inspectionStartedAt: toStringValue(item.inspection_started_at ?? item.inspectionStartedAt) || undefined,
+    inspectionConductedByName: toStringValue(
+      item.inspection_conducted_by_name ?? item.inspectionConductedByName ?? item.created_by_name,
+    ) || undefined,
     createdAt,
     resolutionNote: toStringValue(item.resolution_note ?? item.resolutionNote) || undefined,
     resolvedAt: toStringValue(item.resolved_at ?? item.resolvedAt) || undefined,
+    attachments: normalizeAttachments(item.attachments),
+    inspectionAttachments: normalizeAttachments(item.inspection_attachments ?? item.inspectionAttachments),
   };
 }
 

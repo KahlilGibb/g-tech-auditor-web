@@ -15,6 +15,13 @@ export interface ActionTimelineEntry {
   date: string;
 }
 
+export interface ActionAttachment {
+  id: string;
+  fileUrl: string;
+  fileType?: string;
+  filename?: string;
+}
+
 export interface ActionItem {
   id: string;
   code: string;
@@ -32,8 +39,13 @@ export interface ActionItem {
   asset?: string;
   timeline: ActionTimelineEntry[];
   createdAt: string;
+  groupName?: string;
+  inspectionStartedAt?: string;
+  inspectionConductedByName?: string;
   resolutionNote?: string;
   resolvedAt?: string;
+  attachments?: ActionAttachment[];
+  inspectionAttachments?: ActionAttachment[];
 }
 
 export interface CreateActionPayload {
