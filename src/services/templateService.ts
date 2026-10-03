@@ -302,8 +302,21 @@ function defaultBuildPages() {
   return [
     {
       title: 'Title Page',
-      description: 'First page of the inspection report.',
+      description: 'Halaman pertama laporan inspeksi. Atur pertanyaan utama sebelum menambah halaman lain.',
       order: 1,
+      fields: [
+        {
+          label: 'Question',
+          type: 'text',
+          required: false,
+          order: 1,
+        },
+      ],
+    },
+    {
+      title: 'Second Page',
+      description: 'Halaman kedua laporan inspeksi. Atur pertanyaan utama sebelum menambah halaman lain.',
+      order: 2,
       fields: [],
     },
   ]
@@ -318,11 +331,13 @@ function defaultPassFailOptions(fieldId: string): FieldOption[] {
 
 function fieldPayload(field: TemplateField) {
   if (field.master_field_id) {
+    const rules = optionsToRules(field.options)
     return {
       id: field.id,
       master_field_id: field.master_field_id,
       required: field.required,
       order: field.order,
+      rules: rules.length > 0 ? rules : undefined,
     }
   }
 
@@ -402,6 +417,7 @@ function templateListItem(raw: unknown): TemplateListItem {
       toStringValue(record.modified_date || record.modifiedDate || record.updated_at || record.updatedAt) ||
       '',
     form_type,
+    status: normalizeStatus(record.status),
   }
 }
 
@@ -572,6 +588,7 @@ export interface TemplateListItem {
   lastModified: string
   modifiedDate: string
   form_type: import('../types/template').FormType
+  status?: import('../types/template').TemplateStatus
 }
 
 const MOCK_TEMPLATE_LIST: TemplateListItem[] = [
@@ -618,6 +635,22 @@ const MOCK_TEMPLATE_LIST: TemplateListItem[] = [
 ]
 
 export const templateService = {
+  async uploadTemplateImage(file: File): Promise<string> {
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await apiClient.post(API_ENDPOINTS.TEMPLATES.UPLOAD_IMAGE, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      const data = unwrapData<unknown>(res.data)
+      const record = toRecord(data)
+      return toStringValue(record.file_url ?? record.url ?? record.image_url)
+    } catch (e) {
+      if (e instanceof MockInterceptError) return URL.createObjectURL(file)
+      throw e
+    }
+  },
+
   async getTemplates(): Promise<TemplateListItem[]> {
     try {
       const res = await apiClient.get(API_ENDPOINTS.TEMPLATES.LIST, {
@@ -710,8 +743,8 @@ export const templateService = {
         API_ENDPOINTS.TEMPLATES.BUILD,
         {
           type: formType,
-          title: 'Untitled Template',
-          description: '',
+          title: 'Template Title',
+          description: 'Template Description',
           scoring_enabled: false,
           pages: defaultBuildPages(),
         },
@@ -725,12 +758,14 @@ export const templateService = {
         const templateId = uid()
         const versionId = uid()
         const sectionId = uid()
+        const secondSectionId = uid()
+        const fieldId = uid()
 
         const template: Template = {
           id: templateId,
           org_id: 'org-gtech-001',
-          title: '',
-          description: '',
+          title: 'Template Title',
+          description: 'Template Description',
           form_type: formType,
           scoring_enabled: false,
           status: 'draft',
@@ -741,8 +776,8 @@ export const templateService = {
           id: versionId,
           template_id: templateId,
           version_number: 1,
-          title: '',
-          description: '',
+          title: 'Template Title',
+          description: 'Template Description',
           scoring_enabled: false,
           status: 'draft',
           published_at: null,
@@ -753,17 +788,37 @@ export const templateService = {
           id: sectionId,
           version_id: versionId,
           title: 'Title Page',
-          description: 'First page of the inspection report.',
+          description: 'Halaman pertama laporan inspeksi. Atur pertanyaan utama sebelum menambah halaman lain.',
           order: 1,
           status: 'active',
           created_at: t,
         }
+        const secondPage: TemplateSection = {
+          id: secondSectionId,
+          version_id: versionId,
+          title: 'Second Page',
+          description: 'Halaman kedua laporan inspeksi. Atur pertanyaan utama sebelum menambah halaman lain.',
+          order: 2,
+          status: 'active',
+          created_at: t,
+        }
+        const initialField: TemplateField = {
+          id: fieldId,
+          section_id: sectionId,
+          master_field_id: null,
+          label: 'Question',
+          type: 'text',
+          required: false,
+          order: 1,
+          rules: null,
+        }
 
         _db.templates.push(template)
         _db.versions.push(version)
-        _db.sections.push(titlePage)
+        _db.sections.push(titlePage, secondPage)
+        _db.fields.push(initialField)
 
-        return { template, version, sections: [titlePage] }
+        return { template, version, sections: [titlePage, secondPage] }
       }
       throw e
     }
@@ -826,6 +881,16 @@ export const templateService = {
       if (e instanceof MockInterceptError) {
         return this.getTemplateWithVersion(templateId)
       }
+      throw e
+    }
+  },
+
+  async getTemplatePreview(templateId: string): Promise<TemplateWithVersion> {
+    try {
+      const res = await apiClient.get(API_ENDPOINTS.TEMPLATES.PREVIEW(templateId))
+      return normalizeTemplateTree(unwrapData(res.data), templateId)
+    } catch (e) {
+      if (e instanceof MockInterceptError) return this.getTemplateWithVersion(templateId)
       throw e
     }
   },

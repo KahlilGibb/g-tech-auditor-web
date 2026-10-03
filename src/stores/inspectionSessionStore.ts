@@ -9,6 +9,9 @@ const draftKey = (id: string) => `gtech_inspection_draft_${id}`;
 
 const fieldDebouncers = new Map<string, ReturnType<typeof setTimeout>>();
 const noteDebouncers = new Map<string, ReturnType<typeof setTimeout>>();
+const dirtyFieldIds = new Set<string>();
+const reviewDebouncers = new Map<string, ReturnType<typeof setTimeout>>();
+const dirtyReviewFieldIds = new Set<string>();
 
 const debounceUpsertField = (
   fieldId: string,
@@ -58,6 +61,7 @@ interface InspectionSessionStoreState {
 }
 
 function restoreDraft(session: InspectionSession): InspectionSession {
+  if (session.status === 'submitted') return session;
   const saved = localStorage.getItem(draftKey(session.inspectionId));
   if (!saved) return session;
 
@@ -83,7 +87,25 @@ export const useInspectionSessionStore = create<InspectionSessionStoreState>()((
   loadSession: async inspectionId => {
     set({ isLoading: true, error: null });
     try {
-      const session = restoreDraft(await inspectionService.getInspectionWithTemplate(inspectionId));
+      let session = restoreDraft(await inspectionService.getInspectionWithTemplate(inspectionId));
+      if (session.status === 'submitted') {
+        try {
+          const review = await inspectionService.getInspectionReview(inspectionId);
+          session = {
+            ...session,
+            version: review.version,
+            isReviewMode: review.status !== 'review_completed',
+            reviewStatus: review.status,
+            dealerSubmittedScore: review.dealerSubmittedScore,
+            responses: review.currentResponses,
+            originalResponses: review.originalResponses,
+            reviewChanges: review.changes,
+          };
+        } catch {
+          // Dealers are intentionally forbidden from the HO review endpoint;
+          // they still receive the submitted inspection as a read-only session.
+        }
+      }
       set({ session, isLoading: false });
     } catch (error) {
       set({ isLoading: false, error: getApiErrorMessage(error, 'Failed to load inspection form') });
@@ -95,10 +117,15 @@ export const useInspectionSessionStore = create<InspectionSessionStoreState>()((
     fieldDebouncers.clear();
     noteDebouncers.forEach(timer => clearTimeout(timer));
     noteDebouncers.clear();
+    dirtyFieldIds.clear();
+    reviewDebouncers.forEach(timer => clearTimeout(timer));
+    reviewDebouncers.clear();
+    dirtyReviewFieldIds.clear();
     set({ session: null, isLoading: false, isSaving: false, error: null });
   },
 
   setResponse: (fieldId, value) => {
+    dirtyFieldIds.add(fieldId);
     set(state => {
       if (!state.session) return state;
       const existing = state.session.responses[fieldId];
@@ -122,6 +149,30 @@ export const useInspectionSessionStore = create<InspectionSessionStoreState>()((
     });
 
     const { session } = get();
+    if (session?.isReviewMode) {
+      dirtyReviewFieldIds.add(fieldId);
+      if (reviewDebouncers.has(fieldId)) clearTimeout(reviewDebouncers.get(fieldId));
+      reviewDebouncers.set(fieldId, setTimeout(async () => {
+        reviewDebouncers.delete(fieldId);
+        const latest = get().session;
+        const response = latest?.responses[fieldId];
+        if (!latest?.isReviewMode || !response) return;
+        set({ isSaving: true });
+        try {
+          const result = await inspectionService.updateReviewField(latest.inspectionId, fieldId, latest.version ?? 0, {
+            value: response.value,
+            note: response.note,
+            note_type: response.noteType,
+            reason: 'Koreksi hasil cross-check Admin HO',
+          });
+          dirtyReviewFieldIds.delete(fieldId);
+          set(state => state.session ? ({ isSaving: false, session: { ...state.session, version: result.version, reviewStatus: 'in_review', lastSavedAt: new Date().toISOString(), responses: { ...state.session.responses, [fieldId]: result.response } } }) : state);
+        } catch (reviewError) {
+          set({ isSaving: false, error: getApiErrorMessage(reviewError, 'Gagal menyimpan koreksi review') });
+        }
+      }, 500));
+      return;
+    }
     if (session) {
       debounceUpsertField(fieldId, 500, async () => {
         try {
@@ -143,6 +194,7 @@ export const useInspectionSessionStore = create<InspectionSessionStoreState>()((
               },
             };
           });
+          if (!noteDebouncers.has(fieldId)) dirtyFieldIds.delete(fieldId);
         } catch (err) {
           console.error('[upsert value error]', err);
         }
@@ -151,6 +203,7 @@ export const useInspectionSessionStore = create<InspectionSessionStoreState>()((
   },
 
   setNote: (fieldId, note) => {
+    dirtyFieldIds.add(fieldId);
     set(state => {
       if (!state.session) return state;
       const existing = state.session.responses[fieldId];
@@ -166,6 +219,30 @@ export const useInspectionSessionStore = create<InspectionSessionStoreState>()((
     });
 
     const { session } = get();
+    if (session?.isReviewMode) {
+      dirtyReviewFieldIds.add(fieldId);
+      if (reviewDebouncers.has(fieldId)) clearTimeout(reviewDebouncers.get(fieldId));
+      reviewDebouncers.set(fieldId, setTimeout(async () => {
+        reviewDebouncers.delete(fieldId);
+        const latest = get().session;
+        const response = latest?.responses[fieldId];
+        if (!latest?.isReviewMode || !response) return;
+        set({ isSaving: true });
+        try {
+          const result = await inspectionService.updateReviewField(latest.inspectionId, fieldId, latest.version ?? 0, {
+            value: response.value,
+            note: response.note,
+            note_type: response.noteType,
+            reason: 'Koreksi hasil cross-check Admin HO',
+          });
+          dirtyReviewFieldIds.delete(fieldId);
+          set(state => state.session ? ({ isSaving: false, session: { ...state.session, version: result.version, reviewStatus: 'in_review', lastSavedAt: new Date().toISOString(), responses: { ...state.session.responses, [fieldId]: result.response } } }) : state);
+        } catch (reviewError) {
+          set({ isSaving: false, error: getApiErrorMessage(reviewError, 'Gagal menyimpan koreksi review') });
+        }
+      }, 500));
+      return;
+    }
     if (session) {
       const existing = session.responses[fieldId];
       const isIssue = String(existing?.value ?? '').toLowerCase() === 'no' || String(existing?.value ?? '').toLowerCase() === 'not_ok';
@@ -192,6 +269,7 @@ export const useInspectionSessionStore = create<InspectionSessionStoreState>()((
               },
             };
           });
+          if (!fieldDebouncers.has(fieldId)) dirtyFieldIds.delete(fieldId);
         } catch (err) {
           console.error('[upsert note error]', err);
         }
@@ -394,16 +472,40 @@ export const useInspectionSessionStore = create<InspectionSessionStoreState>()((
 
   saveDraft: async () => {
     const session = get().session;
-    if (!session || session.status !== 'active') return;
+    if (!session || (session.status !== 'active' && session.status !== 'submitting')) return;
     set({ isSaving: true, error: null });
     try {
+      fieldDebouncers.forEach(timer => clearTimeout(timer));
+      fieldDebouncers.clear();
+      noteDebouncers.forEach(timer => clearTimeout(timer));
+      noteDebouncers.clear();
+      const pendingIds = [...dirtyFieldIds];
+      const savedValues = await Promise.all(pendingIds.map(async fieldId => {
+        const current = get().session?.responses[fieldId];
+        if (!current) return null;
+        const result = await inspectionService.upsertFieldValue(session.inspectionId, {
+          field_id: fieldId,
+          value: current.value,
+          note: current.note,
+          note_type: current.noteType,
+        });
+        return { fieldId, id: result.id };
+      }));
+      savedValues.forEach(item => item && dirtyFieldIds.delete(item.fieldId));
       const lastSavedAt = new Date().toISOString();
       const draft = { responses: session.responses, currentSectionIndex: session.currentSectionIndex, lastSavedAt };
       localStorage.setItem(draftKey(session.inspectionId), JSON.stringify(draft));
       await inspectionService.saveInspectionDraft();
       set(state => ({
         isSaving: false,
-        session: state.session ? { ...state.session, lastSavedAt } : state.session,
+        session: state.session ? {
+          ...state.session,
+          lastSavedAt,
+          responses: Object.fromEntries(Object.entries(state.session.responses).map(([fieldId, response]) => {
+            const saved = savedValues.find(item => item?.fieldId === fieldId);
+            return [fieldId, saved ? { ...response, fieldValueId: saved.id } : response];
+          })),
+        } : state.session,
       }));
     } catch (error) {
       set({ isSaving: false, error: getApiErrorMessage(error, 'Failed to save inspection draft') });
@@ -415,16 +517,38 @@ export const useInspectionSessionStore = create<InspectionSessionStoreState>()((
     const session = get().session;
     if (!session) return;
 
-    fieldDebouncers.forEach(timer => clearTimeout(timer));
-    fieldDebouncers.clear();
-    noteDebouncers.forEach(timer => clearTimeout(timer));
-    noteDebouncers.clear();
-
     set(state => ({
       error: null,
       session: state.session ? { ...state.session, status: 'submitting' } : state.session,
     }));
     try {
+      if (session.isReviewMode) {
+        reviewDebouncers.forEach(timer => clearTimeout(timer));
+        reviewDebouncers.clear();
+        let version = get().session?.version ?? 0;
+        for (const fieldId of [...dirtyReviewFieldIds]) {
+          const response = get().session?.responses[fieldId];
+          if (!response) continue;
+          const result = await inspectionService.updateReviewField(session.inspectionId, fieldId, version, {
+            value: response.value,
+            note: response.note,
+            note_type: response.noteType,
+            reason: 'Koreksi hasil cross-check Admin HO',
+          });
+          version = result.version;
+          dirtyReviewFieldIds.delete(fieldId);
+        }
+        const review = await inspectionService.completeInspectionReview(session.inspectionId, version);
+        set(state => ({
+          isSaving: false,
+          session: state.session ? { ...state.session, status: 'submitted', isReviewMode: false, reviewStatus: review.status, version: review.version, responses: review.currentResponses, reviewChanges: review.changes } : state.session,
+        }));
+        return;
+      }
+      if (Object.values(session.responses).some(response => response.attachments?.some(attachment => attachment.uploading))) {
+        throw new Error('Masih ada media yang sedang diunggah. Tunggu hingga selesai sebelum submit.');
+      }
+      await get().saveDraft();
       await inspectionService.submitInspection(session.inspectionId);
       localStorage.removeItem(draftKey(session.inspectionId));
       set(state => ({
@@ -433,7 +557,9 @@ export const useInspectionSessionStore = create<InspectionSessionStoreState>()((
     } catch (error) {
       set(state => ({
         error: getApiErrorMessage(error, 'Failed to submit inspection'),
-        session: state.session ? { ...state.session, status: 'active' } : state.session,
+        session: state.session
+          ? { ...state.session, status: session.isReviewMode ? 'submitted' : 'active' }
+          : state.session,
       }));
       throw error;
     }

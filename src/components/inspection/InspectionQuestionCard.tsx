@@ -7,12 +7,14 @@ import {
   ImagePlus,
   PenLine,
   Plus,
+  MapPin,
   StickyNote,
   Trash2,
 } from 'lucide-react';
 import type { InspectionResponse } from '../../types/inspection';
 import type { FieldOption, TemplateField } from '../../types/template';
 import { cn } from '../../utils/cn';
+import SignaturePad from './SignaturePad';
 
 interface InspectionQuestionCardProps {
   field: TemplateField;
@@ -22,6 +24,8 @@ interface InspectionQuestionCardProps {
   onNoteChange: (fieldId: string, note: string) => void;
   onAddMedia: (fieldId: string, file: File) => void;
   onRemoveMedia: (fieldId: string, uri: string) => void;
+  onCreateAction?: (fieldId: string) => void;
+  readOnly?: boolean;
 }
 
 function valueAsString(value: unknown) {
@@ -55,12 +59,14 @@ function optionsFor(field: TemplateField): FieldOption[] {
   return [];
 }
 
-function dateInputValue(value: unknown) {
+function dateInputValue(value: unknown, includeTime = false) {
   const text = valueAsString(value);
   if (!text) return '';
   const date = new Date(text);
   if (Number.isNaN(date.getTime())) return text.slice(0, 10);
-  return date.toISOString().slice(0, 10);
+  if (!includeTime) return date.toISOString().slice(0, 10);
+  const offset = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 }
 
 const InspectionQuestionCard: React.FC<InspectionQuestionCardProps> = ({
@@ -71,6 +77,8 @@ const InspectionQuestionCard: React.FC<InspectionQuestionCardProps> = ({
   onNoteChange,
   onAddMedia,
   onRemoveMedia,
+  onCreateAction,
+  readOnly = false,
 }) => {
   const [isNoteOpen, setIsNoteOpen] = useState(Boolean(response?.note));
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -93,11 +101,16 @@ const InspectionQuestionCard: React.FC<InspectionQuestionCardProps> = ({
     const value = response?.value;
 
     if (isInstruction) {
+      const instructionText = String(field.config?.text ?? field.label);
+      const images = Array.isArray(field.config?.image_urls) ? field.config.image_urls as string[] : [];
       return (
         <div className="rounded-lg border border-primary-blue/15 bg-primary-blue/[0.04] p-4">
           <div className="flex gap-3">
             <FileText className="mt-0.5 h-5 w-5 shrink-0 text-primary-blue" />
-            <p className="text-sm leading-6 text-foreground">{field.label}</p>
+            <div className="min-w-0 flex-1">
+              <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">{instructionText}</p>
+              {images.length > 0 && <div className="mt-3 grid gap-2 sm:grid-cols-2">{images.map(url => <img key={url} src={url} alt="Instruksi" className="max-h-64 w-full rounded-lg border border-divider object-cover" />)}</div>}
+            </div>
           </div>
         </div>
       );
@@ -112,6 +125,7 @@ const InspectionQuestionCard: React.FC<InspectionQuestionCardProps> = ({
               <button
                 key={option.id}
                 type="button"
+                disabled={readOnly}
                 onClick={() => onValueChange(field.id, option.value)}
                 className={cn(
                   'min-h-11 rounded-lg border px-3 py-2 text-sm font-semibold transition',
@@ -136,6 +150,7 @@ const InspectionQuestionCard: React.FC<InspectionQuestionCardProps> = ({
             className="h-4 w-4 rounded border-divider text-primary-blue"
             checked={Boolean(value)}
             onChange={event => onValueChange(field.id, event.target.checked)}
+            disabled={readOnly}
           />
           Tandai sudah sesuai
         </label>
@@ -149,6 +164,10 @@ const InspectionQuestionCard: React.FC<InspectionQuestionCardProps> = ({
           className="form-input"
           value={valueAsString(value)}
           onChange={event => onValueChange(field.id, event.target.value ? Number(event.target.value) : '')}
+          min={field.config?.min}
+          max={field.config?.max}
+          step={field.config?.step}
+          disabled={readOnly}
           placeholder="Masukkan angka"
         />
       );
@@ -159,10 +178,11 @@ const InspectionQuestionCard: React.FC<InspectionQuestionCardProps> = ({
         <div className="relative">
           <CalendarDays className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
-            type="date"
+            type={field.type === 'datetime' && !field.config?.date_only ? 'datetime-local' : 'date'}
             className="form-input pl-10"
-            value={dateInputValue(value)}
+            value={dateInputValue(value, field.type === 'datetime' && !field.config?.date_only)}
             onChange={event => onValueChange(field.id, event.target.value)}
+            disabled={readOnly}
           />
         </div>
       );
@@ -174,6 +194,7 @@ const InspectionQuestionCard: React.FC<InspectionQuestionCardProps> = ({
           <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFiles} />
           <button
             type="button"
+            disabled={readOnly || mediaUris.length >= Number(field.config?.max_files ?? 10)}
             onClick={() => fileInputRef.current?.click()}
             className="flex min-h-28 w-full flex-col items-center justify-center rounded-lg border border-dashed border-primary-blue/35 bg-primary-blue/[0.03] text-center transition hover:bg-primary-blue/[0.06]"
           >
@@ -191,16 +212,6 @@ const InspectionQuestionCard: React.FC<InspectionQuestionCardProps> = ({
       const hasSigned = signatureAttachments.length > 0;
       const signatureUri = signatureAttachments[0]?.file_url ?? signatureAttachments[0]?.uri;
 
-      const handleSign = () => {
-        const slice = window.atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=');
-        const bytes = new Uint8Array(slice.length);
-        for (let i = 0; i < slice.length; i++) {
-          bytes[i] = slice.charCodeAt(i);
-        }
-        const file = new File([bytes], `signature-${field.id}.png`, { type: 'image/png' });
-        onAddMedia(field.id, file);
-      };
-
       const handleClear = () => {
         if (signatureUri) {
           onRemoveMedia(field.id, signatureUri);
@@ -214,28 +225,22 @@ const InspectionQuestionCard: React.FC<InspectionQuestionCardProps> = ({
               className="form-input"
               value={name}
               onChange={event => onValueChange(field.id, event.target.value)}
+              disabled={readOnly}
               placeholder="Nama penandatangan"
             />
             {hasSigned ? (
               <button
                 type="button"
                 onClick={handleClear}
+                disabled={readOnly}
                 className="btn-secondary justify-center border-success-green/25 bg-success-green/10 text-success-green"
               >
                 <Trash2 className="h-4 w-4" />
                 Hapus TTD
               </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleSign}
-                className="btn-secondary justify-center"
-              >
-                <PenLine className="h-4 w-4" />
-                Tanda Tangan
-              </button>
-            )}
+            ) : <span className="inline-flex items-center gap-2 rounded-lg bg-surface px-3 py-2 text-xs font-semibold text-stone"><PenLine className="h-4 w-4" /> Belum ditandatangani</span>}
           </div>
+          {!hasSigned && !readOnly && <SignaturePad filename={`signature-${field.id}.png`} onSave={file => onAddMedia(field.id, file)} />}
           {signatureUri && (
             <div className="mt-2 max-w-xs rounded-lg border border-divider bg-surface p-2">
               <p className="mb-1 text-[10px] font-semibold text-muted-foreground uppercase">File TTD:</p>
@@ -246,24 +251,46 @@ const InspectionQuestionCard: React.FC<InspectionQuestionCardProps> = ({
       );
     }
 
-    if (field.type === 'location' || field.type === 'title_site' || field.type === 'title_asset' || field.type === 'title_company') {
+    if (field.type === 'slider') {
+      const min = Number(field.config?.min ?? 0);
+      const max = Number(field.config?.max ?? 100);
+      const step = Number(field.config?.step ?? 1);
+      const current = typeof value === 'number' ? value : min;
+      return (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-stone"><span>{min}</span><span className="rounded-full bg-primary-blue/10 px-3 py-1 text-primary-blue">{current}</span><span>{max}</span></div>
+          <input type="range" min={min} max={max} step={step} value={current} disabled={readOnly} onChange={event => onValueChange(field.id, Number(event.target.value))} className="w-full accent-primary-blue" />
+        </div>
+      );
+    }
+
+    if (field.type === 'location') {
+      const location = typeof value === 'object' && value !== null ? value as Record<string, unknown> : null;
+      return (
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <input className="form-input flex-1" readOnly value={location ? `${location.latitude ?? '-'}, ${location.longitude ?? '-'}` : valueAsString(value)} placeholder="Belum ada lokasi" />
+          <button type="button" disabled={readOnly || !navigator.geolocation} onClick={() => navigator.geolocation.getCurrentPosition(position => onValueChange(field.id, { latitude: position.coords.latitude, longitude: position.coords.longitude, accuracy: position.coords.accuracy }))} className="btn-secondary justify-center"><MapPin className="h-4 w-4" /> Ambil lokasi</button>
+        </div>
+      );
+    }
+
+    if (field.type === 'title_site' || field.type === 'title_asset' || field.type === 'title_company' || field.type === 'title_document_number') {
       return (
         <input
           className="form-input"
           value={valueAsString(value)}
           onChange={event => onValueChange(field.id, event.target.value)}
+          disabled={readOnly}
           placeholder="Masukkan data"
         />
       );
     }
 
-    return (
-      <textarea
-        className="form-input min-h-24"
-        value={valueAsString(value)}
-        onChange={event => onValueChange(field.id, event.target.value)}
-        placeholder="Tulis jawaban..."
-      />
+    const multiline = field.config?.multiline !== false;
+    return multiline ? (
+      <textarea className="form-input min-h-24" value={valueAsString(value)} maxLength={field.config?.max_length} disabled={readOnly} onChange={event => onValueChange(field.id, event.target.value)} placeholder="Tulis jawaban..." />
+    ) : (
+      <input className="form-input" value={valueAsString(value)} maxLength={field.config?.max_length} disabled={readOnly} onChange={event => onValueChange(field.id, event.target.value)} placeholder="Tulis jawaban..." />
     );
   };
 
@@ -309,6 +336,7 @@ const InspectionQuestionCard: React.FC<InspectionQuestionCardProps> = ({
               <button
                 type="button"
                 onClick={() => onRemoveMedia(field.id, uri)}
+                disabled={readOnly}
                 className="absolute right-1 top-1 rounded bg-slate-950/60 p-1 text-white opacity-0 transition group-hover:opacity-100"
               >
                 <Trash2 className="h-3 w-3" />
@@ -326,6 +354,7 @@ const InspectionQuestionCard: React.FC<InspectionQuestionCardProps> = ({
               <button
                 type="button"
                 onClick={() => onRemoveMedia(field.id, uri)}
+                disabled={readOnly}
                 className="absolute right-2 top-2 rounded-lg bg-slate-950/70 p-1.5 text-white opacity-0 transition group-hover:opacity-100"
               >
                 <Trash2 className="h-4 w-4" />
@@ -354,6 +383,7 @@ const InspectionQuestionCard: React.FC<InspectionQuestionCardProps> = ({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
+                disabled={readOnly}
                 className={cn(
                   'inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition hover:bg-card',
                   mediaUris.length > 0 ? 'text-primary-blue' : 'text-muted-foreground',
@@ -366,6 +396,8 @@ const InspectionQuestionCard: React.FC<InspectionQuestionCardProps> = ({
           )}
           <button
             type="button"
+            onClick={() => onCreateAction?.(field.id)}
+            disabled={readOnly || !onCreateAction}
             className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-muted-foreground transition hover:bg-card"
           >
             <Plus className="h-4 w-4" />
@@ -380,6 +412,7 @@ const InspectionQuestionCard: React.FC<InspectionQuestionCardProps> = ({
             className="form-input min-h-20"
             value={note}
             onChange={event => onNoteChange(field.id, event.target.value)}
+            disabled={readOnly}
             placeholder="Tulis catatan untuk pertanyaan ini..."
           />
         </div>

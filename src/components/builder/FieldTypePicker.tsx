@@ -13,7 +13,10 @@ import {
   PenTool,
   Info,
   Sliders,
-  Table as TableIcon
+  Table as TableIcon,
+  MapPin,
+  FileImage,
+  AlignLeft,
 } from 'lucide-react'
 import type { FieldType, MasterField } from '../../types/template'
 import { cn } from '../../utils/cn'
@@ -38,7 +41,9 @@ const GROUPS = [
       { value: 'text_answer', label: 'Teks Bebas', desc: 'Jawaban tulisan singkat atau deskripsi', icon: Type, color: '#F59E0B' },
       { value: 'number', label: 'Angka / Nilai', desc: 'Input numerik (suhu, kuantitas, meteran)', icon: Hash, color: '#3B82F6' },
       { value: 'inspection_date', label: 'Tanggal', desc: 'Pilihan kalender & waktu otomatis', icon: Calendar, color: '#10B981' },
+      { value: 'datetime', label: 'Tanggal & Waktu', desc: 'Input tanggal dan jam', icon: Calendar, color: '#0EA5E9' },
       { value: 'person', label: 'Nama Personil', desc: 'Nama staff, auditor, atau saksi', icon: User, color: '#8B5CF6' },
+      { value: 'annotation', label: 'Anotasi', desc: 'Catatan teks terstruktur', icon: AlignLeft, color: '#64748B' },
     ]
   },
   {
@@ -54,6 +59,8 @@ const GROUPS = [
     name: 'Dokumentasi & Lanjutan',
     types: [
       { value: 'photo', label: 'Ambil Foto', desc: 'Kamera langsung atau galeri file gambar', icon: Camera, color: '#14B8A6' },
+      { value: 'media', label: 'Media', desc: 'Unggah satu atau beberapa bukti media', icon: FileImage, color: '#0891B2' },
+      { value: 'location', label: 'Lokasi', desc: 'Koordinat atau lokasi pemeriksaan', icon: MapPin, color: '#16A34A' },
       { value: 'signature', label: 'Tanda Tangan', desc: 'Tanda tangan digital di atas layar sentuh', icon: PenTool, color: '#6366F1' },
       { value: 'instruction', label: 'Instruksi / Info', desc: 'Teks penjelasan (non-pertanyaan)', icon: Info, color: '#94A3B8' },
       { value: 'slider', label: 'Slider Skala', desc: 'Pilih nilai dengan menggeser baris skala', icon: Sliders, color: '#F43F5E' },

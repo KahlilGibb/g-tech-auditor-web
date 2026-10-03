@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -16,6 +17,8 @@ import { useInspections } from '../hooks/useInspections';
 import { SkeletonRow } from '../components/ui/SkeletonLoader';
 import { cn } from '../utils/cn';
 import { inspectionService } from '../services/inspectionService';
+import { templateService } from '../services/templateService';
+import { branchService } from '../services/managementService';
 import { appSwal } from '../lib/appSwal';
 import { getApiErrorMessage } from '../lib/apiResponse';
 import { Can } from '../components/rbac/Can';
@@ -32,6 +35,7 @@ import {
   TableWrap,
   Td,
   Th,
+  Select,
 } from '../components/ui';
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -52,6 +56,18 @@ const InspectionsPage: React.FC = () => {
   const { inspections, isLoading, error, fetchInspections } = useInspections();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [exportingKey, setExportingKey] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  const filteredInspections = useMemo(() => {
+    const keyword = query.trim().toLowerCase();
+    return inspections.filter(item => {
+      const matchesQuery = !keyword || [item.title, item.templateName, item.site, item.assignee].join(' ').toLowerCase().includes(keyword);
+      const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
+      return matchesQuery && matchesStatus;
+    });
+  }, [inspections, query, statusFilter]);
 
   useEffect(() => {
     fetchInspections();
@@ -83,6 +99,71 @@ const InspectionsPage: React.FC = () => {
     }
   };
 
+  const handleCreate = async () => {
+    setIsCreating(true);
+    try {
+      const [templates, branches] = await Promise.all([
+        templateService.getTemplates(),
+        branchService.list({ limit: 100 }),
+      ]);
+      const availableTemplates = templates.filter(item => item.form_type === 'inspection' && item.status !== 'draft');
+      if (!availableTemplates.length || !branches.length) {
+        await appSwal.error({
+          title: 'Inspeksi belum dapat dibuat',
+          text: !availableTemplates.length ? 'Belum ada template inspeksi yang dipublish.' : 'Belum ada cabang / target group.',
+        });
+        return;
+      }
+
+      const templateOptions = Object.fromEntries(availableTemplates.map(item => [item.id, item.name]));
+      const templateResult = await Swal.fire({
+        title: 'Pilih Template Inspeksi',
+        input: 'select',
+        inputOptions: templateOptions,
+        inputPlaceholder: 'Pilih template yang sudah dipublish',
+        showCancelButton: true,
+        confirmButtonText: 'Lanjut',
+        cancelButtonText: 'Batal',
+        customClass: { popup: 'gtech-swal-popup', confirmButton: 'gtech-swal-confirm', cancelButton: 'gtech-swal-cancel', input: 'form-input' },
+        buttonsStyling: false,
+        inputValidator: value => value ? null : 'Template wajib dipilih.',
+      });
+      const templateId = templateResult.value as string | undefined;
+      if (!templateId) return;
+
+      const branchOptions = Object.fromEntries(branches.map(branch => [branch.id, branch.name]));
+      const branchResult = await Swal.fire({
+        title: 'Pilih Target Cabang',
+        text: templateOptions[templateId],
+        input: 'select',
+        inputOptions: branchOptions,
+        inputPlaceholder: 'Pilih cabang / dealer',
+        showCancelButton: true,
+        confirmButtonText: 'Mulai Inspeksi',
+        cancelButtonText: 'Batal',
+        customClass: { popup: 'gtech-swal-popup', confirmButton: 'gtech-swal-confirm', cancelButton: 'gtech-swal-cancel', input: 'form-input' },
+        buttonsStyling: false,
+        inputValidator: value => value ? null : 'Cabang wajib dipilih.',
+      });
+      const groupId = branchResult.value as string | undefined;
+      if (!groupId) return;
+
+      const result = await inspectionService.createInspection({
+        templateId,
+        groupId,
+        title: `${templateOptions[templateId]} / ${branchOptions[groupId]}`,
+        site: branchOptions[groupId],
+        assignee: 'Current User',
+        dueDate: new Date().toISOString(),
+      });
+      navigate(`/inspections/${result.id}/session`);
+    } catch (createError) {
+      await appSwal.error({ title: 'Gagal membuat inspeksi', text: getApiErrorMessage(createError) });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   const statusTone = (status: string) =>
     status === 'Complete' ? 'success' : status === 'Overdue' ? 'danger' : 'brand';
 
@@ -98,17 +179,15 @@ const InspectionsPage: React.FC = () => {
               <RefreshCcw className={cn('h-5 w-5', (isLoading || isRefreshing) && 'animate-spin')} />
             </IconButton>
             <Can resource="inspections" action="create">
-              <Button className="flex-1 sm:flex-none">{t('common.create')}</Button>
+              <Button className="flex-1 sm:flex-none" onClick={handleCreate} loading={isCreating}>{t('common.create')}</Button>
             </Can>
           </>
         }
       />
 
       <div className="toolbar">
-        <SearchInput placeholder="Search inspections..." wrapClassName="sm:max-w-none sm:flex-1" />
-        <Button variant="secondary" icon={<Filter className="h-4 w-4" />}>
-          Filter
-        </Button>
+        <SearchInput value={query} onChange={event => setQuery(event.target.value)} placeholder="Search inspections..." wrapClassName="sm:max-w-none sm:flex-1" />
+        <div className="relative min-w-48"><Filter className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-stone" /><Select className="pl-9" value={statusFilter} onChange={event => setStatusFilter(event.target.value)}><option value="all">Semua status</option><option value="In Progress">In Progress</option><option value="Complete">Complete</option><option value="Draft">Draft</option><option value="Overdue">Overdue</option></Select></div>
       </div>
 
       {error && !isLoading && (
@@ -149,14 +228,14 @@ const InspectionsPage: React.FC = () => {
               <SkeletonRow />
               <SkeletonRow />
             </>
-          ) : inspections.length === 0 && !error ? (
+          ) : filteredInspections.length === 0 && !error ? (
             <tr>
               <td colSpan={8}>
                 <EmptyState icon={<ClipboardCheck className="h-6 w-6" />} title={t('inspections.empty')} />
               </td>
             </tr>
           ) : (
-            inspections.map(item => (
+            filteredInspections.map(item => (
               <tr
                 key={item.id}
                 className={cn(

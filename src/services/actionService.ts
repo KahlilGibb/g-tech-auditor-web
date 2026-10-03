@@ -1,4 +1,5 @@
 import type {
+  ActionComment,
   ActionItem,
   ActionStatusFormInput,
   ActionWorkflowStatus,
@@ -124,14 +125,22 @@ function statusPayload(input: ActionStatusFormInput) {
   };
 }
 
-function actionPayload(input: CreateActionPayload) {
+function actionCorePayload(input: CreateActionPayload) {
   return {
     title: input.title,
     description: input.description,
     priority: apiPriority(input.priority),
     status_id: input.workflowStatusId,
     due_date: input.dueDate,
+  };
+}
+
+function actionPayload(input: CreateActionPayload) {
+  return {
+    ...actionCorePayload(input),
     assignee_ids: input.assigneeIds ?? [],
+    inspection_id: input.inspectionId,
+    field_value_id: input.fieldValueId,
   };
 }
 
@@ -267,6 +276,65 @@ export const actionService = {
     }
   },
 
+  async getAction(id: string): Promise<ActionItem> {
+    try {
+      const res = await apiClient.get<unknown>(API_ENDPOINTS.ACTIONS.DETAIL(id));
+      return normalizeAction(unwrapData(res.data));
+    } catch (e) {
+      if (e instanceof MockInterceptError) {
+        const action = MOCK_ACTIONS.find(item => item.id === id);
+        if (!action) throw new Error('Action not found');
+        return action;
+      }
+      throw e;
+    }
+  },
+
+  async getComments(id: string): Promise<ActionComment[]> {
+    try {
+      const res = await apiClient.get<unknown>(API_ENDPOINTS.ACTIONS.COMMENTS(id));
+      return unwrapList<unknown>(res.data).map(raw => {
+        const item = toRecord(raw);
+        return {
+          id: toStringValue(item.id),
+          actionId: toStringValue(item.action_id ?? item.actionId, id),
+          authorId: toStringValue(item.author_id ?? item.authorId),
+          authorName: toStringValue(item.author_name ?? item.authorName, 'Admin HO'),
+          body: toStringValue(item.body ?? item.comment),
+          createdAt: toStringValue(item.created_at ?? item.createdAt, new Date().toISOString()),
+        };
+      });
+    } catch (e) {
+      if (e instanceof MockInterceptError) return [];
+      throw e;
+    }
+  },
+
+  async addComment(id: string, body: string): Promise<ActionComment> {
+    try {
+      const res = await apiClient.post<unknown>(API_ENDPOINTS.ACTIONS.COMMENTS(id), { body });
+      const item = toRecord(unwrapData(res.data));
+      return {
+        id: toStringValue(item.id),
+        actionId: toStringValue(item.action_id ?? item.actionId, id),
+        authorId: toStringValue(item.author_id ?? item.authorId),
+        authorName: toStringValue(item.author_name ?? item.authorName, 'Admin HO'),
+        body: toStringValue(item.body ?? item.comment, body),
+        createdAt: toStringValue(item.created_at ?? item.createdAt, new Date().toISOString()),
+      };
+    } catch (e) {
+      if (e instanceof MockInterceptError) return {
+        id: `comment-${Date.now()}`,
+        actionId: id,
+        authorId: 'current-user',
+        authorName: 'Current User',
+        body,
+        createdAt: new Date().toISOString(),
+      };
+      throw e;
+    }
+  },
+
   async createAction(input: CreateActionPayload): Promise<ActionItem> {
     try {
       const res = await apiClient.post<unknown>(API_ENDPOINTS.ACTIONS.CREATE, actionPayload(input));
@@ -300,8 +368,21 @@ export const actionService = {
 
   async updateAction(id: string, input: CreateActionPayload): Promise<ActionItem> {
     try {
-      const res = await apiClient.put<unknown>(API_ENDPOINTS.ACTIONS.UPDATE(id), actionPayload(input));
-      return normalizeAction(unwrapData(res.data));
+      const current = await actionService.getAction(id);
+      await apiClient.put<unknown>(API_ENDPOINTS.ACTIONS.UPDATE(id), actionCorePayload(input));
+
+      const currentAssignees = new Set(current.assigneeIds ?? []);
+      const desiredAssignees = new Set(input.assigneeIds ?? []);
+      await Promise.all([
+        ...[...desiredAssignees]
+          .filter(userId => !currentAssignees.has(userId))
+          .map(userId => actionService.addAssignee(id, userId)),
+        ...[...currentAssignees]
+          .filter(userId => !desiredAssignees.has(userId))
+          .map(userId => actionService.removeAssignee(id, userId)),
+      ]);
+
+      return actionService.getAction(id);
     } catch (e) {
       if (e instanceof MockInterceptError) {
         await new Promise<void>(r => setTimeout(r, 300));
@@ -415,12 +496,10 @@ export const actionService = {
 
   async updateActionStatus(id: string, statusId: string): Promise<ActionItem> {
     try {
-      const res = await apiClient.patch<unknown>(API_ENDPOINTS.ACTIONS.UPDATE(id), {
-        workflow_status_id: statusId,
-        action_status_id: statusId,
+      const res = await apiClient.put<unknown>(API_ENDPOINTS.ACTIONS.UPDATE(id), {
         status_id: statusId,
       });
-      return normalizeAction(res.data);
+      return normalizeAction(unwrapData(res.data));
     } catch (e) {
       if (e instanceof MockInterceptError) {
         await new Promise<void>(r => setTimeout(r, 300));

@@ -13,15 +13,21 @@ import {
   Loader2,
   LayoutList,
   Send,
+  ImagePlus,
+  X,
 } from 'lucide-react'
 import { cn } from '../utils/cn'
 import { useTemplateEditorStore } from '../stores/templateEditorStore'
+import { useUserStore } from '../stores/userStore'
+import { useBranchStore } from '../stores/branchStore'
 import type { FieldType, TemplateField, TemplateSection } from '../types/template'
+import type { Branch, ManagementUser } from '../types/management'
 import { fieldTypeColor, fieldTypeLabel } from '../types/template'
 import FieldTypePicker from '../components/builder/FieldTypePicker'
 import FieldOptionsEditor from '../components/builder/FieldOptionsEditor'
 import { appSwal } from '../lib/appSwal'
 import { getApiErrorMessage } from '../lib/apiResponse'
+import { templateService } from '../services/templateService'
 import { Alert, Badge, Button, Eyebrow, IconButton, Toggle } from '../components/ui'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -35,6 +41,69 @@ function hexAlpha(hex: string, alpha: number): string {
 
 const HAS_OPTIONS: FieldType[] = ['dropdown', 'checkbox', 'pass_fail', 'multiple_choice']
 
+const FieldConfigEditor: React.FC<{ field: TemplateField; onUpdate: (patch: Partial<TemplateField>) => void }> = ({ field, onUpdate }) => {
+  const [isUploading, setIsUploading] = useState(false)
+  const config = field.config ?? {}
+  const patchConfig = (patch: Record<string, unknown>) => onUpdate({ config: { ...config, ...patch } })
+
+  const uploadInstructionImage = async (file?: File) => {
+    if (!file) return
+    setIsUploading(true)
+    try {
+      const url = await templateService.uploadTemplateImage(file)
+      patchConfig({ image_urls: [...(config.image_urls ?? []), url] })
+    } catch (uploadError) {
+      await appSwal.error({ title: 'Gagal mengunggah gambar instruksi', text: getApiErrorMessage(uploadError) })
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  if (field.type === 'instruction') {
+    return (
+      <div className="border-t border-hairline-soft bg-surface/40 p-4">
+        <textarea className="form-input min-h-24 text-xs" value={String(config.text ?? '')} onChange={event => patchConfig({ text: event.target.value })} placeholder="Tulis isi instruksi yang akan dibaca auditor…" />
+        <div className="mt-3 flex flex-wrap gap-2">
+          {(config.image_urls ?? []).map((url: string) => (
+            <div key={url} className="group relative h-20 w-28 overflow-hidden rounded-lg border border-divider bg-card">
+              <img src={url} alt="Instruksi" className="h-full w-full object-cover" />
+              <button type="button" onClick={() => patchConfig({ image_urls: (config.image_urls ?? []).filter((item: string) => item !== url) })} className="absolute right-1 top-1 rounded bg-black/60 p-1 text-white"><X className="h-3 w-3" /></button>
+            </div>
+          ))}
+          <label className="flex h-20 w-28 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-primary-blue/35 bg-card text-[10px] font-semibold text-primary-blue hover:bg-primary-blue/5">
+            {isUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImagePlus className="mb-1 h-5 w-5" />}
+            Tambah gambar
+            <input type="file" accept="image/*" className="hidden" disabled={isUploading} onChange={event => void uploadInstructionImage(event.target.files?.[0])} />
+          </label>
+        </div>
+      </div>
+    )
+  }
+
+  if (['text', 'text_answer', 'annotation', 'person'].includes(field.type)) {
+    return (
+      <div className="flex flex-wrap items-center gap-4 border-t border-hairline-soft bg-surface/40 p-4 text-xs">
+        <label className="flex items-center gap-2 font-semibold text-stone"><input type="checkbox" checked={Boolean(config.multiline)} onChange={event => patchConfig({ multiline: event.target.checked })} /> Multiline</label>
+        <label className="flex items-center gap-2 font-semibold text-stone">Maks. karakter <input type="number" min={1} value={config.max_length ?? ''} onChange={event => patchConfig({ max_length: event.target.value ? Number(event.target.value) : undefined })} className="w-24 rounded-lg border border-divider bg-card px-2 py-1.5" /></label>
+      </div>
+    )
+  }
+
+  if (field.type === 'number' || field.type === 'slider') {
+    return (
+      <div className="grid grid-cols-3 gap-3 border-t border-hairline-soft bg-surface/40 p-4 text-xs">
+        {(['min', 'max', 'step'] as const).map(key => <label key={key} className="font-semibold capitalize text-stone">{key}<input type="number" value={config[key] ?? ''} onChange={event => patchConfig({ [key]: event.target.value ? Number(event.target.value) : undefined })} className="form-input mt-1 text-xs" /></label>)}
+      </div>
+    )
+  }
+
+  if (field.type === 'photo' || field.type === 'media') {
+    return <div className="border-t border-hairline-soft bg-surface/40 p-4 text-xs"><label className="font-semibold text-stone">Maksimum file <input type="number" min={1} value={config.max_files ?? 10} onChange={event => patchConfig({ max_files: Number(event.target.value) || 1 })} className="ml-2 w-24 rounded-lg border border-divider bg-card px-2 py-1.5" /></label></div>
+  }
+
+  return null
+}
+
 // ─── FieldRow ─────────────────────────────────────────────────────────────────
 
 interface FieldRowProps {
@@ -46,6 +115,9 @@ interface FieldRowProps {
   onMoveUp: () => void
   onMoveDown: () => void
   onOpenPicker: () => void
+  scoringEnabled: boolean
+  users: ManagementUser[]
+  groups: Branch[]
 }
 
 const FieldRow: React.FC<FieldRowProps> = ({
@@ -57,6 +129,9 @@ const FieldRow: React.FC<FieldRowProps> = ({
   onMoveUp,
   onMoveDown,
   onOpenPicker,
+  scoringEnabled,
+  users,
+  groups,
 }) => {
   const color = fieldTypeColor(field.type)
   const label = fieldTypeLabel(field.type)
@@ -143,9 +218,13 @@ const FieldRow: React.FC<FieldRowProps> = ({
             fieldId={field.id}
             options={field.options ?? []}
             onChange={(opts) => onUpdate({ options: opts })}
+            scoringEnabled={scoringEnabled}
+            users={users}
+            groups={groups}
           />
         </div>
       )}
+      <FieldConfigEditor field={field} onUpdate={onUpdate} />
     </div>
   )
 }
@@ -171,6 +250,9 @@ interface SectionCardProps {
   onDeleteField: (fieldId: string) => void | Promise<void>
   onMoveFieldUp: (fieldIndex: number) => void
   onMoveFieldDown: (fieldIndex: number) => void
+  scoringEnabled: boolean
+  users: ManagementUser[]
+  groups: Branch[]
 }
 
 const SectionCard: React.FC<SectionCardProps> = ({
@@ -192,6 +274,9 @@ const SectionCard: React.FC<SectionCardProps> = ({
   onDeleteField,
   onMoveFieldUp,
   onMoveFieldDown,
+  scoringEnabled,
+  users,
+  groups,
 }) => {
   const { t } = useTranslation()
   const [showMenu, setShowMenu] = useState(false)
@@ -332,6 +417,9 @@ const SectionCard: React.FC<SectionCardProps> = ({
                     onMoveUp={() => onMoveFieldUp(fi)}
                     onMoveDown={() => onMoveFieldDown(fi)}
                     onOpenPicker={() => setPickerOpenFor(field.id)}
+                    scoringEnabled={scoringEnabled}
+                    users={users}
+                    groups={groups}
                   />
                 ))}
               </div>
@@ -396,6 +484,8 @@ export const TemplateBuilderPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const { users, fetchUsers } = useUserStore()
+  const { branches, fetchBranches } = useBranchStore()
 
   const {
     template,
@@ -428,6 +518,8 @@ export const TemplateBuilderPage: React.FC = () => {
 
   useEffect(() => {
     loadMasterFields()
+    fetchUsers({ limit: 100 })
+    fetchBranches({ limit: 100 })
     if (!id || id === 'new') {
       initCreateTemplate('inspection').then((newId) => {
         navigate(`/templates/${newId}/builder`, { replace: true })
@@ -449,7 +541,45 @@ export const TemplateBuilderPage: React.FC = () => {
     }
   }
 
+  const validateTemplate = () => {
+    if (!template?.title.trim()) return 'Judul template wajib diisi.'
+    if (sections.length === 0) return 'Template wajib memiliki minimal satu bab.'
+    for (const section of sections) {
+      if (!section.title.trim()) return 'Semua judul bab wajib diisi.'
+      for (const field of fields[section.id] ?? []) {
+        if (!field.label.trim()) return `Ada pertanyaan tanpa label pada bab “${section.title}”.`
+        if (HAS_OPTIONS.includes(field.type)) {
+          if (!field.options?.length) return `Pertanyaan “${field.label}” wajib memiliki opsi jawaban.`
+          if (field.options.some(option => !option.label.trim() || !option.value.trim())) return `Semua opsi pada “${field.label}” wajib diisi.`
+          for (const option of field.options) {
+            for (const trigger of option.triggers ?? []) {
+              if (trigger.type === 'notify' && !(trigger.message?.trim()) && !(trigger.notify_user_ids?.length || trigger.notify_group_ids?.length)) {
+                return `Logic notifikasi pada opsi “${option.label}” belum memiliki pesan atau penerima.`
+              }
+              if (trigger.type === 'create_action' && (!trigger.action_title?.trim() || !trigger.assignee_ids?.length)) {
+                return `Logic tindakan pada opsi “${option.label}” wajib memiliki judul dan assignee.`
+              }
+            }
+          }
+        }
+        const min = Number(field.config?.min)
+        const max = Number(field.config?.max)
+        if (Number.isFinite(min) && Number.isFinite(max) && min > max) return `Nilai minimum “${field.label}” tidak boleh melebihi maksimum.`
+      }
+    }
+    if (template.form_type === 'cps' && template.scoring_enabled) {
+      const maximumScore = Object.values(fields).flat().reduce((total, field) => total + Math.max(0, ...(field.options ?? []).map(option => option.score_value || 0)), 0)
+      if (maximumScore > 100) return `Total skor maksimum CPS adalah ${maximumScore}; batasnya 100.`
+    }
+    return null
+  }
+
   const handleSave = async () => {
+    const validationError = validateTemplate()
+    if (validationError) {
+      await appSwal.errorIncomplete(validationError)
+      return
+    }
     const confirmed = await appSwal.confirmSave()
     if (!confirmed) return
 
@@ -463,6 +593,11 @@ export const TemplateBuilderPage: React.FC = () => {
   }
 
   const handlePublish = async () => {
+    const validationError = validateTemplate()
+    if (validationError) {
+      await appSwal.errorIncomplete(validationError)
+      return
+    }
     const confirmed = await appSwal.confirm({
       title: t('builder.publishConfirm.title'),
       text: isDirty ? t('builder.publishConfirm.textDirty') : t('builder.publishConfirm.text'),
@@ -775,6 +910,9 @@ export const TemplateBuilderPage: React.FC = () => {
                     onDeleteField={(fieldId) => deleteField(section.id, fieldId)}
                     onMoveFieldUp={(fi) => moveFieldUp(section.id, fi)}
                     onMoveFieldDown={(fi) => moveFieldDown(section.id, fi)}
+                    scoringEnabled={template.scoring_enabled}
+                    users={users}
+                    groups={branches}
                   />
                 )
               })}

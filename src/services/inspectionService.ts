@@ -5,6 +5,7 @@ import type {
   InspectionSummary,
   CreateInspectionPayload,
   DashboardData,
+  InspectionReviewSessionData,
 } from '../types/inspection';
 import type { TemplateField } from '../types/template';
 import { apiClient, MockInterceptError } from '../lib/apiClient';
@@ -93,7 +94,8 @@ function normalizeInspection(raw: unknown): InspectionSummary {
   const record = toRecord(raw);
   const template = toRecord(record.template);
   const site = toRecord(record.site);
-  const assignee = toRecord(record.assignee ?? record.user ?? record.auditor);
+  const group = toRecord(record.group);
+  const assignee = toRecord(record.assignee ?? record.user ?? record.auditor ?? record.conducted_by);
   const id = toStringValue(record.id ?? record.inspection_id ?? record.uuid);
   const templateId = toStringValue(record.template_id ?? record.templateId ?? template.template_id ?? template.templateId ?? template.id);
   const title =
@@ -104,8 +106,8 @@ function normalizeInspection(raw: unknown): InspectionSummary {
     id,
     templateId,
     title,
-    site: toStringValue(record.site_name ?? site.name ?? record.site, '-'),
-    assignee: toStringValue(record.assignee_name ?? assignee.name ?? assignee.full_name ?? record.assignee, '-'),
+    site: toStringValue(record.site_name ?? site.name ?? group.name ?? record.group_name ?? record.site, '-'),
+    assignee: toStringValue(record.assignee_name ?? assignee.name ?? assignee.full_name ?? record.conducted_by_name ?? record.assignee, '-'),
     dueDate: toStringValue(record.due_date ?? record.dueDate ?? record.deadline, new Date().toISOString()),
     templateName: toStringValue(record.template_name ?? template.title ?? template.name, 'Inspection Template'),
     status: normalizeStatus(record.status),
@@ -393,6 +395,8 @@ export const inspectionService = {
         responses: Object.values(normalizeResponses(record.responses ?? record.field_values)),
         createdAt: toStringValue(record.created_at ?? record.createdAt, new Date().toISOString()),
         submittedAt: toStringValue(record.submitted_at ?? record.submittedAt) || null,
+        apiStatus: toStringValue(record.status),
+        version: toNumber(record.version, 0),
       };
     } catch (e) {
       if (e instanceof MockInterceptError) {
@@ -464,7 +468,7 @@ export const inspectionService = {
     try {
       const detail = await this.getInspection(id);
       const tree = detail.templateId
-        ? await templateService.getTemplateWithVersion(detail.templateId).catch(() => null)
+        ? await templateService.getTemplatePreview(detail.templateId).catch(() => null)
         : null;
       const sections = tree ? sectionsFromTemplate(tree.sections, tree.fields) : mockSections();
 
@@ -480,6 +484,7 @@ export const inspectionService = {
         assignee: detail.assignee,
         dueDate: detail.dueDate,
         startedAt: detail.startedAt ?? detail.createdAt,
+        version: detail.version,
       };
     } catch (e) {
       if (e instanceof MockInterceptError) {
@@ -506,6 +511,43 @@ export const inspectionService = {
 
   async saveInspectionDraft(): Promise<void> {
     // No-op because fields are dynamically upserted as they are answered in the new implementation.
+  },
+
+  async getInspectionReview(inspectionId: string): Promise<InspectionReviewSessionData> {
+    const res = await apiClient.get<unknown>(API_ENDPOINTS.INSPECTIONS.REVIEW(inspectionId));
+    const data = toRecord(unwrapData(res.data));
+    const inspection = toRecord(data.inspection);
+    const review = toRecord(data.review);
+    const submission = toRecord(data.dealer_submission);
+    return {
+      version: toNumber(inspection.version, 0),
+      status: toStringValue(review.status, 'pending_review') as InspectionReviewSessionData['status'],
+      dealerSubmittedScore: toNumber(review.dealer_submitted_score, 0),
+      currentResponses: normalizeResponses(data.current_values),
+      originalResponses: normalizeResponses(submission.field_values),
+      changes: Array.isArray(data.changes) ? data.changes : [],
+    };
+  },
+
+  async updateReviewField(
+    inspectionId: string,
+    fieldId: string,
+    version: number,
+    payload: { value: unknown; note?: string; note_type?: string; reason: string },
+  ): Promise<{ response: InspectionDetail['responses'][number]; version: number }> {
+    const res = await apiClient.put<unknown>(API_ENDPOINTS.INSPECTIONS.REVIEW_FIELD(inspectionId, fieldId), payload, {
+      headers: { 'If-Match': String(version) },
+    });
+    const data = toRecord(unwrapData(res.data));
+    const normalized = normalizeResponses([data.field_value]);
+    return { response: normalized[fieldId], version: toNumber(data.version, version + 1) };
+  },
+
+  async completeInspectionReview(inspectionId: string, version: number): Promise<InspectionReviewSessionData> {
+    await apiClient.post(API_ENDPOINTS.INSPECTIONS.REVIEW_COMPLETE(inspectionId), undefined, {
+      headers: { 'If-Match': String(version) },
+    });
+    return this.getInspectionReview(inspectionId);
   },
 
   async upsertFieldValue(

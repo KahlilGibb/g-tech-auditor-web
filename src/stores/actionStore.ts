@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type {
   ActionItem,
   ActionStatusFormInput,
@@ -30,9 +29,7 @@ interface ActionStoreState {
   clearError: () => void;
 }
 
-export const useActionStore = create<ActionStoreState>()(
-  persist(
-    (set, get) => ({
+export const useActionStore = create<ActionStoreState>()((set, get) => ({
       actions: [],
       workflowStatuses: [],
       isLoading: false,
@@ -112,6 +109,7 @@ export const useActionStore = create<ActionStoreState>()(
         } catch (e) {
           // Rollback on failure
           set({ actions: previousActions, error: getApiErrorMessage(e, 'Failed to update action') });
+          throw e;
         }
       },
 
@@ -181,14 +179,4 @@ export const useActionStore = create<ActionStoreState>()(
       },
 
       clearError: () => set({ error: null }),
-    }),
-    {
-      name: 'gtech-action-store',
-      partialize: (state) => ({
-        actions: state.actions,
-        workflowStatuses: state.workflowStatuses,
-        isFetched: state.isFetched,
-      }),
-    }
-  )
-);
+    }));

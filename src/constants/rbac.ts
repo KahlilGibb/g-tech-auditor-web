@@ -72,6 +72,7 @@ export const isAdminRole = (role?: string | null) => {
     'superadmin',
     'platform_admin',
     'org_admin',
+    'admin_ho',
   ].includes(role.toLowerCase());
 };
 

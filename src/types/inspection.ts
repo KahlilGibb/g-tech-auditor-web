@@ -41,6 +41,19 @@ export interface InspectionDetail extends InspectionSummary {
   responses: InspectionResponse[];
   createdAt: string;
   submittedAt?: string | null;
+  apiStatus?: string;
+  version?: number;
+}
+
+export type InspectionReviewStatus = 'pending_review' | 'in_review' | 'review_completed';
+
+export interface InspectionReviewSessionData {
+  version: number;
+  status: InspectionReviewStatus;
+  dealerSubmittedScore?: number;
+  currentResponses: Record<string, InspectionResponse>;
+  originalResponses: Record<string, InspectionResponse>;
+  changes: unknown[];
 }
 
 export interface InspectionSection {
@@ -63,6 +76,12 @@ export interface InspectionSession {
   dueDate: string;
   startedAt: string;
   lastSavedAt?: string;
+  version?: number;
+  isReviewMode?: boolean;
+  reviewStatus?: InspectionReviewStatus;
+  dealerSubmittedScore?: number;
+  originalResponses?: Record<string, InspectionResponse>;
+  reviewChanges?: unknown[];
 }
 
 export interface CreateInspectionPayload {

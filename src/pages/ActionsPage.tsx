@@ -7,13 +7,16 @@ import {
   CheckSquare,
   Clock,
   Edit3,
+  Eye,
   Image,
   FileText,
   Filter,
   MapPin,
+  MessageSquare,
   Plus,
   RefreshCcw,
   Settings2,
+  Send,
   Trash2,
   XCircle,
 } from 'lucide-react';
@@ -23,7 +26,8 @@ import { useUserStore } from '../stores/userStore';
 import { appSwal } from '../lib/appSwal';
 import { getApiErrorMessage } from '../lib/apiResponse';
 import { cn } from '../utils/cn';
-import type { ActionItem, ActionPriority, ActionStatusFormInput, CreateActionPayload } from '../types/action';
+import type { ActionComment, ActionItem, ActionPriority, ActionStatusFormInput, CreateActionPayload } from '../types/action';
+import { actionService } from '../services/actionService';
 import { Can } from '../components/rbac/Can';
 import { useRbac } from '../hooks/useRbac';
 import {
@@ -132,6 +136,10 @@ const ActionsPage: React.FC = () => {
   const [statusFormError, setStatusFormError] = useState('');
   const [resolvingAction, setResolvingAction] = useState<ActionItem | null>(null);
   const [viewingAction, setViewingAction] = useState<ActionItem | null>(null);
+  const [comments, setComments] = useState<ActionComment[]>([]);
+  const [commentBody, setCommentBody] = useState('');
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const [isCommentSaving, setIsCommentSaving] = useState(false);
   const [resolutionNote, setResolutionNote] = useState('');
   const [resolutionFiles, setResolutionFiles] = useState<File[]>([]);
   const [resolveError, setResolveError] = useState('');
@@ -253,6 +261,40 @@ const ActionsPage: React.FC = () => {
     }
   };
 
+  const openViewAction = async (action: ActionItem) => {
+    setViewingAction(action);
+    setComments([]);
+    setCommentBody('');
+    setIsDetailLoading(true);
+    try {
+      const [detail, actionComments] = await Promise.all([
+        actionService.getAction(action.id),
+        actionService.getComments(action.id),
+      ]);
+      setViewingAction(detail);
+      setComments(actionComments);
+    } catch (detailError) {
+      await appSwal.error({ title: 'Gagal memuat detail tindakan', text: getApiErrorMessage(detailError) });
+    } finally {
+      setIsDetailLoading(false);
+    }
+  };
+
+  const handleAddComment = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!viewingAction || !commentBody.trim()) return;
+    setIsCommentSaving(true);
+    try {
+      const comment = await actionService.addComment(viewingAction.id, commentBody.trim());
+      setComments(current => [...current, comment]);
+      setCommentBody('');
+    } catch (commentError) {
+      await appSwal.error({ title: 'Komentar gagal dikirim', text: getApiErrorMessage(commentError) });
+    } finally {
+      setIsCommentSaving(false);
+    }
+  };
+
   const openResolve = (action: ActionItem) => {
     setResolvingAction(action);
     setResolutionNote('');
@@ -283,6 +325,10 @@ const ActionsPage: React.FC = () => {
     const note = resolutionNote.trim();
     if (!note) {
       setResolveError('Catatan perbaikan wajib diisi.');
+      return;
+    }
+    if (resolutionFiles.length === 0) {
+      setResolveError('Minimal satu foto bukti perbaikan wajib diunggah.');
       return;
     }
 
@@ -488,7 +534,7 @@ const ActionsPage: React.FC = () => {
                     )}
 
                     <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-                      <Button variant="secondary" onClick={() => setViewingAction(action)}>
+                      <Button variant="secondary" onClick={() => void openViewAction(action)}>
                         Lihat detail
                       </Button>
                       {canResolve && (
@@ -605,6 +651,9 @@ const ActionsPage: React.FC = () => {
                   </Td>
                   <Td className="text-right">
                     <div className="inline-flex items-center gap-1">
+                      <RowAction onClick={() => void openViewAction(action)} aria-label="Lihat detail" title="Lihat detail">
+                        <Eye className="h-4 w-4" />
+                      </RowAction>
                       {canResolve && (
                         <RowAction tone="brand" onClick={() => openResolve(action)} aria-label="Resolve issue" title="Resolve issue">
                           <CheckCircle2 className="h-4 w-4" />
@@ -645,6 +694,7 @@ const ActionsPage: React.FC = () => {
       >
         {viewingAction && (
           <div className="space-y-5">
+            {isDetailLoading && <Alert tone="info">Memuat detail, foto, dan diskusi terbaru…</Alert>}
             {viewingAction.description && <p className="text-sm leading-relaxed text-charcoal">{viewingAction.description}</p>}
             <div className="grid gap-3 sm:grid-cols-2">
               {viewingContext?.source && <div><p className="text-xs text-stone">Sumber temuan</p><p className="mt-1 text-sm font-medium text-charcoal">{viewingContext.source}</p></div>}
@@ -686,6 +736,42 @@ const ActionsPage: React.FC = () => {
                 </div>
               </div>
             )}
+            <div className="border-t border-hairline-soft pt-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="flex items-center gap-2 text-sm font-semibold text-ink-deep">
+                  <MessageSquare className="h-4 w-4 text-primary-blue" /> Diskusi Head Office
+                </p>
+                <Badge tone="neutral">{comments.length}</Badge>
+              </div>
+              {comments.length === 0 ? (
+                <p className="mt-3 rounded-xl bg-surface px-4 py-3 text-sm text-stone">Belum ada komentar.</p>
+              ) : (
+                <div className="mt-3 max-h-56 space-y-2 overflow-y-auto sidebar-scroll">
+                  {comments.map(comment => (
+                    <div key={comment.id} className="rounded-xl border border-hairline-soft bg-card p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xs font-semibold text-ink-deep">{comment.authorName}</p>
+                        <p className="text-[11px] text-stone">{formatDate(comment.createdAt)}</p>
+                      </div>
+                      <p className="mt-1 text-sm leading-6 text-charcoal">{comment.body}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {isAdmin && (
+                <form onSubmit={handleAddComment} className="mt-3 flex gap-2">
+                  <Input
+                    value={commentBody}
+                    onChange={event => setCommentBody(event.target.value)}
+                    placeholder="Tambahkan komentar untuk dealer…"
+                    disabled={isCommentSaving}
+                  />
+                  <Button type="submit" disabled={!commentBody.trim()} loading={isCommentSaving} icon={!isCommentSaving ? <Send className="h-4 w-4" /> : undefined}>
+                    Kirim
+                  </Button>
+                </form>
+              )}
+            </div>
           </div>
         )}
       </Modal>
@@ -719,7 +805,7 @@ const ActionsPage: React.FC = () => {
               disabled={isSaving}
             />
           </Field>
-          <Field label="Foto bukti perbaikan" hint="Opsional; Anda dapat memilih lebih dari satu foto.">
+          <Field label="Foto bukti perbaikan" required hint="Minimal satu foto; Anda dapat memilih lebih dari satu.">
             <Input
               type="file"
               accept="image/*"

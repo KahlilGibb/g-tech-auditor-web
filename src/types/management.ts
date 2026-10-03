@@ -19,6 +19,7 @@ export interface ManagementUser {
   status?: EntityStatus;
   createdAt?: string;
   updatedAt?: string;
+  activeDeviceCount?: number;
 }
 
 export interface UserFormInput {

@@ -260,6 +260,27 @@ export const userService = {
     }
   },
 
+  async getActiveDeviceCount(id: string): Promise<number> {
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.USERS.SESSIONS(id));
+      const record = toRecord(unwrapData(response.data));
+      const value = Number(record.active_devices ?? record.active_device_count ?? record.count ?? 0);
+      return Number.isFinite(value) ? value : 0;
+    } catch (error) {
+      if (error instanceof MockInterceptError) return 1;
+      throw error;
+    }
+  },
+
+  async logoutAllDevices(id: string): Promise<void> {
+    try {
+      await apiClient.post(API_ENDPOINTS.USERS.LOGOUT_ALL(id));
+    } catch (error) {
+      if (error instanceof MockInterceptError) return;
+      throw error;
+    }
+  },
+
   async getById(id: string): Promise<ManagementUser> {
     try {
       const response = await apiClient.get(API_ENDPOINTS.USERS.DETAIL(id));

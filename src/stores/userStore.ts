@@ -14,6 +14,7 @@ interface UserStoreState {
   deleteUser: (id: string) => Promise<void>;
   provisionGotify: (id: string) => Promise<void>;
   reconcileGotify: () => Promise<void>;
+  logoutAllDevices: (id: string) => Promise<void>;
   clearError: () => void;
 }
 
@@ -27,7 +28,11 @@ export const useUserStore = create<UserStoreState>()((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const users = await userService.list(query);
-      set({ users, isLoading: false });
+      const withDeviceCounts = await Promise.all(users.map(async user => ({
+        ...user,
+        activeDeviceCount: await userService.getActiveDeviceCount(user.id).catch(() => undefined),
+      })));
+      set({ users: withDeviceCounts, isLoading: false });
     } catch (error) {
       set({ isLoading: false, error: getApiErrorMessage(error, 'Failed to load users') });
     }
@@ -87,6 +92,20 @@ export const useUserStore = create<UserStoreState>()((set, get) => ({
       set({ isSaving: false });
     } catch (error) {
       set({ isSaving: false, error: getApiErrorMessage(error, 'Failed to reconcile Gotify') });
+      throw error;
+    }
+  },
+
+  logoutAllDevices: async id => {
+    set({ isSaving: true, error: null });
+    try {
+      await userService.logoutAllDevices(id);
+      set(state => ({
+        users: state.users.map(user => user.id === id ? { ...user, activeDeviceCount: 0 } : user),
+        isSaving: false,
+      }));
+    } catch (error) {
+      set({ isSaving: false, error: getApiErrorMessage(error, 'Failed to logout user devices') });
       throw error;
     }
   },

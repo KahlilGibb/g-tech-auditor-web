@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { BellPlus, Loader2, Pencil, Plus, RefreshCcw, Trash2, UserPlus, Users } from 'lucide-react';
+import { Laptop, Loader2, LogOut, Pencil, Plus, RefreshCcw, Trash2, UserPlus, Users } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { useRoleStore } from '../stores/roleStore';
 import { useUserStore } from '../stores/userStore';
@@ -39,7 +39,7 @@ const EMPTY_FORM: UserFormInput = {
 
 const UsersPage: React.FC = () => {
   const { t } = useTranslation();
-  const { users, isLoading, isSaving, error, fetchUsers, createUser, updateUser, deleteUser, provisionGotify, reconcileGotify } =
+  const { users, isLoading, isSaving, error, fetchUsers, createUser, updateUser, deleteUser, logoutAllDevices } =
     useUserStore();
   const {
     roles,
@@ -52,8 +52,7 @@ const UsersPage: React.FC = () => {
   const [editingUser, setEditingUser] = useState<ManagementUser | null>(null);
   const [form, setForm] = useState<UserFormInput>(EMPTY_FORM);
   const [formError, setFormError] = useState('');
-  const [gotifyUserId, setGotifyUserId] = useState<string | null>(null);
-  const [isReconcilingGotify, setIsReconcilingGotify] = useState(false);
+  const [logoutUserId, setLogoutUserId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -157,55 +156,23 @@ const UsersPage: React.FC = () => {
     }
   };
 
-  const handleProvisionGotify = async (user: ManagementUser) => {
+  const handleLogoutAllDevices = async (user: ManagementUser) => {
+    if (!user.activeDeviceCount) return;
     const confirmed = await appSwal.confirm({
-      title: t('users.gotify.confirmProvision.title'),
-      text: t('users.gotify.confirmProvision.text', { name: user.name }),
-      confirmText: t('swal.buttons.yes'),
-      cancelText: t('swal.buttons.no'),
+      title: 'Logout semua perangkat?',
+      text: `${user.name} akan dikeluarkan dari ${user.activeDeviceCount} perangkat aktif.`,
+      confirmText: 'Ya, logout semua',
+      cancelText: 'Batal',
     });
     if (!confirmed) return;
-
-    setGotifyUserId(user.id);
+    setLogoutUserId(user.id);
     try {
-      await provisionGotify(user.id);
-      await appSwal.success({
-        title: t('users.gotify.successProvision.title'),
-        text: t('users.gotify.successProvision.text', { name: user.name }),
-      });
-    } catch (gotifyError) {
-      await appSwal.error({
-        title: t('users.gotify.failedProvision.title'),
-        text: getApiErrorMessage(gotifyError),
-      });
+      await logoutAllDevices(user.id);
+      await appSwal.success({ title: 'Semua perangkat berhasil dilogout', text: `Seluruh sesi aktif ${user.name} sudah dicabut.` });
+    } catch (logoutError) {
+      await appSwal.error({ title: 'Gagal logout perangkat', text: getApiErrorMessage(logoutError) });
     } finally {
-      setGotifyUserId(null);
-    }
-  };
-
-  const handleReconcileGotify = async () => {
-    const confirmed = await appSwal.confirm({
-      title: t('users.gotify.confirmReconcile.title'),
-      text: t('users.gotify.confirmReconcile.text'),
-      confirmText: t('swal.buttons.yes'),
-      cancelText: t('swal.buttons.no'),
-    });
-    if (!confirmed) return;
-
-    setIsReconcilingGotify(true);
-    try {
-      await reconcileGotify();
-      await appSwal.success({
-        title: t('users.gotify.successReconcile.title'),
-        text: t('users.gotify.successReconcile.text'),
-      });
-    } catch (gotifyError) {
-      await appSwal.error({
-        title: t('users.gotify.failedReconcile.title'),
-        text: getApiErrorMessage(gotifyError),
-      });
-    } finally {
-      setIsReconcilingGotify(false);
+      setLogoutUserId(null);
     }
   };
 
@@ -217,17 +184,6 @@ const UsersPage: React.FC = () => {
         subtitle="Kelola akun, akses role, dan status user auditor."
         actions={
           <>
-            <Can resource="users" action="update">
-              <Button
-                variant="secondary"
-                className="flex-1 sm:flex-none"
-                onClick={handleReconcileGotify}
-                loading={isReconcilingGotify}
-                icon={!isReconcilingGotify ? <BellPlus className="h-4 w-4" /> : undefined}
-              >
-                {t('users.gotify.reconcile')}
-              </Button>
-            </Can>
             <IconButton onClick={() => fetchUsers()} disabled={isLoading} aria-label="Refresh">
               <RefreshCcw className={cn('h-5 w-5', isLoading && 'animate-spin')} />
             </IconButton>
@@ -259,19 +215,20 @@ const UsersPage: React.FC = () => {
             <Th>User</Th>
             <Th>Role</Th>
             <Th>Status</Th>
+            <Th>Perangkat Aktif</Th>
             <Th className="text-right">Aksi</Th>
           </tr>
         </thead>
         <tbody className="divide-y divide-hairline-soft">
           {isLoading ? (
             <tr>
-              <td colSpan={4} className="px-6 py-12 text-center text-sm text-stone">
+              <td colSpan={5} className="px-6 py-12 text-center text-sm text-stone">
                 <Spinner className="mx-auto h-6 w-6 text-primary-blue" />
               </td>
             </tr>
           ) : filteredUsers.length === 0 ? (
             <tr>
-              <td colSpan={4}>
+              <td colSpan={5}>
                 <EmptyState
                   icon={<Users className="h-6 w-6" />}
                   title="Belum ada user"
@@ -296,19 +253,25 @@ const UsersPage: React.FC = () => {
                     {user.status || 'active'}
                   </Badge>
                 </Td>
+                <Td>
+                  <Badge tone={user.activeDeviceCount ? 'brand' : 'neutral'}>
+                    <Laptop className="h-3.5 w-3.5" />
+                    {user.activeDeviceCount ?? '—'} perangkat
+                  </Badge>
+                </Td>
                 <Td className="text-right">
                   <div className="inline-flex items-center gap-1">
                     <Can resource="users" action="update">
                       <RowAction
-                        tone="brand"
-                        onClick={() => handleProvisionGotify(user)}
-                        disabled={gotifyUserId === user.id}
-                        title={t('users.gotify.provision')}
-                        aria-label={t('users.gotify.provision')}
+                        tone="danger"
+                        onClick={() => handleLogoutAllDevices(user)}
+                        disabled={!user.activeDeviceCount || logoutUserId === user.id}
+                        title="Logout semua perangkat"
+                        aria-label="Logout semua perangkat"
                       >
-                        {gotifyUserId === user.id
+                        {logoutUserId === user.id
                           ? <Loader2 className="h-4 w-4 animate-spin" />
-                          : <BellPlus className="h-4 w-4" />}
+                          : <LogOut className="h-4 w-4" />}
                       </RowAction>
                       <RowAction onClick={() => openEdit(user)} aria-label="Edit">
                         <Pencil className="h-4 w-4" />

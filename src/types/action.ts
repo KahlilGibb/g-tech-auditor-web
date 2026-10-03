@@ -59,6 +59,8 @@ export interface CreateActionPayload {
   source?: string;
   site?: string;
   asset?: string;
+  inspectionId?: string;
+  fieldValueId?: string;
 }
 
 export interface ActionStatusFormInput {
@@ -71,4 +73,13 @@ export interface ActionStatusFormInput {
 export interface ResolveActionPayload {
   resolutionNote: string;
   files?: File[];
+}
+
+export interface ActionComment {
+  id: string;
+  actionId: string;
+  authorId: string;
+  authorName: string;
+  body: string;
+  createdAt: string;
 }

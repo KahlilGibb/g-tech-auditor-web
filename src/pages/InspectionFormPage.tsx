@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   AlertCircle,
@@ -22,7 +22,11 @@ import type { InspectionResponse, InspectionSection } from '../types/inspection'
 import type { TemplateField } from '../types/template';
 import { cn } from '../utils/cn';
 import { Can } from '../components/rbac/Can';
-import { Alert, Badge, Button, Card, Eyebrow, IconButton, ProgressBar } from '../components/ui';
+import { Alert, Badge, Button, Card, Eyebrow, Field, IconButton, Input, Modal, ProgressBar, Select, Textarea } from '../components/ui';
+import { useRbac } from '../hooks/useRbac';
+import { useActionStore } from '../stores/actionStore';
+import { useUserStore } from '../stores/userStore';
+import type { ActionPriority } from '../types/action';
 
 function isFieldAnswered(field: TemplateField, response?: InspectionResponse) {
   if (field.type === 'instruction') return true;
@@ -70,6 +74,15 @@ function formatDate(value: string) {
 const InspectionFormPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { can } = useRbac();
+  const { workflowStatuses, fetchActions, createAction, isSaving: isSavingAction } = useActionStore();
+  const { users, fetchUsers } = useUserStore();
+  const [actionFieldId, setActionFieldId] = useState<string | null>(null);
+  const [actionTitle, setActionTitle] = useState('');
+  const [actionDescription, setActionDescription] = useState('');
+  const [actionPriority, setActionPriority] = useState<ActionPriority>('Medium');
+  const [actionStatusId, setActionStatusId] = useState('');
+  const [actionAssigneeIds, setActionAssigneeIds] = useState<string[]>([]);
   const {
     session,
     isLoading,
@@ -90,6 +103,13 @@ const InspectionFormPage: React.FC = () => {
     if (id) void loadSession(id);
     return () => clearSession();
   }, [clearSession, id, loadSession]);
+
+  useEffect(() => {
+    if (can('actions', 'create')) {
+      void fetchActions(true);
+      void fetchUsers({ limit: 100 });
+    }
+  }, [can, fetchActions, fetchUsers]);
 
   const currentSection = session?.sections[session.currentSectionIndex] ?? null;
   const overall = useMemo(
@@ -146,6 +166,43 @@ const InspectionFormPage: React.FC = () => {
     }
   };
 
+  const openCreateAction = (fieldId: string) => {
+    if (!session) return;
+    const field = session.sections.flatMap(section => section.fields).find(item => item.id === fieldId);
+    const response = session.responses[fieldId];
+    setActionFieldId(fieldId);
+    setActionTitle(field?.label ? `Tindak lanjut: ${field.label}` : 'Tindak lanjut inspeksi');
+    setActionDescription(response?.note ?? String(response?.value ?? ''));
+    setActionPriority('Medium');
+    setActionStatusId(workflowStatuses.find(status => status.isDefault)?.id ?? workflowStatuses[0]?.id ?? '');
+    setActionAssigneeIds([]);
+  };
+
+  const handleCreateAction = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!session || !actionFieldId || !actionTitle.trim() || !actionStatusId) {
+      await appSwal.errorIncomplete('Judul dan status tindakan wajib diisi.');
+      return;
+    }
+    try {
+      await createAction({
+        title: actionTitle.trim(),
+        description: actionDescription.trim(),
+        priority: actionPriority,
+        workflowStatusId: actionStatusId,
+        assigneeIds: actionAssigneeIds,
+        inspectionId: session.inspectionId,
+        fieldValueId: session.responses[actionFieldId]?.fieldValueId,
+        source: session.templateTitle,
+        site: session.site,
+      });
+      setActionFieldId(null);
+      await appSwal.successCreated('action', actionTitle.trim());
+    } catch (actionError) {
+      await appSwal.errorCreateFailed('action', getApiErrorMessage(actionError));
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -174,6 +231,7 @@ const InspectionFormPage: React.FC = () => {
 
   const isFirst = session.currentSectionIndex === 0;
   const isLast = session.currentSectionIndex === session.sections.length - 1;
+  const readOnly = session.status === 'submitted';
 
   return (
     <div className="min-h-full">
@@ -185,7 +243,7 @@ const InspectionFormPage: React.FC = () => {
             </IconButton>
             <div className="min-w-0">
               <Eyebrow className="text-primary-blue">
-                <ClipboardCheck className="h-3.5 w-3.5" /> Form Inspeksi
+                <ClipboardCheck className="h-3.5 w-3.5" /> {session.isReviewMode ? 'Review Admin HO' : 'Form Inspeksi'}
               </Eyebrow>
               <h1 className="mt-1.5 truncate text-xl font-semibold tracking-tight text-ink-deep">
                 {session.templateTitle}
@@ -215,23 +273,28 @@ const InspectionFormPage: React.FC = () => {
               </div>
               <ProgressBar value={overallPercent} tone="gradient" className="h-2" />
             </div>
-            <Can resource="inspections" action="submit">
+            {!readOnly && <Can resource="inspections" action="submit">
               <Button variant="secondary" onClick={handleSave} loading={isSaving} icon={!isSaving ? <Save className="h-4 w-4" /> : undefined}>
-                Simpan Draft
+                {session.isReviewMode ? 'Simpan Koreksi' : 'Simpan Draft'}
               </Button>
               <Button
                 onClick={handleSubmit}
                 loading={session.status === 'submitting'}
                 icon={session.status !== 'submitting' ? <Check className="h-4 w-4" /> : undefined}
               >
-                Submit
+                {session.isReviewMode ? 'Selesaikan Review' : 'Submit'}
               </Button>
-            </Can>
+            </Can>}
           </div>
         </div>
       </div>
 
       {error && <Alert tone="danger" className="mt-5">{error}</Alert>}
+      {session.isReviewMode && (
+        <Alert tone="info" className="mt-5">
+          Mode review aktif. Nilai dealer saat submit: <strong>{session.dealerSubmittedScore ?? 0}</strong>. Perubahan jawaban disimpan sebagai koreksi Admin HO dengan version check.
+        </Alert>
+      )}
 
       <div className="grid gap-5 py-5 xl:grid-cols-[280px_minmax(0,1fr)_300px]">
         <aside className="hidden xl:block">
@@ -310,6 +373,8 @@ const InspectionFormPage: React.FC = () => {
               onNoteChange={setNote}
               onAddMedia={addMedia}
               onRemoveMedia={removeMedia}
+              onCreateAction={can('actions', 'create') ? openCreateAction : undefined}
+              readOnly={readOnly}
             />
           ))}
 
@@ -320,10 +385,10 @@ const InspectionFormPage: React.FC = () => {
             <span className="rounded-full bg-surface px-3 py-1.5 text-xs font-semibold text-stone tabular-nums">
               {session.currentSectionIndex + 1}/{session.sections.length}
             </span>
-            {isLast ? (
+            {isLast && !readOnly ? (
               <Can resource="inspections" action="submit">
                 <Button onClick={handleSubmit} icon={<Check className="h-4 w-4" />}>
-                  Selesai
+                  {session.isReviewMode ? 'Selesaikan Review' : 'Selesai'}
                 </Button>
               </Can>
             ) : (
@@ -396,6 +461,28 @@ const InspectionFormPage: React.FC = () => {
           </div>
         </aside>
       </div>
+
+      <Modal
+        open={Boolean(actionFieldId)}
+        onClose={() => !isSavingAction && setActionFieldId(null)}
+        size="lg"
+        eyebrow="Temuan inspeksi"
+        title="Buat Tindakan"
+        subtitle="Tindakan akan terhubung langsung ke pertanyaan dan inspeksi ini."
+        footer={<><Button variant="secondary" onClick={() => setActionFieldId(null)} disabled={isSavingAction}>Batal</Button><Button type="submit" form="inspection-action-form" loading={isSavingAction}>Simpan Tindakan</Button></>}
+      >
+        <form id="inspection-action-form" onSubmit={handleCreateAction} className="grid gap-4 sm:grid-cols-2">
+          <Field label="Judul" required className="sm:col-span-2"><Input value={actionTitle} onChange={event => setActionTitle(event.target.value)} /></Field>
+          <Field label="Deskripsi" className="sm:col-span-2"><Textarea value={actionDescription} onChange={event => setActionDescription(event.target.value)} className="min-h-24" /></Field>
+          <Field label="Prioritas"><Select value={actionPriority} onChange={event => setActionPriority(event.target.value as ActionPriority)}><option>Low</option><option>Medium</option><option>High</option></Select></Field>
+          <Field label="Status" required><Select value={actionStatusId} onChange={event => setActionStatusId(event.target.value)}><option value="">Pilih status</option>{workflowStatuses.map(status => <option key={status.id} value={status.id}>{status.label}</option>)}</Select></Field>
+          <Field label="Assignee" hint="Gunakan Ctrl/Cmd untuk memilih lebih dari satu" className="sm:col-span-2">
+            <Select multiple value={actionAssigneeIds} onChange={event => setActionAssigneeIds(Array.from(event.target.selectedOptions).map(option => option.value))} className="min-h-28">
+              {users.map(user => <option key={user.id} value={user.id}>{user.name} — {user.roleName}</option>)}
+            </Select>
+          </Field>
+        </form>
+      </Modal>
     </div>
   );
 };
