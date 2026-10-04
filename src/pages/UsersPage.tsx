@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Laptop, Loader2, LogOut, Pencil, Plus, RefreshCcw, Trash2, UserPlus, Users } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ChevronLeft, ChevronRight, Laptop, Loader2, LogOut, Pencil, Plus, RefreshCcw, Trash2, UserPlus, Users } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { useRoleStore } from '../stores/roleStore';
 import { useUserStore } from '../stores/userStore';
@@ -37,9 +37,11 @@ const EMPTY_FORM: UserFormInput = {
   status: 'active',
 };
 
+const USERS_PER_PAGE = 20;
+
 const UsersPage: React.FC = () => {
   const { t } = useTranslation();
-  const { users, isLoading, isSaving, error, fetchUsers, createUser, updateUser, deleteUser, logoutAllDevices } =
+  const { users, total, isLoading, isSaving, error, fetchUsers, createUser, updateUser, deleteUser, logoutAllDevices } =
     useUserStore();
   const {
     roles,
@@ -48,6 +50,8 @@ const UsersPage: React.FC = () => {
     fetchRoles,
   } = useRoleStore();
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<ManagementUser | null>(null);
   const [form, setForm] = useState<UserFormInput>(EMPTY_FORM);
@@ -55,19 +59,21 @@ const UsersPage: React.FC = () => {
   const [logoutUserId, setLogoutUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchUsers();
     fetchRoles();
-  }, [fetchRoles, fetchUsers]);
+  }, [fetchRoles]);
 
-  const filteredUsers = useMemo(() => {
-    const keyword = query.toLowerCase();
-    return users.filter(user =>
-      [user.name, user.email, user.username, user.roleName]
-        .join(' ')
-        .toLowerCase()
-        .includes(keyword),
-    );
-  }, [query, users]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedQuery(query.trim()), 350);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
+    void fetchUsers({ page: currentPage, limit: USERS_PER_PAGE, search: debouncedQuery || undefined });
+  }, [currentPage, debouncedQuery, fetchUsers]);
+
+  const totalPages = Math.max(1, Math.ceil(total / USERS_PER_PAGE));
+  const rangeStart = total === 0 ? 0 : (currentPage - 1) * USERS_PER_PAGE + 1;
+  const rangeEnd = Math.min(currentPage * USERS_PER_PAGE, total);
 
   const openCreate = () => {
     const firstRole = roles[0];
@@ -151,6 +157,11 @@ const UsersPage: React.FC = () => {
     try {
       await deleteUser(user.id);
       await appSwal.successDeleted('user', user.name);
+      if (users.length === 1 && currentPage > 1) {
+        setCurrentPage(page => page - 1);
+      } else {
+        await fetchUsers({ page: currentPage, limit: USERS_PER_PAGE, search: debouncedQuery || undefined });
+      }
     } catch (error) {
       await appSwal.errorDeleteFailed('user', getApiErrorMessage(error));
     }
@@ -184,7 +195,11 @@ const UsersPage: React.FC = () => {
         subtitle="Kelola akun, akses role, dan status user auditor."
         actions={
           <>
-            <IconButton onClick={() => fetchUsers()} disabled={isLoading} aria-label="Refresh">
+            <IconButton
+              onClick={() => fetchUsers({ page: currentPage, limit: USERS_PER_PAGE, search: debouncedQuery || undefined })}
+              disabled={isLoading}
+              aria-label="Refresh"
+            >
               <RefreshCcw className={cn('h-5 w-5', isLoading && 'animate-spin')} />
             </IconButton>
             <Can resource="users" action="create">
@@ -199,11 +214,14 @@ const UsersPage: React.FC = () => {
       <div className="toolbar">
         <SearchInput
           value={query}
-          onChange={event => setQuery(event.target.value)}
+          onChange={event => {
+            setQuery(event.target.value);
+            setCurrentPage(1);
+          }}
           placeholder="Cari nama, email, username, atau role..."
         />
         <Badge tone="outline" className="px-3.5 py-2 text-xs">
-          {filteredUsers.length} user
+          {total} user
         </Badge>
       </div>
 
@@ -226,18 +244,18 @@ const UsersPage: React.FC = () => {
                 <Spinner className="mx-auto h-6 w-6 text-primary-blue" />
               </td>
             </tr>
-          ) : filteredUsers.length === 0 ? (
+          ) : users.length === 0 ? (
             <tr>
               <td colSpan={5}>
                 <EmptyState
                   icon={<Users className="h-6 w-6" />}
-                  title="Belum ada user"
-                  description="Data dari API /users akan tampil di sini."
+                  title={debouncedQuery ? 'User tidak ditemukan' : 'Belum ada user'}
+                  description={debouncedQuery ? `Tidak ada hasil untuk “${debouncedQuery}”.` : 'Data dari API /users akan tampil di sini.'}
                 />
               </td>
             </tr>
           ) : (
-            filteredUsers.map(user => (
+            users.map(user => (
               <tr key={user.id} className="transition hover:bg-surface/60">
                 <Td>
                   <p className="text-sm font-semibold text-ink-deep">{user.name}</p>
@@ -289,6 +307,36 @@ const UsersPage: React.FC = () => {
           )}
         </tbody>
       </TableWrap>
+
+      {total > 0 && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-hairline-soft bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <p className="text-xs text-stone" aria-live="polite">
+            Menampilkan <span className="font-semibold text-ink-deep">{rangeStart}–{rangeEnd}</span> dari{' '}
+            <span className="font-semibold text-ink-deep">{total}</span> user
+          </p>
+          <nav className="flex items-center gap-2" aria-label="Pagination user">
+            <IconButton
+              onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+              disabled={isLoading || currentPage === 1}
+              className="h-9 w-9"
+              aria-label="Halaman sebelumnya"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </IconButton>
+            <span className="min-w-20 rounded-full border border-hairline-soft bg-surface px-3 py-2 text-center text-xs font-semibold tabular-nums text-ink-deep">
+              {currentPage} / {totalPages}
+            </span>
+            <IconButton
+              onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
+              disabled={isLoading || currentPage >= totalPages}
+              className="h-9 w-9"
+              aria-label="Halaman berikutnya"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </IconButton>
+          </nav>
+        </div>
+      )}
 
       <Modal
         open={isModalOpen}

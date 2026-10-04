@@ -6,6 +6,17 @@ export interface ListQuery {
   search?: string;
 }
 
+export interface ListMeta {
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface ListResult<T> {
+  items: T[];
+  meta: ListMeta;
+}
+
 export interface ManagementUser {
   id: string;
   username: string;

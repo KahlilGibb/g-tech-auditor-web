@@ -6,6 +6,7 @@ import type {
   BranchFormInput,
   GotifyConfig,
   ListQuery,
+  ListResult,
   ManagementUser,
   Organization,
   OrganizationFormInput,
@@ -248,14 +249,36 @@ function queryParams(query?: ListQuery) {
 }
 
 export const userService = {
-  async list(query?: ListQuery): Promise<ManagementUser[]> {
+  async list(query?: ListQuery): Promise<ListResult<ManagementUser>> {
+    const page = query?.page ?? 1;
+    const limit = query?.limit ?? 20;
     try {
       const response = await apiClient.get(API_ENDPOINTS.USERS.LIST, {
         params: queryParams(query),
       });
-      return unwrapList<unknown>(response.data).map(normalizeUser);
+      const envelope = toRecord(response.data);
+      const meta = toRecord(envelope.meta);
+      const items = unwrapList<unknown>(response.data).map(normalizeUser);
+      const total = Number(meta.total ?? items.length);
+      const responsePage = Number(meta.page ?? page);
+      const responseLimit = Number(meta.limit ?? limit);
+      return {
+        items,
+        meta: {
+          total: Number.isFinite(total) ? total : items.length,
+          page: Number.isFinite(responsePage) && responsePage > 0 ? responsePage : page,
+          limit: Number.isFinite(responseLimit) && responseLimit > 0 ? responseLimit : limit,
+        },
+      };
     } catch (error) {
-      if (error instanceof MockInterceptError) return mockUserApi.list(query);
+      if (error instanceof MockInterceptError) {
+        const matchingUsers = await mockUserApi.list(query);
+        const offset = (page - 1) * limit;
+        return {
+          items: matchingUsers.slice(offset, offset + limit),
+          meta: { total: matchingUsers.length, page, limit },
+        };
+      }
       throw error;
     }
   },
