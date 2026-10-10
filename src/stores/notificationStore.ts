@@ -9,21 +9,19 @@ interface NotificationStoreState {
   isLoading: boolean
   isFetched: boolean
   error: string | null
-  // internal WS states
-  _config: import('../types/notification').GotifyConfig | null
-  _ws: WebSocket | null
-  _reconnectTimer: any | null
+  _pollTimer: ReturnType<typeof setInterval> | null
 
   fetchNotifications: (force?: boolean) => Promise<void>
   fetchUnreadCount: () => Promise<void>
   markAsRead: (id: string) => Promise<void>
   markAllAsRead: () => Promise<void>
   disconnect: () => void
-  _openWebSocket: (config: import('../types/notification').GotifyConfig) => void
   clearError: () => void
 }
 
-const RECONNECT_DELAY_MS = 5000;
+// The web has no push channel (Gotify is gone and FCM serves the phones), so
+// the bell stays current by polling the unread count.
+const POLL_INTERVAL_MS = 60_000
 
 export const useNotificationStore = create<NotificationStoreState>()((set, get) => ({
   notifications: [],
@@ -31,31 +29,24 @@ export const useNotificationStore = create<NotificationStoreState>()((set, get) 
   isLoading: false,
   isFetched: false,
   error: null,
-  _config: null,
-  _ws: null,
-  _reconnectTimer: null,
+  _pollTimer: null,
 
   fetchNotifications: async (force = false) => {
-    const { isFetched, notifications, _config } = get()
+    const { isFetched, notifications } = get()
+    if (!get()._pollTimer) {
+      set({ _pollTimer: setInterval(() => void get().fetchUnreadCount(), POLL_INTERVAL_MS) })
+    }
     if (!force && isFetched && notifications.length > 0) return
     set({ isLoading: true, error: null })
     try {
       const data = await notificationService.getNotifications()
       set({
         notifications: data,
-        unreadCount: data.filter(item => !item.is_read).length,
         isLoading: false,
         isFetched: true,
       })
-      
-      // Initialize Gotify WS
-      try {
-        const config = _config ?? await notificationService.getGotifyConfig()
-        set({ _config: config })
-        get()._openWebSocket(config)
-      } catch (wsErr) {
-        console.warn('Failed to start Gotify WebSocket:', wsErr)
-      }
+      // The list is capped at 50; the badge takes the true total.
+      void get().fetchUnreadCount()
     } catch (e) {
       set({
         isLoading: false,
@@ -64,36 +55,10 @@ export const useNotificationStore = create<NotificationStoreState>()((set, get) 
     }
   },
 
-  _openWebSocket: (config) => {
-    const { _ws, _reconnectTimer } = get()
-    if (_reconnectTimer) clearTimeout(_reconnectTimer)
-    if (_ws) _ws.close()
-
-    const ws = notificationService.connectWebSocket(
-      config,
-      (item) => {
-        set(s => ({
-          notifications: [item, ...s.notifications],
-          unreadCount: s.unreadCount + 1
-        }))
-      },
-      () => {
-        // Reconnect after delay
-        const timer = setTimeout(() => {
-          const { _config } = get()
-          if (_config) get()._openWebSocket(_config)
-        }, RECONNECT_DELAY_MS)
-        set({ _ws: null, _reconnectTimer: timer })
-      }
-    )
-    set({ _ws: ws, _reconnectTimer: null })
-  },
-
   disconnect: () => {
-    const { _ws, _reconnectTimer } = get()
-    if (_reconnectTimer) clearTimeout(_reconnectTimer)
-    if (_ws) _ws.close()
-    set({ _ws: null, _reconnectTimer: null, _config: null, isFetched: false })
+    const { _pollTimer } = get()
+    if (_pollTimer) clearInterval(_pollTimer)
+    set({ _pollTimer: null, notifications: [], unreadCount: 0, isFetched: false })
   },
 
   fetchUnreadCount: async () => {

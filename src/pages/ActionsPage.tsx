@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import {
   AlertCircle,
   Calendar,
@@ -258,6 +259,37 @@ const ActionsPage: React.FC = () => {
       await appSwal.successSaved('action');
     } catch (statusError) {
       await appSwal.errorUpdateFailed('action', getApiErrorMessage(statusError));
+    }
+  };
+
+  // A notification links here as /actions?actionId=…: open that action's
+  // detail straight away, then drop the parameter once it is closed.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const linkedActionId = searchParams.get('actionId');
+  useEffect(() => {
+    if (!linkedActionId) return;
+    let active = true;
+    Promise.all([actionService.getAction(linkedActionId), actionService.getComments(linkedActionId)])
+      .then(([detail, actionComments]) => {
+        if (!active) return;
+        setViewingAction(detail);
+        setComments(actionComments);
+        setCommentBody('');
+      })
+      .catch(linkError => {
+        if (active) void appSwal.error({ title: 'Gagal membuka tindakan', text: getApiErrorMessage(linkError) });
+      });
+    return () => {
+      active = false;
+    };
+  }, [linkedActionId]);
+
+  const closeViewingAction = () => {
+    setViewingAction(null);
+    if (searchParams.has('actionId')) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('actionId');
+      setSearchParams(next, { replace: true });
     }
   };
 
@@ -681,13 +713,13 @@ const ActionsPage: React.FC = () => {
 
       <Modal
         open={Boolean(viewingAction)}
-        onClose={() => setViewingAction(null)}
+        onClose={closeViewingAction}
         size="lg"
         eyebrow="Detail tindakan"
         title={viewingAction?.title}
         subtitle={viewingAction ? `#${viewingAction.code}` : undefined}
         footer={
-          <Button variant="secondary" onClick={() => setViewingAction(null)}>
+          <Button variant="secondary" onClick={closeViewingAction}>
             {t('common.close')}
           </Button>
         }

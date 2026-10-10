@@ -76,9 +76,11 @@ const NotificationPanel: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { notifications, fetchNotifications, markAsRead, markAllAsRead, isLoading } =
     useNotificationStore();
   const panelRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
+  // Always fresh when opened: the list is only loaded once otherwise.
   useEffect(() => {
-    fetchNotifications();
+    fetchNotifications(true);
   }, [fetchNotifications]);
 
   useEffect(() => {
@@ -116,6 +118,12 @@ const NotificationPanel: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             key={notification.id}
             onClick={() => {
               markAsRead(notification.id);
+              // Straight to the related screen (the action detail, the
+              // inspection), like tapping the push on mobile.
+              if (notification.route) {
+                onClose();
+                navigate(notification.route);
+              }
             }}
             className={cn(
               'flex w-full items-start gap-3 border-b border-hairline-soft px-4 py-3 text-left transition last:border-0 hover:bg-surface',
