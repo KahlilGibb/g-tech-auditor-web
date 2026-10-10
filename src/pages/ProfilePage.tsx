@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { User, Mail, Phone, MapPin, ShieldCheck, Globe, LogOut, Camera, X, Building2 } from 'lucide-react';
+import { User, Mail, Phone, MapPin, ShieldCheck, Globe, LogOut, Camera, X, Building2, KeyRound } from 'lucide-react';
+import { ChangePasswordModal } from '../components/password/ChangePasswordModal';
 import { cn } from '../utils/cn';
 import { appSwal } from '../lib/appSwal';
 
@@ -24,6 +25,7 @@ const ProfilePage: React.FC = () => {
   const { logout, logoutAll, user } = useAuth();
 
   const [isEditing, setIsEditing] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [formData, setFormData] = useState(profile);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -174,6 +176,15 @@ const ProfilePage: React.FC = () => {
                 icon={<ShieldCheck className="h-4 w-4" />}
                 className="!border-0 !px-0 !pt-0"
               />
+              <Button
+                variant="secondary"
+                block
+                className="mb-4"
+                onClick={() => setChangePasswordOpen(true)}
+                icon={<KeyRound className="h-4 w-4" />}
+              >
+                Ubah Password
+              </Button>
               <p className="mb-4 text-xs text-stone">
                 Keluarkan akun Anda dari semua peramban dan perangkat yang sedang masuk.
               </p>
@@ -330,6 +341,8 @@ const ProfilePage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <ChangePasswordModal open={changePasswordOpen} onClose={() => setChangePasswordOpen(false)} />
     </div>
   );
 };

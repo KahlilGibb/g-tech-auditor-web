@@ -6,9 +6,11 @@ export const API_ENDPOINTS = {
     VERIFY: '/auth/verify',
     LOGOUT: '/auth/logout',
     LOGOUT_ALL: '/auth/logout-all',
+    FORGOT_PASSWORD: '/auth/forgot-password',
   },
   USERS: {
     ME: '/users/me',
+    CHANGE_MY_PASSWORD: '/users/me/password',
     GOTIFY_CONFIG: '/users/me/gotify',
     RECONCILE_GOTIFY: '/users/reconcile-gotify',
     LIST: '/users',
@@ -19,9 +21,14 @@ export const API_ENDPOINTS = {
     PROVISION_GOTIFY: (id: string) => `/users/${id}/provision-gotify`,
     SESSIONS: (id: string) => `/users/${id}/sessions`,
     LOGOUT_ALL: (id: string) => `/users/${id}/logout-all`,
+    RESET_PASSWORD: (id: string) => `/users/${id}/reset-password`,
     TRASH: '/users/trash',
     RESTORE: (id: string) => `/users/trash/${id}/restore`,
     PERMANENT_DELETE: (id: string) => `/users/trash/${id}`,
+  },
+  PASSWORD_RESET_REQUESTS: {
+    LIST: '/password-reset-requests',
+    DISMISS: (id: string) => `/password-reset-requests/${id}/dismiss`,
   },
   ROLES: {
     LIST: '/roles',

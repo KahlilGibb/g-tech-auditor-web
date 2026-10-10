@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Laptop, Loader2, LogOut, Pencil, Plus, RefreshCcw, Trash2, UserPlus, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, KeyRound, Laptop, Loader2, LogOut, Pencil, Plus, RefreshCcw, Trash2, UserPlus, Users } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { useRoleStore } from '../stores/roleStore';
 import { useUserStore } from '../stores/userStore';
@@ -8,6 +8,9 @@ import { appSwal } from '../lib/appSwal';
 import { getApiErrorMessage } from '../lib/apiResponse';
 import { useTranslation } from 'react-i18next';
 import { Can } from '../components/rbac/Can';
+import { PasswordResetRequestsPanel } from '../components/password/PasswordResetRequestsPanel';
+import { ResetPasswordModal, type ResetTarget } from '../components/password/ResetPasswordModal';
+import { useAuth } from '../hooks/useAuth';
 import {
   Alert,
   Badge,
@@ -57,6 +60,9 @@ const UsersPage: React.FC = () => {
   const [form, setForm] = useState<UserFormInput>(EMPTY_FORM);
   const [formError, setFormError] = useState('');
   const [logoutUserId, setLogoutUserId] = useState<string | null>(null);
+  const [resetTarget, setResetTarget] = useState<ResetTarget | null>(null);
+  const [resetRefreshKey, setResetRefreshKey] = useState(0);
+  const { user: currentUser } = useAuth();
 
   useEffect(() => {
     fetchRoles();
@@ -227,6 +233,10 @@ const UsersPage: React.FC = () => {
 
       {error && <Alert tone="danger">{error}</Alert>}
 
+      <Can resource="users" action="update">
+        <PasswordResetRequestsPanel onReset={setResetTarget} refreshKey={resetRefreshKey} />
+      </Can>
+
       <TableWrap>
         <thead className="table-header">
           <tr>
@@ -291,6 +301,15 @@ const UsersPage: React.FC = () => {
                           ? <Loader2 className="h-4 w-4 animate-spin" />
                           : <LogOut className="h-4 w-4" />}
                       </RowAction>
+                      {user.id !== currentUser?.id && (
+                        <RowAction
+                          onClick={() => setResetTarget({ id: user.id, name: user.name, username: user.username })}
+                          title="Reset password"
+                          aria-label="Reset password"
+                        >
+                          <KeyRound className="h-4 w-4" />
+                        </RowAction>
+                      )}
                       <RowAction onClick={() => openEdit(user)} aria-label="Edit">
                         <Pencil className="h-4 w-4" />
                       </RowAction>
@@ -425,6 +444,15 @@ const UsersPage: React.FC = () => {
           </Field>
         </form>
       </Modal>
+
+      <ResetPasswordModal
+        target={resetTarget}
+        onClose={() => setResetTarget(null)}
+        onDone={() => {
+          setResetRefreshKey(key => key + 1);
+          void fetchUsers({ page: currentPage, limit: USERS_PER_PAGE, search: debouncedQuery || undefined });
+        }}
+      />
     </div>
   );
 };

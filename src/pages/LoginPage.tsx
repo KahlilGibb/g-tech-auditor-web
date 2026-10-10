@@ -5,6 +5,7 @@ import { appSwal } from '../lib/appSwal';
 import { useTranslation } from 'react-i18next';
 import { getApiErrorMessage } from '../lib/apiResponse';
 import { Button, Eyebrow, Field, Input, Alert } from '../components/ui';
+import { ForgotPasswordModal } from '../components/password/ForgotPasswordModal';
 
 const LoginPage: React.FC = () => {
   const { t } = useTranslation();
@@ -12,6 +13,7 @@ const LoginPage: React.FC = () => {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [forgotOpen, setForgotOpen] = useState(false);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -124,9 +126,13 @@ const LoginPage: React.FC = () => {
               label={
                 <span className="flex w-full items-center justify-between">
                   <span>Password</span>
-                  <a href="#" className="text-xs font-semibold text-primary-blue hover:text-primary-blue-dark">
+                  <button
+                    type="button"
+                    onClick={() => setForgotOpen(true)}
+                    className="text-xs font-semibold text-primary-blue hover:text-primary-blue-dark"
+                  >
                     Forgot password?
-                  </a>
+                  </button>
                 </span>
               }
             >
@@ -157,6 +163,8 @@ const LoginPage: React.FC = () => {
           </p>
         </div>
       </main>
+
+      <ForgotPasswordModal open={forgotOpen} onClose={() => setForgotOpen(false)} initialIdentifier={identifier} />
     </div>
   );
 };
