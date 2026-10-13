@@ -196,7 +196,12 @@ export const API_ENDPOINTS = {
     WEEKLY_SCORES: '/cps/weekly-scores',
   },
   TRAINING: {
-    LIST: '/training',
+    MATERIALS: '/training/materials',
+    MATERIAL: (id: string) => `/training/materials/${id}`,
+    MATERIAL_READ: (id: string) => `/training/materials/${id}/read`,
+    MATERIAL_CONTENT: (id: string) => `/training/materials/${id}/content`,
+    SCHEDULES: '/training/schedules',
+    SCHEDULE: (id: string) => `/training/schedules/${id}`,
   },
   NOTIFICATIONS: {
     LIST: '/notifications',

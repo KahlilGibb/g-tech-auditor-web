@@ -1,5 +1,7 @@
 # React + TypeScript + Vite
 
+The production Training module and its API/access contract, verification results, and local browser QA instructions are documented in [docs/training-web.md](docs/training-web.md). Run `npm test` for Training regression tests and `npm run build` for the production build.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:

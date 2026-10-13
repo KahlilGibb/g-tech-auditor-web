@@ -41,7 +41,9 @@ export const NAV_PERMISSIONS = {
     fallback: [{ resource: 'inspections', action: 'read' }],
   },
   cps: { resource: 'cps', action: 'read', fallback: [{ resource: 'inspections', action: 'read' }] },
-  training: { resource: 'training', action: 'read' },
+  // Training reads are available to every authenticated role. The API scopes
+  // published content by organization and user_groups; it has no training:read permission.
+  training: { resource: '', action: 'read' },
   users: { resource: 'users', action: 'read' },
   roles: { resource: 'roles', action: 'read' },
   permissions: {

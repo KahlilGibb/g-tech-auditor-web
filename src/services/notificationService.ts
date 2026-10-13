@@ -75,9 +75,12 @@ export function webRouteFor(record: Record<string, unknown>): string | undefined
     const id = queryParam(route, 'id') || inspectionId
     return id ? `/inspections/${encodeURIComponent(id)}/session` : '/inspections'
   }
+  if (route.includes('training')) return '/training';
   if (route.startsWith('/') && !route.startsWith('/(')) return route
 
   switch (type) {
+    case 'training_published':
+      return '/training'
     case 'password_reset_requested':
       return '/users'
     case 'template_created':

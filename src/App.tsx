@@ -151,7 +151,7 @@ const AppRoutes: React.FC = () => {
         <Route
           path="training"
           element={
-            <ProtectedRoute permission={NAV_PERMISSIONS.training}>
+            <ProtectedRoute>
               <TrainingPage />
             </ProtectedRoute>
           }
