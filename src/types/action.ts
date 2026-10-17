@@ -40,6 +40,7 @@ export interface ActionItem {
   asset?: string;
   timeline: ActionTimelineEntry[];
   createdAt: string;
+  updatedAt?: string;
   groupName?: string;
   inspectionStartedAt?: string;
   inspectionConductedByName?: string;
@@ -50,6 +51,7 @@ export interface ActionItem {
 }
 
 export interface CreateActionPayload {
+  expectedUpdatedAt?: string;
   title: string;
   description?: string;
   workflowStatusId: string;

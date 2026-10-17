@@ -8,6 +8,7 @@ import type {
 } from '../types/action';
 import { actionService } from '../services/actionService';
 import { getApiErrorMessage } from '../lib/apiResponse';
+import { ApiRequestError } from '../lib/apiClient';
 
 interface ActionStoreState {
   actions: ActionItem[];
@@ -74,6 +75,7 @@ export const useActionStore = create<ActionStoreState>()((set, get) => ({
           return action;
         } catch (e) {
           set({ isSaving: false, error: getApiErrorMessage(e, 'Failed to update action') });
+          if (e instanceof ApiRequestError && e.status === 409) await get().fetchActions(true);
           throw e;
         }
       },
@@ -100,7 +102,8 @@ export const useActionStore = create<ActionStoreState>()((set, get) => ({
         });
 
         try {
-          const updatedAction = await actionService.updateActionStatus(id, statusId);
+          const revision = previousActions.find(action => action.id === id)?.updatedAt;
+          const updatedAction = await actionService.updateActionStatus(id, statusId, revision);
           set({
             actions: get().actions.map(a => 
               a.id === id ? { ...a, ...updatedAction } : a
@@ -109,6 +112,7 @@ export const useActionStore = create<ActionStoreState>()((set, get) => ({
         } catch (e) {
           // Rollback on failure
           set({ actions: previousActions, error: getApiErrorMessage(e, 'Failed to update action') });
+          if (e instanceof ApiRequestError && e.status === 409) await get().fetchActions(true);
           throw e;
         }
       },

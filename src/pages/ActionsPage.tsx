@@ -26,6 +26,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useUserStore } from '../stores/userStore';
 import { appSwal } from '../lib/appSwal';
 import { getApiErrorMessage } from '../lib/apiResponse';
+import { ApiRequestError } from '../lib/apiClient';
 import { cn } from '../utils/cn';
 import type { ActionComment, ActionItem, ActionPriority, ActionStatusFormInput, CreateActionPayload } from '../types/action';
 import { actionService } from '../services/actionService';
@@ -209,6 +210,7 @@ const ActionsPage: React.FC = () => {
 
     const payload = {
       ...actionForm,
+      expectedUpdatedAt: editingAction?.updatedAt,
       dueDate: isoFromInput(actionForm.dueDate),
     };
 
@@ -223,6 +225,10 @@ const ActionsPage: React.FC = () => {
       setIsActionModalOpen(false);
     } catch (submitError) {
       const message = getApiErrorMessage(submitError);
+      if (submitError instanceof ApiRequestError && submitError.status === 409) {
+        setIsActionModalOpen(false);
+        setEditingAction(null);
+      }
       if (editingAction) await appSwal.errorUpdateFailed('action', message);
       else await appSwal.errorCreateFailed('action', message);
     }

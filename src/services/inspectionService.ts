@@ -662,6 +662,7 @@ export const inspectionService = {
     try {
       const res = await apiClient.get(API_ENDPOINTS.INSPECTIONS.EXPORT_REPORT(inspectionId), {
         responseType: 'blob',
+        timeout: 120_000,
       });
       return res.data as Blob;
     } catch (e) {
@@ -679,6 +680,7 @@ export const inspectionService = {
     try {
       const res = await apiClient.get(API_ENDPOINTS.INSPECTIONS.EXPORT_ISSUES(inspectionId), {
         responseType: 'blob',
+        timeout: 120_000,
       });
       return res.data as Blob;
     } catch (e) {

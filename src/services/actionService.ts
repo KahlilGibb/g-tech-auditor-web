@@ -127,6 +127,7 @@ function statusPayload(input: ActionStatusFormInput) {
 
 function actionCorePayload(input: CreateActionPayload) {
   return {
+    expected_updated_at: input.expectedUpdatedAt,
     title: input.title,
     description: input.description,
     priority: apiPriority(input.priority),
@@ -241,6 +242,8 @@ function normalizeAction(raw: unknown): ActionItem {
       item.inspection_conducted_by_name ?? item.inspectionConductedByName ?? item.created_by_name,
     ) || undefined,
     createdAt,
+    // Preserve the raw timestamp, including microseconds, for optimistic locking.
+    updatedAt: toStringValue(item.updated_at ?? item.updatedAt) || undefined,
     resolutionNote: toStringValue(item.resolution_note ?? item.resolutionNote) || undefined,
     resolvedAt: toStringValue(item.resolved_at ?? item.resolvedAt) || undefined,
     attachments: normalizeAttachments(item.attachments),
@@ -494,10 +497,11 @@ export const actionService = {
     }
   },
 
-  async updateActionStatus(id: string, statusId: string): Promise<ActionItem> {
+  async updateActionStatus(id: string, statusId: string, expectedUpdatedAt?: string): Promise<ActionItem> {
     try {
       const res = await apiClient.put<unknown>(API_ENDPOINTS.ACTIONS.UPDATE(id), {
         status_id: statusId,
+        expected_updated_at: expectedUpdatedAt,
       });
       return normalizeAction(unwrapData(res.data));
     } catch (e) {
