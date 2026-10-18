@@ -84,11 +84,8 @@ const InspectionsPage: React.FC = () => {
     const key = `${inspectionId}-${type}`;
     setExportingKey(key);
     try {
-      const blob =
-        type === 'report'
-          ? await inspectionService.exportReport(inspectionId)
-          : await inspectionService.exportIssues(inspectionId);
-      downloadBlob(blob, `${inspectionId}-${type}.xlsx`);
+      const file = await inspectionService.exportReportFile(inspectionId, type);
+      downloadBlob(file.blob, file.filename);
     } catch (exportError) {
       await appSwal.error({
         title: t('inspections.export.failed'),

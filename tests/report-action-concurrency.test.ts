@@ -3,6 +3,7 @@ import { apiClient, ApiRequestError } from '../src/lib/apiClient';
 import { actionService } from '../src/services/actionService';
 import { inspectionService } from '../src/services/inspectionService';
 import { useActionStore } from '../src/stores/actionStore';
+import { reportFilename } from '../src/utils/reportFilename';
 
 vi.mock('../src/lib/apiClient', () => ({
   apiClient: { get: vi.fn(), put: vi.fn(), post: vi.fn(), delete: vi.fn() },
@@ -45,6 +46,16 @@ describe('Action revision contract', () => {
 });
 
 describe('Report request budget', () => {
+  it('uses the server dealer/date/time filename for both report kinds', async () => {
+    const blob = new Blob(['PK fixture']);
+    for (const kind of ['report', 'issues'] as const) {
+      const name = `${kind === 'report' ? 'Inspection' : 'Report Temuan'} Dealer BSD 2026-10-18 10-20-30 WIB.xlsx`;
+      vi.mocked(apiClient.get).mockResolvedValue({ data: blob, headers: { 'content-disposition': `attachment; filename="${name}"` } } as never);
+      expect(await inspectionService.exportReportFile('qa', kind)).toEqual({ blob, filename: name });
+    }
+    expect(reportFilename("attachment; filename*=utf-8''Inspection%20Cabang%20%C3%89.xlsx", 'fallback')).toBe('Inspection Cabang É.xlsx');
+    expect(reportFilename('attachment; filename="../../bad.xlsx"', 'fallback')).toBe('-..-bad.xlsx');
+  });
   it('keeps blob downloads but allows report-specific time beyond JSON timeout', async () => {
     const blob = new Blob(['PK fixture']);
     vi.mocked(apiClient.get).mockResolvedValue({ data: blob } as never);

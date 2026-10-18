@@ -12,6 +12,7 @@ import { apiClient, MockInterceptError } from '../lib/apiClient';
 import { API_ENDPOINTS } from '../constants/api';
 import { toRecord, toStringValue, unwrapData, unwrapList } from '../lib/apiResponse';
 import { templateService } from './templateService';
+import { reportFilename } from '../utils/reportFilename';
 
 // TODO: Remove MOCK_DATA when real API is connected.
 let MOCK_TRASHED_INSPECTIONS: InspectionSummary[] = [];
@@ -658,40 +659,30 @@ export const inspectionService = {
     }
   },
 
-  async exportReport(inspectionId: string): Promise<Blob> {
+  async exportReportFile(inspectionId: string, kind: 'report' | 'issues'): Promise<{ blob: Blob; filename: string }> {
+    const fallback = `${kind === 'report' ? 'Inspection' : 'Report Temuan'} ${inspectionId}.xlsx`;
     try {
-      const res = await apiClient.get(API_ENDPOINTS.INSPECTIONS.EXPORT_REPORT(inspectionId), {
+      const endpoint = kind === 'report' ? API_ENDPOINTS.INSPECTIONS.EXPORT_REPORT(inspectionId) : API_ENDPOINTS.INSPECTIONS.EXPORT_ISSUES(inspectionId);
+      const res = await apiClient.get(endpoint, {
         responseType: 'blob',
         timeout: 120_000,
       });
-      return res.data as Blob;
+      return { blob: res.data as Blob, filename: reportFilename(String(res.headers?.['content-disposition'] || ''), fallback) };
     } catch (e) {
       if (e instanceof MockInterceptError) {
         await new Promise<void>(r => setTimeout(r, 300));
-        return new Blob([`Mock inspection report for ${inspectionId}`], {
-          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        });
+        return { blob: new Blob([`Mock inspection ${kind} for ${inspectionId}`], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), filename: fallback };
       }
       throw e;
     }
   },
 
+  async exportReport(inspectionId: string): Promise<Blob> {
+    return (await inspectionService.exportReportFile(inspectionId, 'report')).blob;
+  },
+
   async exportIssues(inspectionId: string): Promise<Blob> {
-    try {
-      const res = await apiClient.get(API_ENDPOINTS.INSPECTIONS.EXPORT_ISSUES(inspectionId), {
-        responseType: 'blob',
-        timeout: 120_000,
-      });
-      return res.data as Blob;
-    } catch (e) {
-      if (e instanceof MockInterceptError) {
-        await new Promise<void>(r => setTimeout(r, 300));
-        return new Blob([`Mock inspection issues for ${inspectionId}`], {
-          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        });
-      }
-      throw e;
-    }
+    return (await inspectionService.exportReportFile(inspectionId, 'issues')).blob;
   },
 
   async getDashboardStats(): Promise<DashboardStatsResponse> {
